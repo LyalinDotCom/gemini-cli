@@ -116,16 +116,6 @@ export async function main() {
     !!process.env.GEMINI_API_KEY &&
     !authFlag;
 
-  // set default fallback to gemini api key
-  // this has to go after load cli because thats where the env is set
-  if (!settings.merged.selectedAuthType && process.env.GEMINI_API_KEY) {
-    settings.setValue(
-      SettingScope.User,
-      'selectedAuthType',
-      AuthType.USE_GEMINI,
-    );
-  }
-
   setMaxSizedBoxDebugging(config.getDebugMode());
 
   // Initialize centralized FileDiscoveryService
