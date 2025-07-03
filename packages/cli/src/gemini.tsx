@@ -38,8 +38,6 @@ import {
 import { validateAuthMethod } from './config/auth.js';
 import { setMaxSizedBoxDebugging } from './ui/components/shared/MaxSizedBox.js';
 
-import { isFirstRun, setFirstRunFinished } from './config/first-run.js';
-
 function getNodeMemoryArgs(config: Config): string[] {
   const totalMemoryMB = os.totalmem() / (1024 * 1024);
   const heapStats = v8.getHeapStatistics();
@@ -114,10 +112,9 @@ export async function main() {
   }
 
   const showIntro =
-    isFirstRun(workspaceRoot) && !!process.env.GEMINI_API_KEY && !authFlag;
-  if (showIntro) {
-    setFirstRunFinished(workspaceRoot);
-  }
+    !settings.merged.selectedAuthType &&
+    !!process.env.GEMINI_API_KEY &&
+    !authFlag;
 
   // set default fallback to gemini api key
   // this has to go after load cli because thats where the env is set
