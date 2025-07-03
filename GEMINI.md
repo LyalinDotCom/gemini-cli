@@ -179,3 +179,38 @@ Design for a good user experience - Provide clear, minimal, and non-blocking UI 
 ## Comments policy
 
 Only write high-value comments if at all. Avoid talking to the user through comments.
+
+## Development Workflow
+
+This project has a strict development workflow that must be followed to ensure code quality and prevent regressions.
+
+### Build Process
+
+The `preflight` script is the single source of truth for validating changes. It's crucial to run this script before submitting any changes.
+
+```bash
+npm run preflight
+```
+
+The `preflight` script will:
+
+1.  Install all dependencies.
+2.  Run the linter and TypeScript compiler.
+3.  Run all tests.
+
+If any of these steps fail, the `preflight` script will fail, and the changes should not be submitted.
+
+### Linting
+
+The project uses ESLint to enforce a strict set of linting rules. These rules include:
+
+*   **License headers:** All new files must have a license header.
+*   **No unused variables:** There should be no unused variables in the code.
+
+### TypeScript
+
+The project uses TypeScript to ensure type safety. It's important to be mindful of the following when working with TypeScript in this project:
+
+*   **Import paths:** All import paths must be correct. The build process is very sensitive to incorrect import paths.
+*   **Types:** All types must be correct. The build process is very sensitive to incorrect types.
+*   **Component props:** All component props must be correct. The build process is very sensitive to incorrect component props.

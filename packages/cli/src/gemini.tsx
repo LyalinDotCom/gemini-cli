@@ -38,6 +38,8 @@ import {
 import { validateAuthMethod } from './config/auth.js';
 import { setMaxSizedBoxDebugging } from './ui/components/shared/MaxSizedBox.js';
 
+import { isFirstRun, setFirstRunFinished } from './config/first-run.js';
+
 function getNodeMemoryArgs(config: Config): string[] {
   const totalMemoryMB = os.totalmem() / (1024 * 1024);
   const heapStats = v8.getHeapStatistics();
@@ -101,6 +103,21 @@ export async function main() {
 
   const extensions = loadExtensions(workspaceRoot);
   const config = await loadCliConfig(settings.merged, extensions, sessionId);
+
+  const authFlag = config.getAuth();
+  if (authFlag === 'env_key') {
+    settings.setValue(
+      SettingScope.User,
+      'selectedAuthType',
+      AuthType.USE_GEMINI,
+    );
+  }
+
+  const showIntro =
+    isFirstRun(workspaceRoot) && !!process.env.GEMINI_API_KEY && !authFlag;
+  if (showIntro) {
+    setFirstRunFinished(workspaceRoot);
+  }
 
   // set default fallback to gemini api key
   // this has to go after load cli because thats where the env is set
@@ -176,6 +193,7 @@ export async function main() {
           config={config}
           settings={settings}
           startupWarnings={startupWarnings}
+          showIntro={showIntro}
         />
       </React.StrictMode>,
       { exitOnCtrlC: false },

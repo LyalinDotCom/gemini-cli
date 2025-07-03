@@ -79,6 +79,7 @@ interface AppProps {
   config: Config;
   settings: LoadedSettings;
   startupWarnings?: string[];
+  showIntro?: boolean;
 }
 
 export const AppWrapper = (props: AppProps) => (
@@ -87,7 +88,12 @@ export const AppWrapper = (props: AppProps) => (
   </SessionStatsProvider>
 );
 
-const App = ({ config, settings, startupWarnings = [] }: AppProps) => {
+const App = ({
+  config,
+  settings,
+  startupWarnings = [],
+  showIntro,
+}: AppProps) => {
   useBracketedPaste();
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
   const { stdout } = useStdout();
@@ -156,6 +162,12 @@ const App = ({ config, settings, startupWarnings = [] }: AppProps) => {
     isAuthenticating,
     cancelAuthentication,
   } = useAuthCommand(settings, setAuthError, config);
+
+  useEffect(() => {
+    if (showIntro) {
+      openAuthDialog();
+    }
+  }, [showIntro, openAuthDialog]);
 
   useEffect(() => {
     if (settings.merged.selectedAuthType) {

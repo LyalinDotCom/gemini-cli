@@ -16,12 +16,14 @@ interface AuthDialogProps {
   onSelect: (authMethod: AuthType | undefined, scope: SettingScope) => void;
   settings: LoadedSettings;
   initialErrorMessage?: string | null;
+  showIntro?: boolean;
 }
 
 export function AuthDialog({
   onSelect,
   settings,
   initialErrorMessage,
+  showIntro,
 }: AuthDialogProps): React.JSX.Element {
   const [errorMessage, setErrorMessage] = useState<string | null>(
     initialErrorMessage || null,
@@ -71,6 +73,18 @@ export function AuthDialog({
       padding={1}
       width="100%"
     >
+      {showIntro && (
+        <Box flexDirection="column" marginBottom={1}>
+          <Text>
+            Gemini CLI has detected an API key in your environment
+            (GEMINI_API_KEY).
+          </Text>
+          <Text>
+            How would you like to authenticate for this project? (Your choice
+            will be saved for this project)
+          </Text>
+        </Box>
+      )}
       <Text bold>Select Auth Method</Text>
       <RadioButtonSelect
         items={items}

@@ -5,6 +5,7 @@
 # gemini-cli settings
 .gemini/
 !gemini/config.yaml
+GEMINI.md
 
 # Dependency directory
 node_modules
@@ -13,6 +14,7 @@ bower_components
 # Editors
 .idea
 *.iml
+.vscode
 
 # OS metadata
 .DS_Store
