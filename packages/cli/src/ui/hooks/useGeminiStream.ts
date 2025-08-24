@@ -215,16 +215,31 @@ export const useGeminiStream = (
       const taskNumber = taskList.tasks.findIndex((t) => t.id === task.id) + 1;
       const totalCount = taskList.tasks.length;
 
-      // Only show this message for the first task, as subsequent tasks get shown in handleTaskCompleted
-      if (taskNumber === 1) {
-        addItem(
-          {
-            type: MessageType.INFO,
-            text: `🚀 **Starting Task ${taskNumber}/${totalCount}**: ${task.title}`,
-          },
-          Date.now(),
-        );
-      }
+      const sep = '═'.repeat(60);
+      const lines: string[] = [
+        `🚀 **Starting Task ${taskNumber}/${totalCount}**: ${task.title}`,
+        sep,
+        '**Task List:**',
+      ];
+      taskList.tasks.forEach((t, i) => {
+        const num = i + 1;
+        if (t.status === 'completed') {
+          lines.push(`  ${num}. [✓] ~~${t.title}~~`);
+        } else if (t.status === 'in_progress') {
+          lines.push(`▶ ${num}. [ ] ${t.title} (in progress)`);
+        } else {
+          lines.push(`  ${num}. [ ] ${t.title}`);
+        }
+      });
+      lines.push(sep);
+
+      addItem(
+        {
+          type: MessageType.GEMINI,
+          text: lines.join('\n'),
+        },
+        Date.now(),
+      );
     };
 
     const handleTaskListCompleted = (taskList: TaskList) => {
