@@ -44,7 +44,7 @@ export class TaskListTool extends BaseDeclarativeTool<
       TaskListTool.Name,
       'TaskList',
       'Creates and manages a task list for complex multi-step requests. This tool helps break down user requests into manageable tasks.',
-      Kind.Tool,
+      Kind.Think,
       {
         properties: {
           user_request: {
@@ -68,9 +68,7 @@ export class TaskListTool extends BaseDeclarativeTool<
     this.taskListService = taskListService || new TaskListService();
   }
 
-  public override validateToolParams(
-    params: TaskListToolParams,
-  ): string | null {
+  override validateToolParams(params: TaskListToolParams): string | null {
     if (!params.user_request || params.user_request.trim().length === 0) {
       return 'user_request cannot be empty';
     }
