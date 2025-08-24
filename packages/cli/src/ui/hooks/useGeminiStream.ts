@@ -901,6 +901,8 @@ export const useGeminiStream = (
             interceptResult.modifiedPrompt
           ) {
             finalQuery = interceptResult.modifiedPrompt;
+            // Ensure we don't miss orchestrator because React state isn't updated yet.
+            // We will prefer checking the service directly below.
           } else if (interceptResult.attemptedToCreate) {
             addItem(
               {
@@ -924,7 +926,7 @@ export const useGeminiStream = (
       }
 
       // Orchestrator mode: delegate execution loop after slash/@ handling
-      if (experimentalOrchestrator && currentTaskList) {
+      if (experimentalOrchestrator && taskListService.getCurrentTaskList()) {
         try {
           const { TaskOrchestratorService } = await import(
             '@google/gemini-cli-core'
@@ -971,6 +973,38 @@ export const useGeminiStream = (
             abortSignal,
           );
           if (ok) {
+            // Show explicit progress summary before advancing
+            const tl = taskListService.getCurrentTaskList();
+            if (tl) {
+              const completed = tl.tasks.filter((t) => t.status === 'completed').length;
+              const total = tl.tasks.length;
+              const nextIdx = tl.currentTaskIndex;
+              const nextTask = tl.tasks[nextIdx];
+              const sep = '═'.repeat(60);
+              const lines: string[] = [
+                '',
+                sep,
+                `📊 Progress: ${completed}/${total} tasks complete (${Math.round((completed / Math.max(total, 1)) * 100)}%)`,
+                '',
+                '**Task List:**',
+              ];
+              tl.tasks.forEach((t, i) => {
+                const num = i + 1;
+                if (t.status === 'completed') {
+                  lines.push(`  ${num}. [✓] ~~${t.title}~~`);
+                } else if (i === nextIdx) {
+                  lines.push(`▶ ${num}. [ ] ${t.title} (next)`);
+                } else {
+                  lines.push(`  ${num}. [ ] ${t.title}`);
+                }
+              });
+              if (nextTask) {
+                lines.push('', `🚀 Next up: Task ${nextIdx + 1} - ${nextTask.title}`);
+              }
+              lines.push(sep, '');
+              addItem({ type: MessageType.GEMINI, text: lines.join('\n') }, Date.now());
+            }
+
             const nextPrompt = await taskListInterceptor.handleTaskCompletion();
             if (nextPrompt && submitQueryRef.current) {
               submitQueryRef.current(nextPrompt, { isContinuation: true });
