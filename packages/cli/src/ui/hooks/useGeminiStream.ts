@@ -5,7 +5,6 @@
  */
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useInput } from 'ink';
 import {
   Config,
   GeminiClient,
@@ -26,6 +25,9 @@ import {
   UnauthorizedError,
   UserPromptEvent,
   DEFAULT_GEMINI_FLASH_MODEL,
+  parseAndFormatApiError,
+  TaskListInterceptor,
+  TaskList,
 } from '@google/gemini-cli-core';
 import { type Part, type PartListUnion, FinishReason } from '@google/genai';
 import {
@@ -38,7 +40,6 @@ import {
   ToolCallStatus,
 } from '../types.js';
 import { isAtCommand } from '../utils/commandUtils.js';
-import { parseAndFormatApiError } from '../utils/errorParsing.js';
 import { useShellCommandProcessor } from './shellCommandProcessor.js';
 import { handleAtCommand } from './atCommandProcessor.js';
 import { findLastSafeSplitPoint } from '../utils/markdownUtilities.js';
@@ -55,18 +56,7 @@ import {
   TrackedCancelledToolCall,
 } from './useReactToolScheduler.js';
 import { useSessionStats } from '../contexts/SessionContext.js';
-
-export function mergePartListUnions(list: PartListUnion[]): PartListUnion {
-  const resultParts: PartListUnion = [];
-  for (const item of list) {
-    if (Array.isArray(item)) {
-      resultParts.push(...item);
-    } else {
-      resultParts.push(item);
-    }
-  }
-  return resultParts;
-}
+import { useKeypress } from './useKeypress.js';
 
 enum StreamProcessingStatus {
   Completed,
@@ -101,17 +91,170 @@ export const useGeminiStream = (
   const turnCancelledRef = useRef(false);
   const [isResponding, setIsResponding] = useState<boolean>(false);
   const [thought, setThought] = useState<ThoughtSummary | null>(null);
+  const submitQueryRef = useRef<any>(null);
   const [pendingHistoryItemRef, setPendingHistoryItem] =
     useStateAndRef<HistoryItemWithoutId | null>(null);
   const processedMemoryToolsRef = useRef<Set<string>>(new Set());
   const { startNewPrompt, getPromptCount } = useSessionStats();
-  const logger = useLogger();
+  const storage = config.storage;
+  const logger = useLogger(storage);
   const gitService = useMemo(() => {
     if (!config.getProjectRoot()) {
       return;
     }
-    return new GitService(config.getProjectRoot());
-  }, [config]);
+    return new GitService(config.getProjectRoot(), storage);
+  }, [config, storage]);
+
+  // Task list state and interceptor
+  const [currentTaskList, setCurrentTaskList] = useState<TaskList | null>(null);
+  const taskListService = useMemo(() => config.getTaskListService(), [config]);
+  const taskListInterceptor = useMemo(
+    () => new TaskListInterceptor(config, taskListService),
+    [config, taskListService]
+  );
+
+  // Listen to task list events
+  useEffect(() => {
+    const handleTaskListCreated = (taskList: TaskList) => {
+      setCurrentTaskList(taskList);
+      
+      // Create a formatted task list display with better formatting
+      const taskDisplay = [
+        '',
+        `📋 **TASK LIST GENERATED** (${taskList.tasks.length} tasks)`,
+        '═'.repeat(60),
+        '',
+        '**Tasks to complete:**',
+        ...taskList.tasks.map((task, index) => 
+          `  ${index + 1}. [ ] ${task.title}`
+        ),
+        '',
+        '═'.repeat(60),
+        '',
+        '🚀 **Starting execution...**',
+        '',
+      ].join('\n');
+      
+      addItem(
+        {
+          type: MessageType.GEMINI,
+          text: taskDisplay,
+        },
+        Date.now(),
+      );
+    };
+
+    const handleTaskCompleted = (task: any, taskList: TaskList) => {
+      console.log('[useGeminiStream] Task completed event fired:', task.title);
+      setCurrentTaskList({ ...taskList });
+      
+      const completedCount = taskList.tasks.filter(t => t.status === 'completed').length;
+      const totalCount = taskList.tasks.length;
+      const nextTaskIndex = taskList.currentTaskIndex;
+      const nextTask = taskList.tasks[nextTaskIndex];
+      const taskNumber = taskList.tasks.findIndex(t => t.id === task.id) + 1;
+      
+      const separator = '═'.repeat(60);
+      let progressText = [
+        '',
+        separator,
+        `✅ **Task ${taskNumber}/${totalCount} Completed**`,
+        `   ~~${task.title}~~`,
+        '',
+        `📊 **Progress: ${completedCount}/${totalCount} tasks complete** (${Math.round((completedCount/totalCount)*100)}%)`,
+        '',
+        '**Updated Task List:**',
+      ];
+      
+      // Show the current state of all tasks
+      taskList.tasks.forEach((t, index) => {
+        const num = index + 1;
+        if (t.status === 'completed') {
+          progressText.push(`     ${num}. [✓] ~~${t.title}~~`);
+        } else if (t.status === 'in_progress') {
+          progressText.push(`  ▶  ${num}. [ ] ${t.title} (starting...)`);
+        } else {
+          progressText.push(`     ${num}. [ ] ${t.title}`);
+        }
+      });
+      
+      if (nextTask) {
+        progressText.push('');
+        progressText.push(`🚀 **Next up: Task ${nextTaskIndex + 1}** - ${nextTask.title}`);
+      }
+      
+      progressText.push(separator);
+      progressText.push('');
+      
+      console.log('[useGeminiStream] Adding task completion message to UI');
+      addItem(
+        {
+          type: MessageType.GEMINI,
+          text: progressText.join('\n'),
+        },
+        Date.now(),
+      );
+    };
+
+    const handleTaskStarted = (task: any, taskList: TaskList) => {
+      setCurrentTaskList({ ...taskList });
+      
+      const taskNumber = taskList.tasks.findIndex(t => t.id === task.id) + 1;
+      const totalCount = taskList.tasks.length;
+      
+      // Only show this message for the first task, as subsequent tasks get shown in handleTaskCompleted
+      if (taskNumber === 1) {
+        addItem(
+          {
+            type: MessageType.INFO,
+            text: `🚀 **Starting Task ${taskNumber}/${totalCount}**: ${task.title}`,
+          },
+          Date.now(),
+        );
+      }
+    };
+    
+    const handleTaskListCompleted = (taskList: TaskList) => {
+      setCurrentTaskList(null);
+      
+      const completedTasks = taskList.tasks.map((task, index) => 
+        `  ${index + 1}. [✓] ~~${task.title}~~`
+      ).join('\n');
+      
+      const completionMessage = [
+        '',
+        '🎉 **ALL TASKS COMPLETED SUCCESSFULLY!** 🎉',
+        '═'.repeat(60),
+        '',
+        '**Final Task List:**',
+        completedTasks,
+        '',
+        '═'.repeat(60),
+        `✨ Completed ${taskList.tasks.length} tasks in total`,
+        '',
+      ].join('\n');
+      
+      addItem(
+        {
+          type: MessageType.GEMINI,
+          text: completionMessage,
+        },
+        Date.now(),
+      );
+    };
+
+    taskListService.on('taskListCreated', handleTaskListCreated);
+    taskListService.on('taskStarted', handleTaskStarted);
+    taskListService.on('taskCompleted', handleTaskCompleted);
+    taskListService.on('taskListCompleted', handleTaskListCompleted);
+
+    return () => {
+      taskListService.off('taskListCreated', handleTaskListCreated);
+      taskListService.off('taskStarted', handleTaskStarted);
+      taskListService.off('taskCompleted', handleTaskCompleted);
+      taskListService.off('taskListCompleted', handleTaskListCompleted);
+    };
+  }, [taskListService, addItem]);
 
   const [toolCalls, scheduleToolCalls, markToolsAsSubmitted] =
     useReactToolScheduler(
@@ -183,28 +326,44 @@ export const useGeminiStream = (
     return StreamingState.Idle;
   }, [isResponding, toolCalls]);
 
-  useInput((_input, key) => {
-    if (streamingState === StreamingState.Responding && key.escape) {
-      if (turnCancelledRef.current) {
-        return;
-      }
-      turnCancelledRef.current = true;
-      abortControllerRef.current?.abort();
-      if (pendingHistoryItemRef.current) {
-        addItem(pendingHistoryItemRef.current, Date.now());
-      }
-      addItem(
-        {
-          type: MessageType.INFO,
-          text: 'Request cancelled.',
-        },
-        Date.now(),
-      );
-      setPendingHistoryItem(null);
-      onCancelSubmit();
-      setIsResponding(false);
+  const cancelOngoingRequest = useCallback(() => {
+    if (streamingState !== StreamingState.Responding) {
+      return;
     }
-  });
+    if (turnCancelledRef.current) {
+      return;
+    }
+    turnCancelledRef.current = true;
+    abortControllerRef.current?.abort();
+    if (pendingHistoryItemRef.current) {
+      addItem(pendingHistoryItemRef.current, Date.now());
+    }
+    addItem(
+      {
+        type: MessageType.INFO,
+        text: 'Request cancelled.',
+      },
+      Date.now(),
+    );
+    setPendingHistoryItem(null);
+    onCancelSubmit();
+    setIsResponding(false);
+  }, [
+    streamingState,
+    addItem,
+    setPendingHistoryItem,
+    onCancelSubmit,
+    pendingHistoryItemRef,
+  ]);
+
+  useKeypress(
+    (key) => {
+      if (key.name === 'escape') {
+        cancelOngoingRequest();
+      }
+    },
+    { isActive: streamingState === StreamingState.Responding },
+  );
 
   const prepareQueryForGemini = useCallback(
     async (
@@ -290,6 +449,13 @@ export const useGeminiStream = (
             messageId: userMessageTimestamp,
             signal: abortSignal,
           });
+
+          // Add user's turn after @ command processing is done.
+          addItem(
+            { type: MessageType.USER, text: trimmedQuery },
+            userMessageTimestamp,
+          );
+
           if (!atCommandResult.shouldProceed) {
             return { queryToSend: null, shouldProceed: false };
           }
@@ -447,7 +613,7 @@ export const useGeminiStream = (
   );
 
   const handleFinishedEvent = useCallback(
-    (event: ServerGeminiFinishedEvent, userMessageTimestamp: number) => {
+    async (event: ServerGeminiFinishedEvent, userMessageTimestamp: number) => {
       const finishReason = event.value;
 
       const finishReasonMessages: Record<FinishReason, string | undefined> = {
@@ -482,8 +648,25 @@ export const useGeminiStream = (
           userMessageTimestamp,
         );
       }
+      
+      // Check if we should advance to the next task
+      if (currentTaskList && finishReason === FinishReason.STOP) {
+        // Wait a bit to ensure the response is fully displayed
+        setTimeout(async () => {
+          const nextPrompt = await taskListInterceptor.handleTaskCompletion();
+          
+          // Task completion event will fire from handleTaskCompletion
+          // Give time for the UI to display the completion message
+          if (nextPrompt && submitQueryRef.current) {
+            // Wait for the completion message to be displayed
+            setTimeout(() => {
+              submitQueryRef.current(nextPrompt, { isContinuation: true });
+            }, 2000); // Increased delay to show task completion message
+          }
+        }, 500); // Initial delay before marking task complete
+      }
     },
-    [addItem],
+    [addItem, currentTaskList, taskListInterceptor],
   );
 
   const handleChatCompressionEvent = useCallback(
@@ -628,8 +811,44 @@ export const useGeminiStream = (
         prompt_id = config.getSessionId() + '########' + getPromptCount();
       }
 
+      // Intercept the query for potential task list creation
+      let finalQuery = query;
+      if (!options?.isContinuation && !currentTaskList) {
+        try {
+          console.log('[useGeminiStream] Checking if task list should be created...');
+          const interceptResult = await taskListInterceptor.interceptPrompt(
+            query,
+            abortSignal,
+          );
+          
+          if (interceptResult.shouldProceedWithTaskList && interceptResult.modifiedPrompt) {
+            console.log('[useGeminiStream] Task list created successfully');
+            finalQuery = interceptResult.modifiedPrompt;
+          } else if (interceptResult.attemptedToCreate) {
+            // Task list generation was attempted but failed
+            console.log('[useGeminiStream] Task list generation failed');
+            addItem(
+              {
+                type: MessageType.ERROR,
+                text: '❌ Failed to generate task list. Proceeding with direct execution.',
+              },
+              Date.now(),
+            );
+          }
+        } catch (error) {
+          console.error('[useGeminiStream] Error in task list interceptor:', error);
+          addItem(
+            {
+              type: MessageType.ERROR,
+              text: `❌ Error generating task list: ${error instanceof Error ? error.message : 'Unknown error'}. Proceeding without task list.`,
+            },
+            Date.now(),
+          );
+        }
+      }
+
       const { queryToSend, shouldProceed } = await prepareQueryForGemini(
-        query,
+        finalQuery,
         userMessageTimestamp,
         abortSignal,
         prompt_id!,
@@ -642,6 +861,11 @@ export const useGeminiStream = (
       if (!options?.isContinuation) {
         startNewPrompt();
         setThought(null); // Reset thought when starting a new prompt
+        
+        // Clear task list on new prompt if not a continuation
+        if (!currentTaskList || taskListService.getCurrentTaskList()?.status !== 'active') {
+          taskListService.clearTaskList();
+        }
       }
 
       setIsResponding(true);
@@ -710,6 +934,11 @@ export const useGeminiStream = (
       handleLoopDetectedEvent,
     ],
   );
+
+  // Store submitQuery in ref for use in other callbacks
+  useEffect(() => {
+    submitQueryRef.current = submitQuery;
+  }, [submitQuery]);
 
   const handleCompletedTools = useCallback(
     async (completedToolCallsFromScheduler: TrackedToolCall[]) => {
@@ -781,19 +1010,9 @@ export const useGeminiStream = (
         if (geminiClient) {
           // We need to manually add the function responses to the history
           // so the model knows the tools were cancelled.
-          const responsesToAdd = geminiTools.flatMap(
+          const combinedParts = geminiTools.flatMap(
             (toolCall) => toolCall.response.responseParts,
           );
-          const combinedParts: Part[] = [];
-          for (const response of responsesToAdd) {
-            if (Array.isArray(response)) {
-              combinedParts.push(...response);
-            } else if (typeof response === 'string') {
-              combinedParts.push({ text: response });
-            } else {
-              combinedParts.push(response);
-            }
-          }
           geminiClient.addHistory({
             role: 'user',
             parts: combinedParts,
@@ -807,7 +1026,7 @@ export const useGeminiStream = (
         return;
       }
 
-      const responsesToSend: PartListUnion[] = geminiTools.map(
+      const responsesToSend: Part[] = geminiTools.flatMap(
         (toolCall) => toolCall.response.responseParts,
       );
       const callIdsToMarkAsSubmitted = geminiTools.map(
@@ -826,7 +1045,7 @@ export const useGeminiStream = (
       }
 
       submitQuery(
-        mergePartListUnions(responsesToSend),
+        responsesToSend,
         {
           isContinuation: true,
         },
@@ -861,9 +1080,7 @@ export const useGeminiStream = (
       );
 
       if (restorableToolCalls.length > 0) {
-        const checkpointDir = config.getProjectTempDir()
-          ? path.join(config.getProjectTempDir(), 'checkpoints')
-          : undefined;
+        const checkpointDir = storage.getProjectTempCheckpointsDir();
 
         if (!checkpointDir) {
           return;
@@ -890,17 +1107,31 @@ export const useGeminiStream = (
           }
 
           try {
-            let commitHash = await gitService?.createFileSnapshot(
-              `Snapshot for ${toolCall.request.name}`,
-            );
+            if (!gitService) {
+              onDebugMessage(
+                `Checkpointing is enabled but Git service is not available. Failed to create snapshot for ${filePath}. Ensure Git is installed and working properly.`,
+              );
+              continue;
+            }
+
+            let commitHash: string | undefined;
+            try {
+              commitHash = await gitService.createFileSnapshot(
+                `Snapshot for ${toolCall.request.name}`,
+              );
+            } catch (error) {
+              onDebugMessage(
+                `Failed to create new snapshot: ${getErrorMessage(error)}. Attempting to use current commit.`,
+              );
+            }
 
             if (!commitHash) {
-              commitHash = await gitService?.getCurrentCommitHash();
+              commitHash = await gitService.getCurrentCommitHash();
             }
 
             if (!commitHash) {
               onDebugMessage(
-                `Failed to create snapshot for ${filePath}. Skipping restorable tool call.`,
+                `Failed to create snapshot for ${filePath}. Checkpointing may not be working properly. Ensure Git is installed and the project directory is accessible.`,
               );
               continue;
             }
@@ -937,16 +1168,24 @@ export const useGeminiStream = (
             );
           } catch (error) {
             onDebugMessage(
-              `Failed to write restorable tool call file: ${getErrorMessage(
+              `Failed to create checkpoint for ${filePath}: ${getErrorMessage(
                 error,
-              )}`,
+              )}. This may indicate a problem with Git or file system permissions.`,
             );
           }
         }
       }
     };
     saveRestorableToolCalls();
-  }, [toolCalls, config, onDebugMessage, gitService, history, geminiClient]);
+  }, [
+    toolCalls,
+    config,
+    onDebugMessage,
+    gitService,
+    history,
+    geminiClient,
+    storage,
+  ]);
 
   return {
     streamingState,
@@ -954,5 +1193,7 @@ export const useGeminiStream = (
     initError,
     pendingHistoryItems,
     thought,
+    cancelOngoingRequest,
+    currentTaskList,
   };
 };
