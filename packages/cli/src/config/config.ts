@@ -74,6 +74,7 @@ export interface CliArgs {
   proxy: string | undefined;
   includeDirectories: string[] | undefined;
   screenReader: boolean | undefined;
+  experimentalOrchestrator: boolean | undefined;
 }
 
 export async function parseArguments(): Promise<CliArgs> {
@@ -199,6 +200,11 @@ export async function parseArguments(): Promise<CliArgs> {
         .option('experimental-acp', {
           type: 'boolean',
           description: 'Starts the agent in ACP mode',
+        })
+        .option('experimental-orchestrator', {
+          type: 'boolean',
+          description:
+            'Enable agent-first task orchestrator (plan→execute→verify loop).',
         })
         .option('allowed-mcp-server-names', {
           type: 'array',
@@ -332,6 +338,7 @@ export async function loadCliConfig(
   const memoryImportFormat = settings.memoryImportFormat || 'tree';
 
   const ideMode = settings.ideMode ?? false;
+  const experimentalOrchestrator = argv.experimentalOrchestrator ?? false;
 
   const folderTrustFeature = settings.folderTrustFeature ?? false;
   const folderTrustSetting = settings.folderTrust ?? true;
@@ -542,6 +549,7 @@ export async function loadCliConfig(
     extensionContextFilePaths,
     maxSessionTurns: settings.maxSessionTurns ?? -1,
     experimentalZedIntegration: argv.experimentalAcp || false,
+    experimentalOrchestrator,
     listExtensions: argv.listExtensions || false,
     extensions: allExtensions,
     blockedMcpServers,

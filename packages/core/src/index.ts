@@ -54,6 +54,7 @@ export * from './services/fileSystemService.js';
 export * from './services/loopDetectionService.js';
 export * from './services/taskListService.js';
 export * from './services/taskListInterceptor.js';
+export * from './services/taskOrchestratorService.js';
 
 // Export IDE specific logic
 export * from './ide/ide-client.js';

@@ -26,6 +26,7 @@ import { ReadManyFilesTool } from '../tools/read-many-files.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
 import { WebSearchTool } from '../tools/web-search.js';
 import { TaskListTool } from '../tools/taskListTool.js';
+import { TaskListUpdateTool } from '../tools/taskListUpdateTool.js';
 import { TaskListService } from '../services/taskListService.js';
 import { GeminiClient } from '../core/client.js';
 import { FileDiscoveryService } from '../services/fileDiscoveryService.js';
@@ -192,6 +193,7 @@ export interface ConfigParameters {
   extensionContextFilePaths?: string[];
   maxSessionTurns?: number;
   experimentalZedIntegration?: boolean;
+  experimentalOrchestrator?: boolean;
   listExtensions?: boolean;
   extensions?: GeminiCLIExtension[];
   blockedMcpServers?: Array<{ name: string; extensionName: string }>;
@@ -271,6 +273,7 @@ export class Config {
     | Record<string, SummarizeToolOutputSettings>
     | undefined;
   private readonly experimentalZedIntegration: boolean = false;
+  private readonly experimentalOrchestrator: boolean = false;
   private readonly loadMemoryFromIncludeDirectories: boolean = false;
   private readonly chatCompression: ChatCompressionSettings | undefined;
   private readonly interactive: boolean;
@@ -336,6 +339,7 @@ export class Config {
     this.maxSessionTurns = params.maxSessionTurns ?? -1;
     this.experimentalZedIntegration =
       params.experimentalZedIntegration ?? false;
+    this.experimentalOrchestrator = params.experimentalOrchestrator ?? false;
     this.listExtensions = params.listExtensions ?? false;
     this._extensions = params.extensions ?? [];
     this._blockedMcpServers = params.blockedMcpServers ?? [];
@@ -678,6 +682,10 @@ export class Config {
     return this.experimentalZedIntegration;
   }
 
+  getExperimentalOrchestrator(): boolean {
+    return this.experimentalOrchestrator;
+  }
+
   getListExtensions(): boolean {
     return this.listExtensions;
   }
@@ -853,6 +861,7 @@ export class Config {
     registerCoreTool(MemoryTool);
     registerCoreTool(WebSearchTool, this);
     registerCoreTool(TaskListTool, this, this.taskListService);
+    registerCoreTool(TaskListUpdateTool, this, this.taskListService);
 
     await registry.discoverAllTools();
     return registry;

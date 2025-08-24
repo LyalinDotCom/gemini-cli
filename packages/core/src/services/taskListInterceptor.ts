@@ -256,10 +256,13 @@ Your answer (YES or NO):`;
     const taskContext = this.taskListService.getTaskContext();
     const modifiedPromptText =
       `Original request: ${promptText}\n\n` +
-      `I've broken this down into ${taskTitles.length} tasks that I'll execute sequentially.\n\n` +
+      `I've broken this down into ${taskTitles.length} tasks that I'll execute ONE AT A TIME.\n` +
+      `After each task, I will run a short verification pass to ensure success before advancing.\n` +
+      `Do not ask the user for any input; if something like a folder/app name is required and not specified, choose a reasonable default (e.g., "app").\n\n` +
       `${taskContext}\n\n` +
-      `Starting with Task 1: ${currentTask.title}\n\n` +
-      `IMPORTANT: I will use non-interactive commands and verify success at each step.`;
+      `🛑 **EXECUTE ONLY TASK 1: ${currentTask.title}**\n\n` +
+      `After completing this ONE task, STOP. A verification step will run next.\n` +
+      `DO NOT continue to other tasks on your own.`;
 
     console.log(
       '[TaskListInterceptor] Returning modified prompt with task context',
@@ -377,15 +380,13 @@ Example format:
     const currentIndex = taskList?.currentTaskIndex || 0;
     const totalTasks = taskList?.tasks.length || 0;
 
+    const completedIndex = taskList?.tasks.findIndex(t => t.id === completedTask.id) || 0;
+    
     return (
-      `Task ${currentIndex}/${totalTasks} "${completedTask.title}" has been marked as completed.\n\n` +
-      `Before proceeding to the next task, please:\n` +
-      `1. Verify the previous task was successful\n` +
-      `2. Check for any errors or issues that need fixing\n` +
-      `3. Only proceed if everything is working correctly\n\n` +
+      `✅ Task ${completedIndex + 1}/${totalTasks} "${completedTask.title}" completed!\n\n` +
       `${taskContext}\n\n` +
-      `Now execute Task ${currentIndex + 1}/${totalTasks}: ${currentTask.title}\n` +
-      `Remember: Use non-interactive commands and verify success.`
+      `🛑 **NOW EXECUTE ONLY TASK ${currentIndex + 1}: ${currentTask.title}**\n\n` +
+      `STOP after completing this ONE task. Do NOT continue to other tasks.`
     );
   }
 }

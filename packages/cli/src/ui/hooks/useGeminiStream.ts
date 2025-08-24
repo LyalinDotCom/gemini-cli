@@ -116,6 +116,7 @@ export const useGeminiStream = (
   // Task list state and interceptor
   const [currentTaskList, setCurrentTaskList] = useState<TaskList | null>(null);
   const taskListService = useMemo(() => config.getTaskListService(), [config]);
+  const experimentalOrchestrator = config.getExperimentalOrchestrator?.() ?? false;
   const taskListInterceptor = useMemo(
     () => new TaskListInterceptor(config, taskListService),
     [config, taskListService],
@@ -259,12 +260,30 @@ export const useGeminiStream = (
     taskListService.on('taskStarted', handleTaskStarted);
     taskListService.on('taskCompleted', handleTaskCompleted);
     taskListService.on('taskListCompleted', handleTaskListCompleted);
+    const handleTaskListUpdated = (taskList: TaskList) => {
+      setCurrentTaskList({ ...taskList });
+      const updatedList = [
+        '',
+        '📝 Task list updated.',
+        '═'.repeat(60),
+        '**Current Tasks:**',
+        ...taskList.tasks.map((t, i) => {
+          const mark = t.status === 'completed' ? '[✓]' : t.status === 'in_progress' ? '[▶]' : '[ ]';
+          return `  ${i + 1}. ${mark} ${t.title}`;
+        }),
+        '═'.repeat(60),
+        '',
+      ].join('\n');
+      addItem({ type: MessageType.GEMINI, text: updatedList }, Date.now());
+    };
+    taskListService.on('taskListUpdated', handleTaskListUpdated);
 
     return () => {
       taskListService.off('taskListCreated', handleTaskListCreated);
       taskListService.off('taskStarted', handleTaskStarted);
       taskListService.off('taskCompleted', handleTaskCompleted);
       taskListService.off('taskListCompleted', handleTaskListCompleted);
+      taskListService.off('taskListUpdated', handleTaskListUpdated);
     };
   }, [taskListService, addItem]);
 
@@ -300,6 +319,8 @@ export const useGeminiStream = (
   );
 
   const loopDetectedRef = useRef(false);
+  // Between-task verification control to interpose a verification pass
+  const verificationPendingRef = useRef(false);
 
   const onExec = useCallback(async (done: Promise<void>) => {
     setIsResponding(true);
@@ -473,7 +494,7 @@ export const useGeminiStream = (
           }
           localQueryToSendToGemini = atCommandResult.processedQuery;
         } else {
-          // Normal query for Gemini
+          // Normal query for Gemini unless orchestrator is enabled
           addItem(
             { type: MessageType.USER, text: trimmedQuery },
             userMessageTimestamp,
@@ -661,24 +682,50 @@ export const useGeminiStream = (
         );
       }
 
-      // Check if we should advance to the next task
+      // Task-driven workflow: interpose a verification pass between tasks.
       if (currentTaskList && finishReason === FinishReason.STOP) {
-        // Wait a bit to ensure the response is fully displayed
+        // If no verification has been run for the current task yet, run it now.
+        if (!verificationPendingRef.current) {
+          verificationPendingRef.current = true;
+          const currentTask = taskListService.getCurrentTask();
+          if (currentTask && submitQueryRef.current) {
+            const verificationContext = taskListService.getTaskContext();
+            const verifyPrompt = [
+              '🔍 Verify the previous task was successful before proceeding.',
+              '',
+              verificationContext,
+              '',
+              `You must validate that the CURRENT TASK is complete: "${currentTask.title}"`,
+              '',
+              'Validation rules:',
+              '- Prefer non-interactive commands and flags.',
+              '- Where applicable for this repository, run build/test/typecheck/lint to validate (e.g., `npm run preflight`, or `npm run build && npm run test && npm run typecheck && npm run lint:ci`).',
+              '- If errors occur, FIX THEM using available tools (edit/write_file/shell) and re-run checks until clean.',
+              '- Do NOT start the next task until validation passes.',
+              '',
+              'When validation passes, reply briefly with a summary of what was checked and the outcome.',
+              'If new subtasks are required, call the `task_list_update` tool to insert them after the current task.',
+            ].join('\n');
+            // Kick off verification as a continuation
+            submitQueryRef.current(verifyPrompt, { isContinuation: true });
+          }
+          return; // Do not complete/advance yet; wait for verification turn to finish
+        }
+
+        // A verification pass just finished; now mark the task complete and move on.
+        verificationPendingRef.current = false;
+        // Wait a bit to ensure verification response is rendered
         setTimeout(async () => {
           const nextPrompt = await taskListInterceptor.handleTaskCompletion();
-
-          // Task completion event will fire from handleTaskCompletion
-          // Give time for the UI to display the completion message
           if (nextPrompt && submitQueryRef.current) {
-            // Wait for the completion message to be displayed
             setTimeout(() => {
               submitQueryRef.current?.(nextPrompt, { isContinuation: true });
-            }, 2000); // Increased delay to show task completion message
+            }, 1000);
           }
-        }, 500); // Initial delay before marking task complete
+        }, 300);
       }
     },
-    [addItem, currentTaskList, taskListInterceptor],
+    [addItem, currentTaskList, taskListInterceptor, taskListService],
   );
 
   const handleChatCompressionEvent = useCallback(
@@ -823,49 +870,9 @@ export const useGeminiStream = (
         prompt_id = config.getSessionId() + '########' + getPromptCount();
       }
 
-      // Intercept the query for potential task list creation
+      // Note: Do not create task lists before slash/@ commands are processed.
+      // We will run task list detection after prepareQueryForGemini below.
       let finalQuery = query;
-      if (!options?.isContinuation && !currentTaskList) {
-        try {
-          console.log(
-            '[useGeminiStream] Checking if task list should be created...',
-          );
-          const interceptResult = await taskListInterceptor.interceptPrompt(
-            query,
-            abortSignal,
-          );
-
-          if (
-            interceptResult.shouldProceedWithTaskList &&
-            interceptResult.modifiedPrompt
-          ) {
-            console.log('[useGeminiStream] Task list created successfully');
-            finalQuery = interceptResult.modifiedPrompt;
-          } else if (interceptResult.attemptedToCreate) {
-            // Task list generation was attempted but failed
-            console.log('[useGeminiStream] Task list generation failed');
-            addItem(
-              {
-                type: MessageType.ERROR,
-                text: '❌ Failed to generate task list. Proceeding with direct execution.',
-              },
-              Date.now(),
-            );
-          }
-        } catch (error) {
-          console.error(
-            '[useGeminiStream] Error in task list interceptor:',
-            error,
-          );
-          addItem(
-            {
-              type: MessageType.ERROR,
-              text: `❌ Error generating task list: ${error instanceof Error ? error.message : 'Unknown error'}. Proceeding without task list.`,
-            },
-            Date.now(),
-          );
-        }
-      }
 
       const { queryToSend, shouldProceed } = await prepareQueryForGemini(
         finalQuery,
@@ -876,6 +883,111 @@ export const useGeminiStream = (
 
       if (!shouldProceed || queryToSend === null) {
         return;
+      }
+
+      // After slash/@ commands are processed, consider creating a task list
+      if (
+        !options?.isContinuation &&
+        !currentTaskList &&
+        typeof queryToSend === 'string'
+      ) {
+        try {
+          const interceptResult = await taskListInterceptor.interceptPrompt(
+            queryToSend,
+            abortSignal,
+          );
+          if (
+            interceptResult.shouldProceedWithTaskList &&
+            interceptResult.modifiedPrompt
+          ) {
+            finalQuery = interceptResult.modifiedPrompt;
+          } else if (interceptResult.attemptedToCreate) {
+            addItem(
+              {
+                type: MessageType.ERROR,
+                text: '❌ Failed to generate task list. Proceeding with direct execution.',
+              },
+              Date.now(),
+            );
+          }
+        } catch (error) {
+          addItem(
+            {
+              type: MessageType.ERROR,
+              text: `❌ Error generating task list: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }. Proceeding without task list.`,
+            },
+            Date.now(),
+          );
+        }
+      }
+
+      // Orchestrator mode: delegate execution loop after slash/@ handling
+      if (experimentalOrchestrator && currentTaskList) {
+        try {
+          const { TaskOrchestratorService } = await import(
+            '@google/gemini-cli-core'
+          );
+          const orchestrator = new TaskOrchestratorService(config);
+          const current = taskListService.getCurrentTask();
+          const userText = typeof finalQuery === 'string' ? finalQuery : '';
+          if (!current) {
+            addItem(
+              {
+                type: MessageType.INFO,
+                text: 'No current task. Orchestrator idle.',
+              },
+              Date.now(),
+            );
+            return;
+          }
+          addItem(
+            {
+              type: MessageType.INFO,
+              text: '⚙️ Agent-Orchestrator: planning and executing steps…',
+            },
+            Date.now(),
+          );
+          const ok = await orchestrator.runTask(
+            userText,
+            current.title,
+            (e) => {
+              const prefix = {
+                info: 'ℹ',
+                plan: '📝',
+                step_start: '▶',
+                step_result: '•',
+                verify: '🔍',
+                verify_result: '✅',
+                complete: '🎉',
+                error: '❌',
+              }[e.type];
+              addItem(
+                { type: MessageType.GEMINI, text: `${prefix} ${e.message}` },
+                Date.now(),
+              );
+            },
+            abortSignal,
+          );
+          if (ok) {
+            const nextPrompt = await taskListInterceptor.handleTaskCompletion();
+            if (nextPrompt && submitQueryRef.current) {
+              submitQueryRef.current(nextPrompt, { isContinuation: true });
+            }
+          } else {
+            addItem(
+              {
+                type: MessageType.ERROR,
+                text: 'Task verification failed after repair attempts.',
+              },
+              Date.now(),
+            );
+          }
+        } finally {
+          setIsResponding(false);
+        }
+        return; // skip normal streaming path entirely
       }
 
       if (!options?.isContinuation) {
@@ -896,7 +1008,7 @@ export const useGeminiStream = (
 
       try {
         const stream = geminiClient.sendMessageStream(
-          queryToSend,
+          finalQuery ?? queryToSend,
           abortSignal,
           prompt_id!,
         );

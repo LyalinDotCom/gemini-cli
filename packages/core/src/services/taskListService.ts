@@ -189,6 +189,55 @@ export class TaskListService extends EventEmitter {
   }
 
   /**
+   * Inserts new tasks immediately after the current task index.
+   * If there's no active list, this is a no-op.
+   */
+  insertTasksAfterCurrent(titles: string[]): void {
+    if (!this.currentTaskList || titles.length === 0) {
+      return;
+    }
+    const insertIndex = Math.min(
+      this.currentTaskList.currentTaskIndex + 1,
+      this.currentTaskList.tasks.length,
+    );
+    const now = Date.now();
+    const newTasks: Task[] = titles.map((title, i) => ({
+      id: `task-${now}-${i}`,
+      title,
+      status: 'pending',
+      createdAt: now,
+    }));
+    this.currentTaskList.tasks.splice(insertIndex, 0, ...newTasks);
+    this.emit('taskListUpdated', this.currentTaskList);
+  }
+
+  /**
+   * Appends tasks to the end of the current task list.
+   */
+  appendTasks(titles: string[]): void {
+    if (!this.currentTaskList || titles.length === 0) {
+      return;
+    }
+    const now = Date.now();
+    const newTasks: Task[] = titles.map((title, i) => ({
+      id: `task-${now}-${i}`,
+      title,
+      status: 'pending',
+      createdAt: now,
+    }));
+    this.currentTaskList.tasks.push(...newTasks);
+    this.emit('taskListUpdated', this.currentTaskList);
+  }
+
+  /** Returns the index of the current task (0-based), or -1 if none. */
+  getCurrentTaskIndex(): number {
+    if (!this.currentTaskList || this.currentTaskList.status !== 'active') {
+      return -1;
+    }
+    return this.currentTaskList.currentTaskIndex;
+  }
+
+  /**
    * Generates a context string for the current task
    */
   getTaskContext(): string {
@@ -222,17 +271,21 @@ export class TaskListService extends EventEmitter {
         ? `**Previous tasks completed:**\n${previousTasks}\n\n`
         : '') +
       `**CURRENT TASK (${currentTaskIndex + 1}/${totalCount}):** ${currentTask.title}\n\n` +
-      `**CRITICAL EXECUTION RULES:**\n` +
-      `1. Focus ONLY on completing: "${currentTask.title}"\n` +
-      `2. Use non-interactive commands (add --yes, --typescript, --no-input flags)\n` +
-      `3. If an error occurs, FIX it - do NOT skip or clean up\n` +
-      `4. Verify success before considering the task complete\n` +
-      `5. Do NOT execute future tasks yet\n\n` +
-      `**Upcoming tasks (DO NOT EXECUTE):**\n` +
-      tasks
-        .slice(currentTaskIndex + 1)
-        .map((t, i) => `  ${currentTaskIndex + i + 2}. [ ] ${t.title}`)
-        .join('\n')
+      `**🛑 CRITICAL EXECUTION RULES - YOU MUST FOLLOW THESE:**\n` +
+      `1. Complete ONLY this ONE task: "${currentTask.title}"\n` +
+      `2. STOP immediately after completing "${currentTask.title}"\n` +
+      `3. Do NOT proceed to any other tasks\n` +
+      `4. NEVER ask the user questions or for input. If required info (like a project or folder name) is missing, choose a sensible default (e.g., "app") and proceed.\n` +
+      `5. Use non-interactive commands (add --yes, --typescript, --no-input flags).\n` +
+      `6. If an error occurs, FIX it — do NOT skip or clean up.\n\n` +
+      `**⚠️ STOP AFTER THIS TASK! The system will prompt you for the next task.**\n\n` +
+      (tasks.length > currentTaskIndex + 1
+        ? `**Upcoming tasks (DO NOT EXECUTE - STOP AFTER CURRENT TASK):**\n` +
+          tasks
+            .slice(currentTaskIndex + 1)
+            .map((t, i) => `  ${currentTaskIndex + i + 2}. [ ] ${t.title}`)
+            .join('\n')
+        : 'This is the final task.')
     );
   }
 
