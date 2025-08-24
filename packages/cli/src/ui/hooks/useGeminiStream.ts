@@ -93,7 +93,11 @@ export const useGeminiStream = (
   const [isResponding, setIsResponding] = useState<boolean>(false);
   const [thought, setThought] = useState<ThoughtSummary | null>(null);
   const submitQueryRef = useRef<
-    | ((query: PartListUnion, options?: { isContinuation: boolean }, prompt_id?: string) => Promise<void>)
+    | ((
+        query: PartListUnion,
+        options?: { isContinuation: boolean },
+        prompt_id?: string,
+      ) => Promise<void>)
     | null
   >(null);
   const [pendingHistoryItemRef, setPendingHistoryItem] =

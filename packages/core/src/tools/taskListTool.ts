@@ -68,7 +68,9 @@ export class TaskListTool extends BaseDeclarativeTool<
     this.taskListService = taskListService || new TaskListService();
   }
 
-  public override validateToolParams(params: TaskListToolParams): string | null {
+  public override validateToolParams(
+    params: TaskListToolParams,
+  ): string | null {
     if (!params.user_request || params.user_request.trim().length === 0) {
       return 'user_request cannot be empty';
     }
