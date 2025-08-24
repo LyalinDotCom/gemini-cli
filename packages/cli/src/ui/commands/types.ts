@@ -63,6 +63,7 @@ export interface CommandContext {
     setGeminiMdFileCount: (count: number) => void;
     /** Toggles the display of footer tooltips. */
     toggleTooltips?: () => void;
+    reloadCommands: () => void;
   };
   // Session-specific data
   session: {
