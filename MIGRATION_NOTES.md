@@ -5,6 +5,7 @@
 All task list implementation files have been successfully copied from the v0.1.21 codebase to this v0.1.18 fork:
 
 ### New Files Created:
+
 1. `packages/core/src/services/taskListService.ts` - Core task management service
 2. `packages/core/src/services/taskListInterceptor.ts` - Automatic task detection
 3. `packages/core/src/tools/taskListTool.ts` - Task list tool implementation
@@ -12,6 +13,7 @@ All task list implementation files have been successfully copied from the v0.1.2
 5. `TASK_LIST_IMPLEMENTATION.md` - Comprehensive documentation
 
 ### Modified Files:
+
 1. `packages/cli/src/ui/hooks/useGeminiStream.ts` - Integrated task list event handling
 2. `packages/core/src/config/config.ts` - Added TaskListService integration
 3. `packages/core/src/core/client.ts` - Added task context to system prompts
@@ -32,6 +34,7 @@ Due to version differences between the fork (v0.1.18) and the source (v0.1.21), 
 ### Remaining Build Issues:
 
 The following imports/features from v0.1.21 don't exist in v0.1.18:
+
 - `parseAndFormatApiError` export from core
 - `getIdeModeFeature` method on Config
 - `getProjectTempDir` method on Config
@@ -47,12 +50,14 @@ The following imports/features from v0.1.21 don't exist in v0.1.18:
 ## Testing
 
 Once build issues are resolved, test with:
+
 ```bash
 npm run build
 node packages/cli/dist/index.js
 ```
 
 Test prompts:
+
 - "Create a folder called test and inside create a Next.js app"
 - "Build a todo app with React, add authentication, and write tests"
 

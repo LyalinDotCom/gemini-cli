@@ -8,7 +8,7 @@ import { CommandKind, SlashCommand } from './types.js';
 
 export const tooltipsCommand: SlashCommand = {
   name: 'tooltips',
-  altNames: ['??'],  // Double ?? to avoid conflict with help's ?
+  altNames: ['??'], // Double ?? to avoid conflict with help's ?
   kind: CommandKind.BUILT_IN,
   description: 'Toggle footer tooltips overlay',
   action: async (context) => {

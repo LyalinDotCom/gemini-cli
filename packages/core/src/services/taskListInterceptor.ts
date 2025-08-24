@@ -6,7 +6,10 @@
 
 import { Config } from '../config/config.js';
 import { TaskListService } from './taskListService.js';
-import { createContentGenerator, createContentGeneratorConfig } from '../core/contentGenerator.js';
+import {
+  createContentGenerator,
+  createContentGeneratorConfig,
+} from '../core/contentGenerator.js';
 import { GeminiChat } from '../core/geminiChat.js';
 import { DEFAULT_GEMINI_FLASH_MODEL } from '../config/models.js';
 import { PartListUnion } from '@google/genai';
@@ -21,11 +24,14 @@ export class TaskListInterceptor {
    * Analyzes a user prompt to determine if it should be broken into tasks
    */
   async shouldCreateTaskList(userPrompt: string): Promise<boolean> {
-    console.log('[TaskListInterceptor] Analyzing prompt for task list creation:', userPrompt.substring(0, 100));
-    
+    console.log(
+      '[TaskListInterceptor] Analyzing prompt for task list creation:',
+      userPrompt.substring(0, 100),
+    );
+
     // Quick heuristics to avoid unnecessary API calls
     const prompt = userPrompt.toLowerCase();
-    
+
     // Skip if it's a simple question
     if (
       prompt.startsWith('what') ||
@@ -34,7 +40,9 @@ export class TaskListInterceptor {
       prompt.startsWith('describe') ||
       (prompt.includes('?') && !prompt.includes(' and '))
     ) {
-      console.log('[TaskListInterceptor] Skipping - detected as simple question');
+      console.log(
+        '[TaskListInterceptor] Skipping - detected as simple question',
+      );
       return false;
     }
 
@@ -51,14 +59,16 @@ export class TaskListInterceptor {
       /^list\s+\w+$/,
     ];
 
-    if (singleCommandPatterns.some(pattern => pattern.test(prompt))) {
-      console.log('[TaskListInterceptor] Skipping - detected as single command');
+    if (singleCommandPatterns.some((pattern) => pattern.test(prompt))) {
+      console.log(
+        '[TaskListInterceptor] Skipping - detected as single command',
+      );
       return false;
     }
 
     // Check for multi-step indicators - be more aggressive
     const multiStepIndicators = [
-      ' and ',  // Any "and" suggests multiple steps
+      ' and ', // Any "and" suggests multiple steps
       'then',
       'after',
       'next',
@@ -84,18 +94,22 @@ export class TaskListInterceptor {
       'make',
     ];
 
-    const hasMultiStepIndicator = multiStepIndicators.some(indicator => 
-      prompt.includes(indicator)
+    const hasMultiStepIndicator = multiStepIndicators.some((indicator) =>
+      prompt.includes(indicator),
     );
 
     // If we have indicators OR the prompt is reasonably complex, create a task list
     if (hasMultiStepIndicator || prompt.split(' ').length > 8) {
-      console.log('[TaskListInterceptor] Creating task list - detected multi-step indicators or complex request');
+      console.log(
+        '[TaskListInterceptor] Creating task list - detected multi-step indicators or complex request',
+      );
       return true;
     }
 
     // For ambiguous cases, use Flash to decide
-    console.log('[TaskListInterceptor] Checking with Flash model for ambiguous case');
+    console.log(
+      '[TaskListInterceptor] Checking with Flash model for ambiguous case',
+    );
     return await this.askFlashToDecide(userPrompt);
   }
 
@@ -104,7 +118,7 @@ export class TaskListInterceptor {
    */
   private async askFlashToDecide(userPrompt: string): Promise<boolean> {
     const originalModel = this.config.getModel();
-    
+
     try {
       this.config.setModel(DEFAULT_GEMINI_FLASH_MODEL);
       // Use the existing auth from the config
@@ -145,7 +159,8 @@ Your answer (YES or NO):`;
         'task-analysis',
       );
 
-      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const responseText =
+        response.candidates?.[0]?.content?.parts?.[0]?.text || '';
       return responseText.trim().toUpperCase() === 'YES';
     } catch (error) {
       // If there's an error, default to not creating a task list
@@ -168,20 +183,27 @@ Your answer (YES or NO):`;
     attemptedToCreate?: boolean;
   }> {
     console.log('[TaskListInterceptor] interceptPrompt called');
-    
+
     // Extract text from the prompt
     let promptText = '';
     if (typeof userPrompt === 'string') {
       promptText = userPrompt;
     } else if (Array.isArray(userPrompt)) {
       promptText = userPrompt
-        .map(part => (typeof part === 'string' ? part : part.text || ''))
+        .map((part) => (typeof part === 'string' ? part : part.text || ''))
         .join(' ');
-    } else if (userPrompt && typeof userPrompt === 'object' && 'text' in userPrompt) {
+    } else if (
+      userPrompt &&
+      typeof userPrompt === 'object' &&
+      'text' in userPrompt
+    ) {
       promptText = userPrompt.text || '';
     }
 
-    console.log('[TaskListInterceptor] Extracted prompt text:', promptText.substring(0, 100));
+    console.log(
+      '[TaskListInterceptor] Extracted prompt text:',
+      promptText.substring(0, 100),
+    );
 
     if (!promptText) {
       console.log('[TaskListInterceptor] No prompt text found, skipping');
@@ -196,7 +218,7 @@ Your answer (YES or NO):`;
     }
 
     console.log('[TaskListInterceptor] Decision: Creating task list');
-    
+
     // Generate the task list
     let taskTitles: string[] = [];
     try {
@@ -204,17 +226,17 @@ Your answer (YES or NO):`;
       console.log('[TaskListInterceptor] Generated tasks:', taskTitles);
     } catch (error) {
       console.error('[TaskListInterceptor] Error generating tasks:', error);
-      return { 
+      return {
         shouldProceedWithTaskList: false,
-        attemptedToCreate: true 
+        attemptedToCreate: true,
       };
     }
-    
+
     if (taskTitles.length === 0) {
       console.log('[TaskListInterceptor] No tasks generated, skipping');
-      return { 
+      return {
         shouldProceedWithTaskList: false,
-        attemptedToCreate: true 
+        attemptedToCreate: true,
       };
     }
 
@@ -232,13 +254,16 @@ Your answer (YES or NO):`;
     }
 
     const taskContext = this.taskListService.getTaskContext();
-    const modifiedPromptText = `Original request: ${promptText}\n\n` +
+    const modifiedPromptText =
+      `Original request: ${promptText}\n\n` +
       `I've broken this down into ${taskTitles.length} tasks that I'll execute sequentially.\n\n` +
       `${taskContext}\n\n` +
       `Starting with Task 1: ${currentTask.title}\n\n` +
       `IMPORTANT: I will use non-interactive commands and verify success at each step.`;
 
-    console.log('[TaskListInterceptor] Returning modified prompt with task context');
+    console.log(
+      '[TaskListInterceptor] Returning modified prompt with task context',
+    );
     return {
       shouldProceedWithTaskList: true,
       modifiedPrompt: modifiedPromptText,
@@ -254,8 +279,13 @@ Your answer (YES or NO):`;
   ): Promise<string[]> {
     console.log('[TaskListInterceptor] Generating task list with Flash model');
     const originalModel = this.config.getModel();
-    console.log('[TaskListInterceptor] Original model:', originalModel, '-> Switching to:', DEFAULT_GEMINI_FLASH_MODEL);
-    
+    console.log(
+      '[TaskListInterceptor] Original model:',
+      originalModel,
+      '-> Switching to:',
+      DEFAULT_GEMINI_FLASH_MODEL,
+    );
+
     try {
       this.config.setModel(DEFAULT_GEMINI_FLASH_MODEL);
       // Use the existing auth from the config
@@ -296,7 +326,8 @@ Example format:
         'task-generation',
       );
 
-      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const responseText =
+        response.candidates?.[0]?.content?.parts?.[0]?.text || '';
       return this.parseTaskList(responseText);
     } catch (error) {
       console.error('Error generating task list:', error);
@@ -312,7 +343,7 @@ Example format:
   private parseTaskList(responseText: string): string[] {
     const lines = responseText.split('\n');
     const tasks: string[] = [];
-    
+
     for (const line of lines) {
       const match = line.match(/^\d+\.\s+(.+)$/);
       if (match) {
@@ -340,19 +371,21 @@ Example format:
 
     // Start the next task
     this.taskListService.startCurrentTask();
-    
+
     const taskContext = this.taskListService.getTaskContext();
     const taskList = this.taskListService.getCurrentTaskList();
     const currentIndex = taskList?.currentTaskIndex || 0;
     const totalTasks = taskList?.tasks.length || 0;
-    
-    return `Task ${currentIndex}/${totalTasks} "${completedTask.title}" has been marked as completed.\n\n` +
-           `Before proceeding to the next task, please:\n` +
-           `1. Verify the previous task was successful\n` +
-           `2. Check for any errors or issues that need fixing\n` +
-           `3. Only proceed if everything is working correctly\n\n` +
-           `${taskContext}\n\n` +
-           `Now execute Task ${currentIndex + 1}/${totalTasks}: ${currentTask.title}\n` +
-           `Remember: Use non-interactive commands and verify success.`;
+
+    return (
+      `Task ${currentIndex}/${totalTasks} "${completedTask.title}" has been marked as completed.\n\n` +
+      `Before proceeding to the next task, please:\n` +
+      `1. Verify the previous task was successful\n` +
+      `2. Check for any errors or issues that need fixing\n` +
+      `3. Only proceed if everything is working correctly\n\n` +
+      `${taskContext}\n\n` +
+      `Now execute Task ${currentIndex + 1}/${totalTasks}: ${currentTask.title}\n` +
+      `Remember: Use non-interactive commands and verify success.`
+    );
   }
 }

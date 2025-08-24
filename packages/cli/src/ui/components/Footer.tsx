@@ -84,7 +84,7 @@ export const Footer: React.FC<FooterProps> = ({
           </Text>
         </Box>
       )}
-      
+
       {/* Main footer content */}
       <Box
         justifyContent="space-between"
@@ -117,65 +117,65 @@ export const Footer: React.FC<FooterProps> = ({
           )}
         </Box>
 
-      {/* Middle Section: Centered Trust/Sandbox Info */}
-      <Box
-        flexGrow={isNarrow ? 0 : 1}
-        alignItems="center"
-        justifyContent={isNarrow ? 'flex-start' : 'center'}
-        display="flex"
-        paddingX={isNarrow ? 0 : 1}
-        paddingTop={isNarrow ? 1 : 0}
-      >
-        {isTrustedFolder === false ? (
-          <Text color={theme.status.warning}>untrusted</Text>
-        ) : process.env['SANDBOX'] &&
-          process.env['SANDBOX'] !== 'sandbox-exec' ? (
-          <Text color="green">
-            {process.env['SANDBOX'].replace(/^gemini-(?:cli-)?/, '')}
-          </Text>
-        ) : process.env['SANDBOX'] === 'sandbox-exec' ? (
-          <Text color={theme.status.warning}>
-            macOS Seatbelt{' '}
-            <Text color={theme.text.secondary}>
-              ({process.env['SEATBELT_PROFILE']})
+        {/* Middle Section: Centered Trust/Sandbox Info */}
+        <Box
+          flexGrow={isNarrow ? 0 : 1}
+          alignItems="center"
+          justifyContent={isNarrow ? 'flex-start' : 'center'}
+          display="flex"
+          paddingX={isNarrow ? 0 : 1}
+          paddingTop={isNarrow ? 1 : 0}
+        >
+          {isTrustedFolder === false ? (
+            <Text color={theme.status.warning}>untrusted</Text>
+          ) : process.env['SANDBOX'] &&
+            process.env['SANDBOX'] !== 'sandbox-exec' ? (
+            <Text color="green">
+              {process.env['SANDBOX'].replace(/^gemini-(?:cli-)?/, '')}
             </Text>
-          </Text>
-        ) : (
-          <Text color={theme.status.error}>
-            no sandbox <Text color={theme.text.secondary}>(see /docs)</Text>
-          </Text>
-        )}
-      </Box>
+          ) : process.env['SANDBOX'] === 'sandbox-exec' ? (
+            <Text color={theme.status.warning}>
+              macOS Seatbelt{' '}
+              <Text color={theme.text.secondary}>
+                ({process.env['SEATBELT_PROFILE']})
+              </Text>
+            </Text>
+          ) : (
+            <Text color={theme.status.error}>
+              no sandbox <Text color={theme.text.secondary}>(see /docs)</Text>
+            </Text>
+          )}
+        </Box>
 
-      {/* Right Section: Gemini Label and Console Summary */}
-      <Box alignItems="center" paddingTop={isNarrow ? 1 : 0}>
-        <Text color={theme.text.accent}>
-          {isNarrow ? '' : ' '}
-          {model}{' '}
-          <ContextUsageDisplay
-            promptTokenCount={promptTokenCount}
-            model={model}
-          />
-        </Text>
-        {corgiMode && (
-          <Text>
-            <Text color={theme.ui.symbol}>| </Text>
-            <Text color={theme.status.error}>▼</Text>
-            <Text color={theme.text.primary}>(´</Text>
-            <Text color={theme.status.error}>ᴥ</Text>
-            <Text color={theme.text.primary}>`)</Text>
-            <Text color={theme.status.error}>▼ </Text>
+        {/* Right Section: Gemini Label and Console Summary */}
+        <Box alignItems="center" paddingTop={isNarrow ? 1 : 0}>
+          <Text color={theme.text.accent}>
+            {isNarrow ? '' : ' '}
+            {model}{' '}
+            <ContextUsageDisplay
+              promptTokenCount={promptTokenCount}
+              model={model}
+            />
           </Text>
-        )}
-        {!showErrorDetails && errorCount > 0 && (
-          <Box>
-            <Text color={theme.ui.symbol}>| </Text>
-            <ConsoleSummaryDisplay errorCount={errorCount} />
-          </Box>
-        )}
-        {showMemoryUsage && <MemoryUsageDisplay />}
+          {corgiMode && (
+            <Text>
+              <Text color={theme.ui.symbol}>| </Text>
+              <Text color={theme.status.error}>▼</Text>
+              <Text color={theme.text.primary}>(´</Text>
+              <Text color={theme.status.error}>ᴥ</Text>
+              <Text color={theme.text.primary}>`)</Text>
+              <Text color={theme.status.error}>▼ </Text>
+            </Text>
+          )}
+          {!showErrorDetails && errorCount > 0 && (
+            <Box>
+              <Text color={theme.ui.symbol}>| </Text>
+              <ConsoleSummaryDisplay errorCount={errorCount} />
+            </Box>
+          )}
+          {showMemoryUsage && <MemoryUsageDisplay />}
+        </Box>
       </Box>
-    </Box>
     </Box>
   );
 };

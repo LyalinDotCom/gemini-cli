@@ -4,11 +4,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BaseDeclarativeTool, BaseToolInvocation, Icon } from './tools.js';
-import { ToolInvocation, ToolResult } from './tools.js';
+import {
+  BaseDeclarativeTool,
+  BaseToolInvocation,
+  ToolInvocation,
+  ToolResult,
+} from './tools.js';
 import { Config } from '../config/config.js';
 import { DEFAULT_GEMINI_FLASH_MODEL } from '../config/models.js';
-import { createContentGenerator, createContentGeneratorConfig } from '../core/contentGenerator.js';
+import {
+  createContentGenerator,
+  createContentGeneratorConfig,
+} from '../core/contentGenerator.js';
 import { GeminiChat } from '../core/geminiChat.js';
 import { TaskListService } from '../services/taskListService.js';
 import { Type } from '@google/genai';
@@ -21,7 +28,10 @@ export interface TaskListToolParams {
 /**
  * Tool for managing task lists in Gemini CLI
  */
-export class TaskListTool extends BaseDeclarativeTool<TaskListToolParams, ToolResult> {
+export class TaskListTool extends BaseDeclarativeTool<
+  TaskListToolParams,
+  ToolResult
+> {
   static readonly Name = 'task_list';
   private taskListService: TaskListService;
 
@@ -42,7 +52,8 @@ export class TaskListTool extends BaseDeclarativeTool<TaskListToolParams, ToolRe
           },
           create_tasks: {
             type: Type.BOOLEAN,
-            description: 'Whether to create a new task list (true) or just get current status (false)',
+            description:
+              'Whether to create a new task list (true) or just get current status (false)',
             default: true,
           },
         },
@@ -52,7 +63,7 @@ export class TaskListTool extends BaseDeclarativeTool<TaskListToolParams, ToolRe
       true,
       false,
     );
-    
+
     // Use provided service or create new one
     this.taskListService = taskListService || new TaskListService();
   }
@@ -67,7 +78,11 @@ export class TaskListTool extends BaseDeclarativeTool<TaskListToolParams, ToolRe
   protected createInvocation(
     params: TaskListToolParams,
   ): ToolInvocation<TaskListToolParams, ToolResult> {
-    return new TaskListToolInvocation(this.config, this.taskListService, params);
+    return new TaskListToolInvocation(
+      this.config,
+      this.taskListService,
+      params,
+    );
   }
 
   getTaskListService(): TaskListService {
@@ -75,7 +90,10 @@ export class TaskListTool extends BaseDeclarativeTool<TaskListToolParams, ToolRe
   }
 }
 
-class TaskListToolInvocation extends BaseToolInvocation<TaskListToolParams, ToolResult> {
+class TaskListToolInvocation extends BaseToolInvocation<
+  TaskListToolParams,
+  ToolResult
+> {
   constructor(
     private config: Config,
     private taskListService: TaskListService,
@@ -99,7 +117,7 @@ class TaskListToolInvocation extends BaseToolInvocation<TaskListToolParams, Tool
       if (this.params.create_tasks === false) {
         const summary = this.taskListService.getTaskListSummary();
         const context = this.taskListService.getTaskContext();
-        
+
         return {
           llmContent: summary + '\n' + context,
           returnDisplay: summary,
@@ -129,12 +147,14 @@ class TaskListToolInvocation extends BaseToolInvocation<TaskListToolParams, Tool
 
       return {
         llmContent: `Created task list with ${taskList.tasks.length} tasks:\n${summary}`,
-        returnDisplay: `## Task List Created\n\n` +
-                      `**Request:** ${this.params.user_request}\n\n` +
-                      summary,
+        returnDisplay:
+          `## Task List Created\n\n` +
+          `**Request:** ${this.params.user_request}\n\n` +
+          summary,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         llmContent: `Failed to create task list: ${errorMessage}`,
         returnDisplay: `Error: ${errorMessage}`,
@@ -151,7 +171,7 @@ class TaskListToolInvocation extends BaseToolInvocation<TaskListToolParams, Tool
   ): Promise<string[]> {
     // Store current model to restore later
     const originalModel = this.config.getModel();
-    
+
     try {
       // Switch to Flash model for task generation
       this.config.setModel(DEFAULT_GEMINI_FLASH_MODEL);
@@ -196,7 +216,8 @@ Example format:
       );
 
       // Parse the response to extract task titles
-      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const responseText =
+        response.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const tasks = this.parseTaskList(responseText);
 
       return tasks;
@@ -209,7 +230,7 @@ Example format:
   private parseTaskList(responseText: string): string[] {
     const lines = responseText.split('\n');
     const tasks: string[] = [];
-    
+
     for (const line of lines) {
       // Match numbered list items (e.g., "1. ", "2. ", etc.)
       const match = line.match(/^\d+\.\s+(.+)$/);

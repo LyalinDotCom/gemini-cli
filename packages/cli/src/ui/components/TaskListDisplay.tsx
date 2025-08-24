@@ -13,17 +13,16 @@ interface TaskListDisplayProps {
   compact?: boolean;
 }
 
-export const TaskListDisplay: React.FC<TaskListDisplayProps> = ({ 
-  taskList, 
-  compact = false 
+export const TaskListDisplay: React.FC<TaskListDisplayProps> = ({
+  taskList,
+  compact = false,
 }) => {
-  
   if (!taskList || taskList.status !== 'active') {
     return null;
   }
 
   const { tasks, currentTaskIndex } = taskList;
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
+  const completedCount = tasks.filter((t) => t.status === 'completed').length;
   const totalCount = tasks.length;
   const progressPercentage = Math.round((completedCount / totalCount) * 100);
 
@@ -46,13 +45,15 @@ export const TaskListDisplay: React.FC<TaskListDisplayProps> = ({
     const currentTask = tasks[currentTaskIndex];
     return (
       <Box flexDirection="row" gap={1}>
-        <Text color={"blue"}>Tasks:</Text>
-        <Text>{completedCount}/{totalCount}</Text>
+        <Text color={'blue'}>Tasks:</Text>
+        <Text>
+          {completedCount}/{totalCount}
+        </Text>
         <Text dimColor>({progressPercentage}%)</Text>
         {currentTask && currentTask.status === 'in_progress' && (
           <>
             <Text dimColor>|</Text>
-            <Text color={"cyan"}>{currentTask.title}</Text>
+            <Text color={'cyan'}>{currentTask.title}</Text>
           </>
         )}
       </Box>
@@ -63,19 +64,25 @@ export const TaskListDisplay: React.FC<TaskListDisplayProps> = ({
   return (
     <Box flexDirection="column" marginY={1}>
       <Box flexDirection="row" gap={1} marginBottom={1}>
-        <Text bold color={"blue"}>Task Progress</Text>
-        <Text>({completedCount}/{totalCount})</Text>
+        <Text bold color={'blue'}>
+          Task Progress
+        </Text>
+        <Text>
+          ({completedCount}/{totalCount})
+        </Text>
         <Text dimColor>{progressPercentage}%</Text>
       </Box>
-      
+
       {/* Progress bar */}
       <Box marginBottom={1}>
         <Text>
           [
-          {Array.from({ length: 20 }).map((_, i) => {
-            const filled = i < Math.floor((completedCount / totalCount) * 20);
-            return filled ? '█' : '░';
-          }).join('')}
+          {Array.from({ length: 20 })
+            .map((_, i) => {
+              const filled = i < Math.floor((completedCount / totalCount) * 20);
+              return filled ? '█' : '░';
+            })
+            .join('')}
           ]
         </Text>
       </Box>
@@ -85,19 +92,23 @@ export const TaskListDisplay: React.FC<TaskListDisplayProps> = ({
         {tasks.map((task, index) => {
           const isCurrent = index === currentTaskIndex;
           const isActive = task.status === 'in_progress';
-          
+
           return (
             <Box key={task.id} flexDirection="row" gap={1}>
               {getStatusIcon(task, index)}
               <Text
                 bold={isActive}
-                color={isActive ? "cyan" : isCurrent ? "yellow" : undefined}
-                dimColor={task.status === 'completed' || index > currentTaskIndex}
+                color={isActive ? 'cyan' : isCurrent ? 'yellow' : undefined}
+                dimColor={
+                  task.status === 'completed' || index > currentTaskIndex
+                }
               >
                 {index + 1}. {task.title}
               </Text>
               {task.status === 'failed' && task.error && (
-                <Text color={"red"} dimColor>({task.error})</Text>
+                <Text color={'red'} dimColor>
+                  ({task.error})
+                </Text>
               )}
             </Box>
           );
@@ -105,13 +116,17 @@ export const TaskListDisplay: React.FC<TaskListDisplayProps> = ({
       </Box>
 
       {/* Current task details */}
-      {tasks[currentTaskIndex] && tasks[currentTaskIndex].status === 'in_progress' && (
-        <Box marginTop={1} borderStyle="single" borderColor={"cyan"} paddingX={1}>
-          <Text color={"cyan"}>
-            Current: {tasks[currentTaskIndex].title}
-          </Text>
-        </Box>
-      )}
+      {tasks[currentTaskIndex] &&
+        tasks[currentTaskIndex].status === 'in_progress' && (
+          <Box
+            marginTop={1}
+            borderStyle="single"
+            borderColor={'cyan'}
+            paddingX={1}
+          >
+            <Text color={'cyan'}>Current: {tasks[currentTaskIndex].title}</Text>
+          </Box>
+        )}
     </Box>
   );
 };

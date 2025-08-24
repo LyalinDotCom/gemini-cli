@@ -1,11 +1,13 @@
 # Gemini CLI Task List Implementation
 
 ## Overview
+
 This document details the implementation of a comprehensive task list feature for Gemini CLI that mimics Claude Code's task management approach. The feature automatically breaks down complex user requests into manageable tasks, tracks progress, and executes them sequentially.
 
 ## Latest Updates (Critical for Future Implementation)
 
 ### Visual Feedback System
+
 1. **Task List Display**: Shows immediately after Flash generates it with clear formatting:
    - Header: `📋 TASK LIST GENERATED (X tasks)`
    - Tasks shown as checkboxes: `1. [ ] Task name`
@@ -32,6 +34,7 @@ This document details the implementation of a comprehensive task list feature fo
    - Try-catch blocks around interceptor calls
 
 ### Task Detection Logic (Improved)
+
 - **Aggressive Detection**: Any prompt with " and ", "create", "build", "implement", "add", "write", "test"
 - **Complexity Check**: Prompts > 8 words trigger consideration
 - **Skip Patterns**: Simple questions (what/why/how) and single commands
@@ -44,6 +47,7 @@ This document details the implementation of a comprehensive task list feature fo
 ### Core Components
 
 #### 1. TaskListService (`packages/core/src/services/taskListService.ts`)
+
 - **Purpose**: Central service managing task state during execution
 - **Key Features**:
   - In-memory task list management (doesn't persist between sessions)
@@ -53,6 +57,7 @@ This document details the implementation of a comprehensive task list feature fo
   - Progress tracking and summary generation
 
 **Key Methods**:
+
 - `createTaskList()`: Creates a new task list from user prompt
 - `getCurrentTask()`: Returns the active task
 - `startCurrentTask()`: Transitions task to in_progress
@@ -61,6 +66,7 @@ This document details the implementation of a comprehensive task list feature fo
 - `getTaskListSummary()`: Returns formatted task list display
 
 #### 2. TaskListTool (`packages/core/src/tools/taskListTool.ts`)
+
 - **Purpose**: Built-in tool for explicit task list creation
 - **Key Features**:
   - Extends `BaseDeclarativeTool` following Gemini CLI patterns
@@ -69,12 +75,14 @@ This document details the implementation of a comprehensive task list feature fo
   - Can be called directly via tool invocation
 
 **Implementation Details**:
+
 - Registered as `task_list` tool
 - Uses Flash model to generate task lists
 - Returns structured task breakdown
 - Supports both creation and status queries
 
 #### 3. TaskListInterceptor (`packages/core/src/services/taskListInterceptor.ts`)
+
 - **Purpose**: Automatically detects when to create task lists
 - **Key Features**:
   - Analyzes user prompts using heuristics
@@ -83,12 +91,14 @@ This document details the implementation of a comprehensive task list feature fo
   - Modifies prompts to include task context
 
 **Detection Heuristics**:
+
 - Skips simple questions (what, why, how, explain)
 - Skips single commands (run, execute, test)
 - Triggers on multi-step indicators (and then, after that, implement, refactor)
 - Uses Flash model for final decision on ambiguous cases
 
 #### 4. TaskListDisplay Component (`packages/cli/src/ui/components/TaskListDisplay.tsx`)
+
 - **Purpose**: Visual representation of task progress
 - **Features**:
   - Progress bar visualization
@@ -99,6 +109,7 @@ This document details the implementation of a comprehensive task list feature fo
 ## Integration Points
 
 ### 1. Config Class Updates (`packages/core/src/config/config.ts`)
+
 ```typescript
 // Added TaskListService as a core service
 private taskListService: TaskListService;
@@ -116,6 +127,7 @@ registerCoreTool(TaskListTool, this, this.taskListService);
 ```
 
 ### 2. System Prompt Integration (`packages/core/src/core/client.ts`)
+
 ```typescript
 // Modified startChat to include task context
 const taskContext = this.config.getTaskListService().getTaskContext();
@@ -123,6 +135,7 @@ const systemInstruction = getCoreSystemPrompt(userMemory) + taskContext;
 ```
 
 ### 3. useGeminiStream Hook Integration (`packages/cli/src/ui/hooks/useGeminiStream.ts`)
+
 - Added task list state management
 - Integrated TaskListInterceptor for automatic detection
 - Added event listeners for task lifecycle
@@ -130,6 +143,7 @@ const systemInstruction = getCoreSystemPrompt(userMemory) + taskContext;
 - Added automatic task progression on completion
 
 ### 4. Automatic Task Progression
+
 ```typescript
 // In handleFinishedEvent
 if (currentTaskList && finishReason === FinishReason.STOP) {
@@ -145,16 +159,19 @@ if (currentTaskList && finishReason === FinishReason.STOP) {
 ## Task List Generation Flow
 
 ### 1. User submits a request
+
 ```
 User: "Create a REST API with authentication, database models, and tests"
 ```
 
 ### 2. Interceptor analyzes the request
+
 - Checks heuristics for multi-step indicators
 - If unclear, queries Flash model
 - Decides whether to create task list
 
 ### 3. Task list generation (if needed)
+
 - Switches to Flash model
 - Generates structured task breakdown:
   ```
@@ -167,12 +184,14 @@ User: "Create a REST API with authentication, database models, and tests"
   ```
 
 ### 4. Task execution
+
 - First task marked as `in_progress`
 - Task context added to system prompt
 - Gemini executes with task awareness
 - On completion, automatically advances to next task
 
 ### 5. Progress tracking
+
 - UI displays current progress
 - Events emitted for state changes
 - User sees real-time updates
@@ -180,26 +199,31 @@ User: "Create a REST API with authentication, database models, and tests"
 ## Key Implementation Decisions
 
 ### 1. In-Memory Only
+
 - Task lists don't persist between sessions
 - Cleared on interruption or new request
 - Simpler implementation, matches Claude Code behavior
 
 ### 2. Flash Model for Task Generation
+
 - Uses Flash (faster, cheaper) for task breakdown
 - Pro model for actual task execution
 - Optimal cost/performance balance
 
 ### 3. Automatic Detection
+
 - Heuristics reduce unnecessary API calls
 - Smart detection avoids task lists for simple requests
 - Fallback to Flash for ambiguous cases
 
 ### 4. Event-Driven Architecture
+
 - TaskListService extends EventEmitter
 - UI components react to events
 - Loose coupling between components
 
 ### 5. Automatic Progression
+
 - Tasks advance without user intervention
 - Small delay between tasks for UI updates
 - Continuation flag preserves context
@@ -207,6 +231,7 @@ User: "Create a REST API with authentication, database models, and tests"
 ## Critical Implementation Patterns
 
 ### Event Flow for Task Execution
+
 ```javascript
 // In useGeminiStream.ts
 1. User submits prompt
@@ -222,6 +247,7 @@ User: "Create a REST API with authentication, database models, and tests"
 ```
 
 ### Key Code Locations
+
 - **Interceptor Logic**: `packages/core/src/services/taskListInterceptor.ts`
   - `shouldCreateTaskList()`: Detection heuristics
   - `generateTaskList()`: Flash model call
@@ -239,6 +265,7 @@ User: "Create a REST API with authentication, database models, and tests"
   - `isContinuation: true` flag preserves context
 
 ### Flash Model Integration
+
 ```javascript
 // Always switches to Flash for task generation
 const originalModel = this.config.getModel();
@@ -248,14 +275,15 @@ this.config.setModel(originalModel);
 ```
 
 ### Error Recovery Pattern
+
 ```javascript
 // In interceptPrompt
 try {
   taskTitles = await this.generateTaskList(promptText, signal);
 } catch (error) {
-  return { 
+  return {
     shouldProceedWithTaskList: false,
-    attemptedToCreate: true  // Flag for UI feedback
+    attemptedToCreate: true, // Flag for UI feedback
   };
 }
 ```
@@ -263,12 +291,14 @@ try {
 ## Testing the Implementation
 
 ### Test Command (Production Ready)
+
 ```bash
 cd /Users/dmitrylyalin/Source/Misc/GeminiCLI-TaskList/gemini-cli
 npm run build && node packages/cli/dist/index.js
 ```
 
 ### Debug Mode (See Console Logs)
+
 ```bash
 node packages/cli/dist/index.js --debug
 ```
@@ -276,21 +306,27 @@ node packages/cli/dist/index.js --debug
 ### Test Scenarios
 
 1. **Complex multi-step request**:
+
 ```
 "Build a todo app with React, add authentication, create a backend API, and write tests"
 ```
+
 Expected: Should create task list automatically
 
 2. **Simple question**:
+
 ```
 "What is React?"
 ```
+
 Expected: Should NOT create task list
 
 3. **Explicit task list request**:
+
 ```
 "Create a task list for migrating from Vue to React"
 ```
+
 Expected: Should create task list via tool
 
 ## File Structure
@@ -338,6 +374,7 @@ gemini-cli/
 ## Task Execution Improvements
 
 ### Better Task Guidance (Latest)
+
 To prevent common execution errors like interactive prompts and workspace issues:
 
 1. **Enhanced Task Context** (`taskListService.ts:181-215`):
@@ -357,6 +394,7 @@ To prevent common execution errors like interactive prompts and workspace issues
    - Sets expectation for verification at each step
 
 ### Example Task Context in System Prompt:
+
 ```
 ## Task Execution Context
 You are executing a multi-step task list. Current progress: 1/3 tasks completed.
@@ -380,14 +418,17 @@ You are executing a multi-step task list. Current progress: 1/3 tasks completed.
 ## Common Issues & Solutions
 
 ### Task List Not Generating
+
 1. **Check Detection**: Prompt needs multi-step indicators or be > 8 words
 2. **Flash Model**: Ensure GEMINI_API_KEY is set for Flash model access
 3. **Debug**: Run with `--debug` to see `[TaskListInterceptor]` logs
 
 ### Authentication Error When Switching to Flash Model
+
 **Problem**: "Could not load the default credentials" error when generating task lists  
 **Cause**: Hardcoded `AuthType.USE_GEMINI` when creating content generator for Flash  
 **Solution**: Use existing authentication from config instead of hardcoding:
+
 ```typescript
 // ❌ Old (broken) - hardcoded auth type
 const contentGeneratorConfig = createContentGeneratorConfig(
@@ -399,20 +440,24 @@ const contentGeneratorConfig = createContentGeneratorConfig(
 const currentConfig = this.config.getContentGeneratorConfig();
 const contentGeneratorConfig = createContentGeneratorConfig(
   this.config,
-  currentConfig?.authType,  // Maintains OAuth or API key auth
+  currentConfig?.authType, // Maintains OAuth or API key auth
 );
 ```
+
 **Files Fixed**:
+
 - `taskListInterceptor.ts:112-114` - `askFlashToDecide` method
 - `taskListInterceptor.ts:258-261` - `generateTaskList` method
 - `taskListTool.ts:159-162` - `generateTaskList` method
 
 ### Tasks Not Progressing
+
 1. **Finish Reason**: Tasks only advance on `FinishReason.STOP`
 2. **Task State**: Check `taskListService.getCurrentTask()` state
 3. **Continuation Flag**: Ensure `isContinuation: true` is set
 
 ### Visual Issues
+
 1. **Message Types**: Use `MessageType.GEMINI` for task displays
 2. **Formatting**: Markdown formatting with `**bold**` and `~~strikethrough~~`
 3. **Timing**: 1-second delays between task transitions for UI updates
@@ -420,6 +465,7 @@ const contentGeneratorConfig = createContentGeneratorConfig(
 ## Summary
 
 The implementation successfully adds Claude Code-style task management to Gemini CLI with:
+
 - **Automatic task detection** using aggressive heuristics
 - **Flash model integration** for efficient task generation
 - **Clear visual feedback** throughout execution

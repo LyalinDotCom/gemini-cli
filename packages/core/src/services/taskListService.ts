@@ -113,17 +113,25 @@ export class TaskListService extends EventEmitter {
 
     currentTask.status = 'completed';
     currentTask.completedAt = Date.now();
-    console.log('[TaskListService] Emitting taskCompleted event for:', currentTask.title);
+    console.log(
+      '[TaskListService] Emitting taskCompleted event for:',
+      currentTask.title,
+    );
     this.emit('taskCompleted', currentTask, this.currentTaskList);
 
     // Move to next task
     if (this.currentTaskList) {
       this.currentTaskList.currentTaskIndex++;
-      
+
       // Check if all tasks are completed
-      if (this.currentTaskList.currentTaskIndex >= this.currentTaskList.tasks.length) {
+      if (
+        this.currentTaskList.currentTaskIndex >=
+        this.currentTaskList.tasks.length
+      ) {
         this.currentTaskList.status = 'completed';
-        console.log('[TaskListService] All tasks completed, emitting taskListCompleted event');
+        console.log(
+          '[TaskListService] All tasks completed, emitting taskListCompleted event',
+        );
         this.emit('taskListCompleted', this.currentTaskList);
       }
     }
@@ -148,8 +156,11 @@ export class TaskListService extends EventEmitter {
     // Move to next task even if failed
     if (this.currentTaskList) {
       this.currentTaskList.currentTaskIndex++;
-      
-      if (this.currentTaskList.currentTaskIndex >= this.currentTaskList.tasks.length) {
+
+      if (
+        this.currentTaskList.currentTaskIndex >=
+        this.currentTaskList.tasks.length
+      ) {
         this.currentTaskList.status = 'completed';
         this.emit('taskListCompleted', this.currentTaskList);
       }
@@ -187,33 +198,42 @@ export class TaskListService extends EventEmitter {
 
     const { tasks, currentTaskIndex } = this.currentTaskList;
     const currentTask = tasks[currentTaskIndex];
-    
+
     if (!currentTask) {
       return '';
     }
 
-    const completedCount = tasks.filter(t => t.status === 'completed').length;
+    const completedCount = tasks.filter((t) => t.status === 'completed').length;
     const totalCount = tasks.length;
-    
+
     // Get previous tasks to provide context
-    const previousTasks = tasks.slice(0, currentTaskIndex)
-      .map((t, i) => `  ${i + 1}. [${t.status === 'completed' ? '✓' : '✗'}] ${t.title}`)
+    const previousTasks = tasks
+      .slice(0, currentTaskIndex)
+      .map(
+        (t, i) =>
+          `  ${i + 1}. [${t.status === 'completed' ? '✓' : '✗'}] ${t.title}`,
+      )
       .join('\n');
 
-    return `\n## Task Execution Context\n` +
-           `You are executing a multi-step task list. Current progress: ${completedCount}/${totalCount} tasks completed.\n\n` +
-           (previousTasks ? `**Previous tasks completed:**\n${previousTasks}\n\n` : '') +
-           `**CURRENT TASK (${currentTaskIndex + 1}/${totalCount}):** ${currentTask.title}\n\n` +
-           `**CRITICAL EXECUTION RULES:**\n` +
-           `1. Focus ONLY on completing: "${currentTask.title}"\n` +
-           `2. Use non-interactive commands (add --yes, --typescript, --no-input flags)\n` +
-           `3. If an error occurs, FIX it - do NOT skip or clean up\n` +
-           `4. Verify success before considering the task complete\n` +
-           `5. Do NOT execute future tasks yet\n\n` +
-           `**Upcoming tasks (DO NOT EXECUTE):**\n` +
-           tasks.slice(currentTaskIndex + 1)
-             .map((t, i) => `  ${currentTaskIndex + i + 2}. [ ] ${t.title}`)
-             .join('\n');
+    return (
+      `\n## Task Execution Context\n` +
+      `You are executing a multi-step task list. Current progress: ${completedCount}/${totalCount} tasks completed.\n\n` +
+      (previousTasks
+        ? `**Previous tasks completed:**\n${previousTasks}\n\n`
+        : '') +
+      `**CURRENT TASK (${currentTaskIndex + 1}/${totalCount}):** ${currentTask.title}\n\n` +
+      `**CRITICAL EXECUTION RULES:**\n` +
+      `1. Focus ONLY on completing: "${currentTask.title}"\n` +
+      `2. Use non-interactive commands (add --yes, --typescript, --no-input flags)\n` +
+      `3. If an error occurs, FIX it - do NOT skip or clean up\n` +
+      `4. Verify success before considering the task complete\n` +
+      `5. Do NOT execute future tasks yet\n\n` +
+      `**Upcoming tasks (DO NOT EXECUTE):**\n` +
+      tasks
+        .slice(currentTaskIndex + 1)
+        .map((t, i) => `  ${currentTaskIndex + i + 2}. [ ] ${t.title}`)
+        .join('\n')
+    );
   }
 
   /**
@@ -226,11 +246,16 @@ export class TaskListService extends EventEmitter {
 
     const { tasks } = this.currentTaskList;
     const lines: string[] = ['## Task List'];
-    
+
     tasks.forEach((task, index) => {
-      const status = task.status === 'completed' ? '✓' :
-                    task.status === 'in_progress' ? '▶' :
-                    task.status === 'failed' ? '✗' : '○';
+      const status =
+        task.status === 'completed'
+          ? '✓'
+          : task.status === 'in_progress'
+            ? '▶'
+            : task.status === 'failed'
+              ? '✗'
+              : '○';
       lines.push(`${status} ${index + 1}. ${task.title}`);
     });
 

@@ -28,6 +28,7 @@ import {
   parseAndFormatApiError,
   TaskListInterceptor,
   TaskList,
+  Task,
 } from '@google/gemini-cli-core';
 import { type Part, type PartListUnion, FinishReason } from '@google/genai';
 import {
@@ -91,7 +92,10 @@ export const useGeminiStream = (
   const turnCancelledRef = useRef(false);
   const [isResponding, setIsResponding] = useState<boolean>(false);
   const [thought, setThought] = useState<ThoughtSummary | null>(null);
-  const submitQueryRef = useRef<any>(null);
+  const submitQueryRef = useRef<
+    | ((query: string, options?: { isContinuation?: boolean }) => Promise<void>)
+    | null
+  >(null);
   const [pendingHistoryItemRef, setPendingHistoryItem] =
     useStateAndRef<HistoryItemWithoutId | null>(null);
   const processedMemoryToolsRef = useRef<Set<string>>(new Set());
@@ -110,14 +114,14 @@ export const useGeminiStream = (
   const taskListService = useMemo(() => config.getTaskListService(), [config]);
   const taskListInterceptor = useMemo(
     () => new TaskListInterceptor(config, taskListService),
-    [config, taskListService]
+    [config, taskListService],
   );
 
   // Listen to task list events
   useEffect(() => {
     const handleTaskListCreated = (taskList: TaskList) => {
       setCurrentTaskList(taskList);
-      
+
       // Create a formatted task list display with better formatting
       const taskDisplay = [
         '',
@@ -125,8 +129,8 @@ export const useGeminiStream = (
         '═'.repeat(60),
         '',
         '**Tasks to complete:**',
-        ...taskList.tasks.map((task, index) => 
-          `  ${index + 1}. [ ] ${task.title}`
+        ...taskList.tasks.map(
+          (task, index) => `  ${index + 1}. [ ] ${task.title}`,
         ),
         '',
         '═'.repeat(60),
@@ -134,7 +138,7 @@ export const useGeminiStream = (
         '🚀 **Starting execution...**',
         '',
       ].join('\n');
-      
+
       addItem(
         {
           type: MessageType.GEMINI,
@@ -144,28 +148,30 @@ export const useGeminiStream = (
       );
     };
 
-    const handleTaskCompleted = (task: any, taskList: TaskList) => {
+    const handleTaskCompleted = (task: Task, taskList: TaskList) => {
       console.log('[useGeminiStream] Task completed event fired:', task.title);
       setCurrentTaskList({ ...taskList });
-      
-      const completedCount = taskList.tasks.filter(t => t.status === 'completed').length;
+
+      const completedCount = taskList.tasks.filter(
+        (t) => t.status === 'completed',
+      ).length;
       const totalCount = taskList.tasks.length;
       const nextTaskIndex = taskList.currentTaskIndex;
       const nextTask = taskList.tasks[nextTaskIndex];
-      const taskNumber = taskList.tasks.findIndex(t => t.id === task.id) + 1;
-      
+      const taskNumber = taskList.tasks.findIndex((t) => t.id === task.id) + 1;
+
       const separator = '═'.repeat(60);
-      let progressText = [
+      const progressText = [
         '',
         separator,
         `✅ **Task ${taskNumber}/${totalCount} Completed**`,
         `   ~~${task.title}~~`,
         '',
-        `📊 **Progress: ${completedCount}/${totalCount} tasks complete** (${Math.round((completedCount/totalCount)*100)}%)`,
+        `📊 **Progress: ${completedCount}/${totalCount} tasks complete** (${Math.round((completedCount / totalCount) * 100)}%)`,
         '',
         '**Updated Task List:**',
       ];
-      
+
       // Show the current state of all tasks
       taskList.tasks.forEach((t, index) => {
         const num = index + 1;
@@ -177,15 +183,17 @@ export const useGeminiStream = (
           progressText.push(`     ${num}. [ ] ${t.title}`);
         }
       });
-      
+
       if (nextTask) {
         progressText.push('');
-        progressText.push(`🚀 **Next up: Task ${nextTaskIndex + 1}** - ${nextTask.title}`);
+        progressText.push(
+          `🚀 **Next up: Task ${nextTaskIndex + 1}** - ${nextTask.title}`,
+        );
       }
-      
+
       progressText.push(separator);
       progressText.push('');
-      
+
       console.log('[useGeminiStream] Adding task completion message to UI');
       addItem(
         {
@@ -196,12 +204,12 @@ export const useGeminiStream = (
       );
     };
 
-    const handleTaskStarted = (task: any, taskList: TaskList) => {
+    const handleTaskStarted = (task: Task, taskList: TaskList) => {
       setCurrentTaskList({ ...taskList });
-      
-      const taskNumber = taskList.tasks.findIndex(t => t.id === task.id) + 1;
+
+      const taskNumber = taskList.tasks.findIndex((t) => t.id === task.id) + 1;
       const totalCount = taskList.tasks.length;
-      
+
       // Only show this message for the first task, as subsequent tasks get shown in handleTaskCompleted
       if (taskNumber === 1) {
         addItem(
@@ -213,14 +221,14 @@ export const useGeminiStream = (
         );
       }
     };
-    
+
     const handleTaskListCompleted = (taskList: TaskList) => {
       setCurrentTaskList(null);
-      
-      const completedTasks = taskList.tasks.map((task, index) => 
-        `  ${index + 1}. [✓] ~~${task.title}~~`
-      ).join('\n');
-      
+
+      const completedTasks = taskList.tasks
+        .map((task, index) => `  ${index + 1}. [✓] ~~${task.title}~~`)
+        .join('\n');
+
       const completionMessage = [
         '',
         '🎉 **ALL TASKS COMPLETED SUCCESSFULLY!** 🎉',
@@ -233,7 +241,7 @@ export const useGeminiStream = (
         `✨ Completed ${taskList.tasks.length} tasks in total`,
         '',
       ].join('\n');
-      
+
       addItem(
         {
           type: MessageType.GEMINI,
@@ -648,13 +656,13 @@ export const useGeminiStream = (
           userMessageTimestamp,
         );
       }
-      
+
       // Check if we should advance to the next task
       if (currentTaskList && finishReason === FinishReason.STOP) {
         // Wait a bit to ensure the response is fully displayed
         setTimeout(async () => {
           const nextPrompt = await taskListInterceptor.handleTaskCompletion();
-          
+
           // Task completion event will fire from handleTaskCompletion
           // Give time for the UI to display the completion message
           if (nextPrompt && submitQueryRef.current) {
@@ -815,13 +823,18 @@ export const useGeminiStream = (
       let finalQuery = query;
       if (!options?.isContinuation && !currentTaskList) {
         try {
-          console.log('[useGeminiStream] Checking if task list should be created...');
+          console.log(
+            '[useGeminiStream] Checking if task list should be created...',
+          );
           const interceptResult = await taskListInterceptor.interceptPrompt(
             query,
             abortSignal,
           );
-          
-          if (interceptResult.shouldProceedWithTaskList && interceptResult.modifiedPrompt) {
+
+          if (
+            interceptResult.shouldProceedWithTaskList &&
+            interceptResult.modifiedPrompt
+          ) {
             console.log('[useGeminiStream] Task list created successfully');
             finalQuery = interceptResult.modifiedPrompt;
           } else if (interceptResult.attemptedToCreate) {
@@ -836,7 +849,10 @@ export const useGeminiStream = (
             );
           }
         } catch (error) {
-          console.error('[useGeminiStream] Error in task list interceptor:', error);
+          console.error(
+            '[useGeminiStream] Error in task list interceptor:',
+            error,
+          );
           addItem(
             {
               type: MessageType.ERROR,
@@ -861,9 +877,12 @@ export const useGeminiStream = (
       if (!options?.isContinuation) {
         startNewPrompt();
         setThought(null); // Reset thought when starting a new prompt
-        
+
         // Clear task list on new prompt if not a continuation
-        if (!currentTaskList || taskListService.getCurrentTaskList()?.status !== 'active') {
+        if (
+          !currentTaskList ||
+          taskListService.getCurrentTaskList()?.status !== 'active'
+        ) {
           taskListService.clearTaskList();
         }
       }
@@ -926,6 +945,9 @@ export const useGeminiStream = (
       addItem,
       setPendingHistoryItem,
       setInitError,
+      currentTaskList,
+      taskListInterceptor,
+      taskListService,
       geminiClient,
       onAuthError,
       config,
