@@ -176,6 +176,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
   const [showErrorDetails, setShowErrorDetails] = useState<boolean>(false);
   const [showToolDescriptions, setShowToolDescriptions] =
     useState<boolean>(false);
+  const [showTooltips, setShowTooltips] = useState<boolean>(false);
 
   const [ctrlCPressedOnce, setCtrlCPressedOnce] = useState(false);
   const [quittingMessages, setQuittingMessages] = useState<
@@ -295,6 +296,10 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
 
   const toggleCorgiMode = useCallback(() => {
     setCorgiMode((prev) => !prev);
+  }, []);
+
+  const toggleTooltips = useCallback(() => {
+    setShowTooltips((prev) => !prev);
   }, []);
 
   const performMemoryRefresh = useCallback(async () => {
@@ -519,6 +524,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     toggleVimEnabled,
     setIsProcessing,
     setGeminiMdFileCount,
+    toggleTooltips,
   );
 
   const buffer = useTextBuffer({
@@ -1183,6 +1189,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
             promptTokenCount={sessionStats.lastPromptTokenCount}
             nightly={nightly}
             vimMode={vimModeEnabled ? vimMode : undefined}
+            showTooltips={showTooltips}
           />
         </Box>
       </Box>

@@ -32,6 +32,7 @@ interface FooterProps {
   promptTokenCount: number;
   nightly: boolean;
   vimMode?: string;
+  showTooltips?: boolean;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -47,6 +48,7 @@ export const Footer: React.FC<FooterProps> = ({
   promptTokenCount,
   nightly,
   vimMode,
+  showTooltips = false,
 }) => {
   const { columns: terminalWidth } = useTerminalSize();
 
@@ -59,36 +61,59 @@ export const Footer: React.FC<FooterProps> = ({
     : shortenPath(tildeifyPath(targetDir), pathLength);
 
   return (
-    <Box
-      justifyContent="space-between"
-      width="100%"
-      flexDirection={isNarrow ? 'column' : 'row'}
-      alignItems={isNarrow ? 'flex-start' : 'center'}
-    >
-      <Box>
-        {debugMode && <DebugProfiler />}
-        {vimMode && <Text color={theme.text.secondary}>[{vimMode}] </Text>}
-        {nightly ? (
-          <Gradient colors={theme.ui.gradient}>
-            <Text>
+    <Box flexDirection="column" width="100%">
+      {/* Tooltip overlay row - only shown when tooltips enabled */}
+      {showTooltips && (
+        <Box
+          justifyContent="space-between"
+          width="100%"
+          flexDirection={isNarrow ? 'column' : 'row'}
+          alignItems={isNarrow ? 'flex-start' : 'center'}
+          marginBottom={0}
+        >
+          <Text color={theme.text.secondary} dimColor>
+            ↓ Working directory {branchName && '(Git branch)'}
+          </Text>
+          <Text color={theme.text.secondary} dimColor>
+            ↓ Security isolation
+          </Text>
+          <Text color={theme.text.secondary} dimColor>
+            ↓ AI model (context usage)
+          </Text>
+        </Box>
+      )}
+      
+      {/* Main footer content */}
+      <Box
+        justifyContent="space-between"
+        width="100%"
+        flexDirection={isNarrow ? 'column' : 'row'}
+        alignItems={isNarrow ? 'flex-start' : 'center'}
+      >
+        <Box>
+          {debugMode && <DebugProfiler />}
+          {vimMode && <Text color={theme.text.secondary}>[{vimMode}] </Text>}
+          {nightly ? (
+            <Gradient colors={theme.ui.gradient}>
+              <Text>
+                {displayPath}
+                {branchName && <Text> ({branchName}*)</Text>}
+              </Text>
+            </Gradient>
+          ) : (
+            <Text color={theme.text.link}>
               {displayPath}
-              {branchName && <Text> ({branchName}*)</Text>}
+              {branchName && (
+                <Text color={theme.text.secondary}> ({branchName}*)</Text>
+              )}
             </Text>
-          </Gradient>
-        ) : (
-          <Text color={theme.text.link}>
-            {displayPath}
-            {branchName && (
-              <Text color={theme.text.secondary}> ({branchName}*)</Text>
-            )}
-          </Text>
-        )}
-        {debugMode && (
-          <Text color={theme.status.error}>
-            {' ' + (debugMessage || '--debug')}
-          </Text>
-        )}
-      </Box>
+          )}
+          {debugMode && (
+            <Text color={theme.status.error}>
+              {' ' + (debugMessage || '--debug')}
+            </Text>
+          )}
+        </Box>
 
       {/* Middle Section: Centered Sandbox Info */}
       <Box
@@ -145,6 +170,7 @@ export const Footer: React.FC<FooterProps> = ({
         )}
         {showMemoryUsage && <MemoryUsageDisplay />}
       </Box>
+    </Box>
     </Box>
   );
 };

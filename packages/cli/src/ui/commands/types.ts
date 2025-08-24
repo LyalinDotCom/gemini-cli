@@ -61,6 +61,8 @@ export interface CommandContext {
     toggleCorgiMode: () => void;
     toggleVimEnabled: () => Promise<boolean>;
     setGeminiMdFileCount: (count: number) => void;
+    /** Toggles the display of footer tooltips. */
+    toggleTooltips?: () => void;
   };
   // Session-specific data
   session: {
