@@ -9,6 +9,7 @@ import {
   BaseToolInvocation,
   ToolInvocation,
   ToolResult,
+  Kind,
 } from './tools.js';
 import { Config } from '../config/config.js';
 import { DEFAULT_GEMINI_FLASH_MODEL } from '../config/models.js';
@@ -43,7 +44,7 @@ export class TaskListTool extends BaseDeclarativeTool<
       TaskListTool.Name,
       'TaskList',
       'Creates and manages a task list for complex multi-step requests. This tool helps break down user requests into manageable tasks.',
-      Icon.LightBulb,
+      Kind.Tool,
       {
         properties: {
           user_request: {
@@ -54,7 +55,6 @@ export class TaskListTool extends BaseDeclarativeTool<
             type: Type.BOOLEAN,
             description:
               'Whether to create a new task list (true) or just get current status (false)',
-            default: true,
           },
         },
         required: ['user_request'],
@@ -68,14 +68,14 @@ export class TaskListTool extends BaseDeclarativeTool<
     this.taskListService = taskListService || new TaskListService();
   }
 
-  protected validateToolParams(params: TaskListToolParams): string | null {
+  public override validateToolParams(params: TaskListToolParams): string | null {
     if (!params.user_request || params.user_request.trim().length === 0) {
       return 'user_request cannot be empty';
     }
     return null;
   }
 
-  protected createInvocation(
+  protected override createInvocation(
     params: TaskListToolParams,
   ): ToolInvocation<TaskListToolParams, ToolResult> {
     return new TaskListToolInvocation(

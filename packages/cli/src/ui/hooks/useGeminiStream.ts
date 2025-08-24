@@ -93,7 +93,7 @@ export const useGeminiStream = (
   const [isResponding, setIsResponding] = useState<boolean>(false);
   const [thought, setThought] = useState<ThoughtSummary | null>(null);
   const submitQueryRef = useRef<
-    | ((query: string, options?: { isContinuation?: boolean }) => Promise<void>)
+    | ((query: PartListUnion, options?: { isContinuation: boolean }, prompt_id?: string) => Promise<void>)
     | null
   >(null);
   const [pendingHistoryItemRef, setPendingHistoryItem] =
@@ -668,7 +668,7 @@ export const useGeminiStream = (
           if (nextPrompt && submitQueryRef.current) {
             // Wait for the completion message to be displayed
             setTimeout(() => {
-              submitQueryRef.current(nextPrompt, { isContinuation: true });
+              submitQueryRef.current?.(nextPrompt, { isContinuation: true });
             }, 2000); // Increased delay to show task completion message
           }
         }, 500); // Initial delay before marking task complete
