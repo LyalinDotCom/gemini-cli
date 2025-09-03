@@ -31,6 +31,8 @@ import { statsCommand } from '../ui/commands/statsCommand.js';
 import { themeCommand } from '../ui/commands/themeCommand.js';
 import { toolsCommand } from '../ui/commands/toolsCommand.js';
 import { settingsCommand } from '../ui/commands/settingsCommand.js';
+import { thinkbudgetCommand } from '../ui/commands/thinkbudgetCommand.js';
+import { thinkingCommand } from '../ui/commands/thinkingCommand.js';
 import { vimCommand } from '../ui/commands/vimCommand.js';
 import { setupGithubCommand } from '../ui/commands/setupGithubCommand.js';
 import { terminalSetupCommand } from '../ui/commands/terminalSetupCommand.js';
@@ -73,6 +75,8 @@ export class BuiltinCommandLoader implements ICommandLoader {
       restoreCommand(this.config),
       statsCommand,
       themeCommand,
+      thinkbudgetCommand,
+      thinkingCommand,
       toolsCommand,
       settingsCommand,
       vimCommand,

@@ -288,6 +288,8 @@ export class Config {
   private readonly fileExclusions: FileExclusions;
   private readonly eventEmitter?: EventEmitter;
   private readonly useSmartEdit: boolean;
+  private thinkingBudget: number = -1;
+  private showThoughts: boolean = false;
 
   constructor(params: ConfigParameters) {
     this.sessionId = params.sessionId;
@@ -475,6 +477,22 @@ export class Config {
 
   getQuotaErrorOccurred(): boolean {
     return this.quotaErrorOccurred;
+  }
+
+  getThinkingBudget(): number {
+    return this.thinkingBudget;
+  }
+
+  setThinkingBudget(value: number): void {
+    this.thinkingBudget = value;
+  }
+
+  getShowThoughts(): boolean {
+    return this.showThoughts;
+  }
+
+  setShowThoughts(value: boolean): void {
+    this.showThoughts = value;
   }
 
   getEmbeddingModel(): string {

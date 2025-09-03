@@ -141,6 +141,7 @@ export const Footer: React.FC<FooterProps> = ({
             <Text color={theme.text.accent}>
               {isNarrow ? '' : ' '}
               {model}{' '}
+              <Text color={theme.status.success}>[improve-prompt]</Text>{' '}
               <ContextUsageDisplay
                 promptTokenCount={promptTokenCount}
                 model={model}

@@ -606,6 +606,19 @@ export const useGeminiStream = (
         switch (event.type) {
           case ServerGeminiEventType.Thought:
             setThought(event.value);
+            // If showThoughts is enabled, add the thought to the history
+            if (config.getShowThoughts() && event.value) {
+              const thoughtText = event.value.description 
+                ? `💭 **${event.value.subject}**: ${event.value.description}`
+                : `💭 **${event.value.subject}**`;
+              addItem(
+                {
+                  type: MessageType.INFO,
+                  text: thoughtText,
+                },
+                userMessageTimestamp,
+              );
+            }
             break;
           case ServerGeminiEventType.Content:
             geminiMessageBuffer = handleContentEvent(

@@ -259,10 +259,10 @@ export class GeminiClient {
         ? {
             ...this.generateContentConfig,
             thinkingConfig: {
-              thinkingBudget: -1,
-              includeThoughts: true,
+              thinkingBudget: this.config.getThinkingBudget(),
+              includeThoughts: this.config.getShowThoughts(),
               ...(!isThinkingDefault(model)
-                ? { thinkingBudget: DEFAULT_THINKING_MODE }
+                ? { thinkingBudget: this.config.getThinkingBudget() !== -1 ? this.config.getThinkingBudget() : DEFAULT_THINKING_MODE }
                 : {}),
             },
           }
