@@ -58,12 +58,22 @@ export const INSTALL_METADATA_FILENAME = '.gemini-extension-install.json';
  * outside of the loading process that data needs to be stored on the
  * GeminiCLIExtension class defined in Core.
  */
+interface ExecutableCommandDef {
+  type: 'executable';
+  binary: string;
+  description?: string;
+  subcommands?: string[];
+  requireConfirm?: boolean;
+  env?: Record<string, string>;
+}
+
 interface ExtensionConfig {
   name: string;
   version: string;
   mcpServers?: Record<string, MCPServerConfig>;
   contextFileName?: string | string[];
   excludeTools?: string[];
+  commands?: Record<string, ExecutableCommandDef>;
 }
 
 export interface ExtensionUpdateInfo {
@@ -635,6 +645,12 @@ function extensionConsentString(extensionConfig: ExtensionConfig): string {
   if (sanitizedConfig.excludeTools) {
     output.push(
       `This extension will exclude the following core tools: ${sanitizedConfig.excludeTools}`,
+    );
+  }
+  if (sanitizedConfig.commands) {
+    const commandNames = Object.keys(sanitizedConfig.commands);
+    output.push(
+      `This extension will add executable commands: ${commandNames.join(', ')}`,
     );
   }
   return output.join('\n');

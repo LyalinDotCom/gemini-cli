@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as fs } from 'node:fs';
+import { promises as fs, statSync } from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import toml from '@iarna/toml';
 import { glob } from 'glob';
 import { z } from 'zod';
@@ -33,6 +34,21 @@ import {
   ShellProcessor,
 } from './prompt-processors/shellProcessor.js';
 import { AtFileProcessor } from './prompt-processors/atFileProcessor.js';
+
+interface ExecutableCommandDef {
+  type: 'executable';
+  binary: string;
+  description?: string;
+  subcommands?: string[];
+  requireConfirm?: boolean;
+  env?: Record<string, string>;
+}
+
+interface ExtensionManifest {
+  name: string;
+  version: string;
+  commands?: Record<string, ExecutableCommandDef>;
+}
 
 interface CommandDirectory {
   path: string;
@@ -128,6 +144,10 @@ export class FileCommandLoader implements ICommandLoader {
         }
       }
     }
+
+    // Load executable commands from extensions
+    const executableCommands = await this.loadExecutableCommands(signal);
+    allCommands.push(...executableCommands);
 
     return allCommands;
   }
@@ -311,5 +331,210 @@ export class FileCommandLoader implements ICommandLoader {
         }
       },
     };
+  }
+
+  /**
+   * Loads executable commands from extension manifests.
+   * @param signal An AbortSignal to cancel the loading process.
+   * @returns A promise that resolves to an array of executable SlashCommands.
+   */
+  private async loadExecutableCommands(
+    signal: AbortSignal,
+  ): Promise<SlashCommand[]> {
+    const commands: SlashCommand[] = [];
+
+    if (!this.config) {
+      return commands;
+    }
+
+    const extensions = this.config
+      .getExtensions()
+      .filter((ext) => ext.isActive);
+
+    for (const ext of extensions) {
+      if (signal.aborted) {
+        break;
+      }
+
+      try {
+        // Read extension manifest
+        const manifestPath = path.join(ext.path, 'gemini-extension.json');
+        const manifestContent = await fs.readFile(manifestPath, 'utf-8');
+        const manifest = JSON.parse(manifestContent) as ExtensionManifest;
+
+        if (!manifest.commands) {
+          continue;
+        }
+
+        // Process each command definition
+        for (const [cmdName, cmdDef] of Object.entries(manifest.commands)) {
+          if (cmdDef.type === 'executable') {
+            const command = this.createExecutableCommand(cmdName, cmdDef, ext);
+            if (command) {
+              commands.push(command);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(
+          `[FileCommandLoader] Failed to load executable commands from ${ext.name}:`,
+          error,
+        );
+      }
+    }
+
+    return commands;
+  }
+
+  /**
+   * Creates a SlashCommand wrapper for an executable binary.
+   * @param name The command name.
+   * @param def The executable command definition.
+   * @param extension The extension providing this command.
+   * @returns A SlashCommand or null if the binary doesn't exist.
+   */
+  private createExecutableCommand(
+    name: string,
+    def: ExecutableCommandDef,
+    extension: { name: string; path: string },
+  ): SlashCommand | null {
+    try {
+      // Resolve binary path with template variables
+      const binaryPath = this.resolveBinaryPath(def.binary, extension.path);
+
+      // Check if binary exists synchronously
+      try {
+        const stats = statSync(binaryPath);
+        if (!stats.isFile()) {
+          console.warn(
+            `[FileCommandLoader] Binary path is not a file for command ${name}: ${binaryPath}`,
+          );
+          return null;
+        }
+      } catch (_error) {
+        console.warn(
+          `[FileCommandLoader] Binary not found for command ${name}: ${binaryPath}`,
+        );
+        return null;
+      }
+
+      const description = def.description
+        ? `[${extension.name}] ${def.description}`
+        : `[${extension.name}] Execute ${name}`;
+
+      return {
+        name,
+        description,
+        kind: CommandKind.FILE,
+        extensionName: extension.name,
+
+        action: async (context: CommandContext, args: string) =>
+          await this.executeCommand(binaryPath, args, context, def),
+
+        // Support subcommands if defined
+        subCommands: def.subcommands?.map((sub) => ({
+          name: sub,
+          description: `${name} ${sub}`,
+          kind: CommandKind.FILE,
+          action: async (context: CommandContext, args: string) =>
+            await this.executeCommand(
+              binaryPath,
+              `${sub} ${args}`,
+              context,
+              def,
+            ),
+        })),
+      };
+    } catch (error) {
+      console.error(
+        `[FileCommandLoader] Failed to create executable command ${name}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Resolves template variables in a binary path.
+   * @param template The path template string.
+   * @param extensionPath The extension's installation path.
+   * @returns The resolved path.
+   */
+  private resolveBinaryPath(template: string, extensionPath: string): string {
+    return template
+      .replace(/\$\{extensionPath\}/g, extensionPath)
+      .replace(/\$\{platform\}/g, process.platform)
+      .replace(/\$\{arch\}/g, process.arch)
+      .replace(/\$\{\/\}/g, path.sep);
+  }
+
+  /**
+   * Executes a binary command and returns the result.
+   * @param binaryPath The path to the binary.
+   * @param args The command arguments as a string.
+   * @param context The command execution context.
+   * @param def The executable command definition.
+   * @returns A promise that resolves to the command action return.
+   */
+  private async executeCommand(
+    binaryPath: string,
+    args: string,
+    context: CommandContext,
+    def: ExecutableCommandDef,
+  ): Promise<SlashCommandActionReturn> {
+    // TODO: Handle confirmation if required
+    // if (def.requireConfirm) {
+    //   // Similar to shell command confirmation
+    // }
+
+    return new Promise((resolve) => {
+      const argArray = args
+        .trim()
+        .split(/\s+/)
+        .filter((a) => a.length > 0);
+      const proc = spawn(binaryPath, argArray, {
+        cwd: this.config?.getProjectRoot() || process.cwd(),
+        env: {
+          ...process.env,
+          ...def.env,
+          GEMINI_CLI: '1', // Mark as running from Gemini CLI
+        },
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code: number) => {
+        if (code !== 0) {
+          resolve({
+            type: 'message',
+            messageType: 'error',
+            content: stderr || `Command exited with code ${code}`,
+          });
+        } else {
+          resolve({
+            type: 'message',
+            messageType: 'info',
+            content: stdout,
+          });
+        }
+      });
+
+      proc.on('error', (error: Error) => {
+        resolve({
+          type: 'message',
+          messageType: 'error',
+          content: `Failed to execute command: ${error.message}`,
+        });
+      });
+    });
   }
 }
