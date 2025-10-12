@@ -7,7 +7,7 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { type PartListUnion } from '@google/genai';
 import process from 'node:process';
-import { watch } from 'node:fs';
+import { watch, existsSync } from 'node:fs';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
 import type { Config } from '@google/gemini-cli-core';
 import {
@@ -267,49 +267,62 @@ export const useSlashCommandProcessor = (
       return;
     }
 
+    // Check if directory exists before watching
+    if (!existsSync(extensionsPath)) {
+      console.debug(`Extensions directory does not exist: ${extensionsPath}`);
+      return;
+    }
+
     let reloadTimeout: NodeJS.Timeout | null = null;
 
-    const watcher = watch(
-      extensionsPath,
-      { recursive: true },
-      (eventType: string, filename: string | null) => {
-        // Ignore if filename is null
-        if (!filename) {
-          return;
-        }
+    try {
+      const watcher = watch(
+        extensionsPath,
+        { recursive: true },
+        (eventType: string, filename: string | null) => {
+          // Ignore if filename is null
+          if (!filename) {
+            return;
+          }
 
-        // Debounce: wait 500ms after last change before reloading
+          // Debounce: wait 500ms after last change before reloading
+          if (reloadTimeout) {
+            clearTimeout(reloadTimeout);
+          }
+
+          reloadTimeout = setTimeout(async () => {
+            console.log(
+              `Extension directory changed: ${filename}, reloading...`,
+            );
+
+            // Reload commands
+            reloadCommands();
+
+            // Reload MCP servers
+            const toolRegistry = config.getToolRegistry();
+            if (toolRegistry) {
+              await toolRegistry.restartMcpServers();
+            }
+
+            // Update Gemini client with new tools
+            const geminiClient = config.getGeminiClient();
+            if (geminiClient) {
+              await geminiClient.setTools();
+            }
+          }, 500);
+        },
+      );
+
+      return () => {
         if (reloadTimeout) {
           clearTimeout(reloadTimeout);
         }
-
-        reloadTimeout = setTimeout(async () => {
-          console.log(`Extension directory changed: ${filename}, reloading...`);
-
-          // Reload commands
-          reloadCommands();
-
-          // Reload MCP servers
-          const toolRegistry = config.getToolRegistry();
-          if (toolRegistry) {
-            await toolRegistry.restartMcpServers();
-          }
-
-          // Update Gemini client with new tools
-          const geminiClient = config.getGeminiClient();
-          if (geminiClient) {
-            await geminiClient.setTools();
-          }
-        }, 500);
-      },
-    );
-
-    return () => {
-      if (reloadTimeout) {
-        clearTimeout(reloadTimeout);
-      }
-      watcher.close();
-    };
+        watcher.close();
+      };
+    } catch (error) {
+      console.error(`Failed to watch extensions directory: ${error}`);
+      return;
+    }
   }, [config, reloadCommands]);
 
   useEffect(() => {
