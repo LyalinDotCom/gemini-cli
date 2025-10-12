@@ -7,6 +7,7 @@
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { type PartListUnion } from '@google/genai';
 import process from 'node:process';
+import { watch } from 'node:fs';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
 import type { Config } from '@google/gemini-cli-core';
 import {
@@ -252,6 +253,62 @@ export const useSlashCommandProcessor = (
         const ideClient = await IdeClient.getInstance();
         ideClient.removeStatusChangeListener(listener);
       })();
+    };
+  }, [config, reloadCommands]);
+
+  // Watch extensions directory for changes and auto-reload
+  useEffect(() => {
+    if (!config) {
+      return;
+    }
+
+    const extensionsPath = config.storage.getExtensionsDir();
+    if (!extensionsPath) {
+      return;
+    }
+
+    let reloadTimeout: NodeJS.Timeout | null = null;
+
+    const watcher = watch(
+      extensionsPath,
+      { recursive: true },
+      (eventType: string, filename: string | null) => {
+        // Ignore if filename is null
+        if (!filename) {
+          return;
+        }
+
+        // Debounce: wait 500ms after last change before reloading
+        if (reloadTimeout) {
+          clearTimeout(reloadTimeout);
+        }
+
+        reloadTimeout = setTimeout(async () => {
+          console.log(`Extension directory changed: ${filename}, reloading...`);
+
+          // Reload commands
+          reloadCommands();
+
+          // Reload MCP servers
+          const toolRegistry = config.getToolRegistry();
+          if (toolRegistry) {
+            await toolRegistry.restartMcpServers();
+          }
+
+          // Update Gemini client with new tools
+          const geminiClient = config.getGeminiClient();
+          if (geminiClient) {
+            await geminiClient.setTools();
+          }
+        }, 500);
+      },
+    );
+
+    return () => {
+      if (reloadTimeout) {
+        clearTimeout(reloadTimeout);
+      }
+      watcher.close();
     };
   }, [config, reloadCommands]);
 
