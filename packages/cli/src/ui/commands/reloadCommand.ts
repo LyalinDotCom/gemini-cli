@@ -17,11 +17,18 @@ export const reloadCommand: SlashCommand = {
     // Reload commands (extensions)
     context.ui.reloadCommands();
 
-    // Reload MCP servers
+    // Reload MCP servers and re-discover all tools
     const config = context.services.config;
     if (config) {
+      // Re-read extension configurations and discover all tools/MCP servers
       const toolRegistry = config.getToolRegistry();
-      await toolRegistry.restartMcpServers();
+      await toolRegistry.discoverAllTools();
+
+      // Update the Gemini client with new tools
+      const geminiClient = config.getGeminiClient();
+      if (geminiClient) {
+        await geminiClient.setTools();
+      }
     }
 
     return {
