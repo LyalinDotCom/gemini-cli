@@ -290,25 +290,13 @@ export const useSlashCommandProcessor = (
             clearTimeout(reloadTimeout);
           }
 
-          reloadTimeout = setTimeout(async () => {
+          reloadTimeout = setTimeout(() => {
             console.log(
-              `Extension directory changed: ${filename}, reloading...`,
+              `⚠️  Extension directory changed: ${filename}. Restart CLI to use new extensions.`,
             );
 
-            // Reload commands
-            reloadCommands();
-
-            // Reload MCP servers
-            const toolRegistry = config.getToolRegistry();
-            if (toolRegistry) {
-              await toolRegistry.restartMcpServers();
-            }
-
-            // Update Gemini client with new tools
-            const geminiClient = config.getGeminiClient();
-            if (geminiClient) {
-              await geminiClient.setTools();
-            }
+            // TODO: Set a flag/event that UI can listen to for showing
+            // "Restart required" indicator in status bar
           }, 500);
         },
       );
