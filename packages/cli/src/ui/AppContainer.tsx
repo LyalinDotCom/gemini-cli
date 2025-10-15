@@ -787,6 +787,7 @@ Logging in with Google... Please restart Gemini CLI to continue.
   const [showErrorDetails, setShowErrorDetails] = useState<boolean>(false);
   const [showToolDescriptions, setShowToolDescriptions] =
     useState<boolean>(false);
+  const [showTokenCounts, setShowTokenCounts] = useState<boolean>(false);
 
   const [ctrlCPressedOnce, setCtrlCPressedOnce] = useState(false);
   const ctrlCTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -956,6 +957,8 @@ Logging in with Google... Please restart Gemini CLI to continue.
         if (Object.keys(mcpServers || {}).length > 0) {
           handleSlashCommand(newValue ? '/mcp desc' : '/mcp nodesc');
         }
+      } else if (keyMatchers[Command.TOGGLE_TOKEN_DISPLAY](key)) {
+        setShowTokenCounts(!showTokenCounts);
       } else if (
         keyMatchers[Command.TOGGLE_IDE_CONTEXT_DETAIL](key) &&
         config.getIdeMode() &&
@@ -979,6 +982,8 @@ Logging in with Google... Please restart Gemini CLI to continue.
       setShowErrorDetails,
       showToolDescriptions,
       setShowToolDescriptions,
+      showTokenCounts,
+      setShowTokenCounts,
       config,
       ideContextState,
       handleExit,
@@ -1122,6 +1127,7 @@ Logging in with Google... Please restart Gemini CLI to continue.
       filteredConsoleMessages,
       ideContextState,
       showToolDescriptions,
+      showTokenCounts,
       ctrlCPressedOnce,
       ctrlDPressedOnce,
       showEscapePrompt,
@@ -1203,6 +1209,7 @@ Logging in with Google... Please restart Gemini CLI to continue.
       filteredConsoleMessages,
       ideContextState,
       showToolDescriptions,
+      showTokenCounts,
       ctrlCPressedOnce,
       ctrlDPressedOnce,
       showEscapePrompt,

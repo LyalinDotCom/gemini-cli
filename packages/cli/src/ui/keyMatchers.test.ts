@@ -53,6 +53,7 @@ describe('keyMatchers', () => {
     [Command.SHOW_ERROR_DETAILS]: (key: Key) => key.ctrl && key.name === 'o',
     [Command.TOGGLE_TOOL_DESCRIPTIONS]: (key: Key) =>
       key.ctrl && key.name === 't',
+    [Command.TOGGLE_TOKEN_DISPLAY]: (key: Key) => key.ctrl && key.name === 'w',
     [Command.TOGGLE_IDE_CONTEXT_DETAIL]: (key: Key) =>
       key.ctrl && key.name === 'g',
     [Command.QUIT]: (key: Key) => key.ctrl && key.name === 'c',
@@ -219,6 +220,11 @@ describe('keyMatchers', () => {
       command: Command.TOGGLE_TOOL_DESCRIPTIONS,
       positive: [createKey('t', { ctrl: true })],
       negative: [createKey('t'), createKey('s', { ctrl: true })],
+    },
+    {
+      command: Command.TOGGLE_TOKEN_DISPLAY,
+      positive: [createKey('w', { ctrl: true })],
+      negative: [createKey('w'), createKey('t', { ctrl: true })],
     },
     {
       command: Command.TOGGLE_IDE_CONTEXT_DETAIL,

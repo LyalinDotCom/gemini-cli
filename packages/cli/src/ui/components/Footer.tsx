@@ -151,6 +151,8 @@ export const Footer: React.FC = () => {
                 promptTokenCount={promptTokenCount}
                 model={model}
                 terminalWidth={mainAreaWidth}
+                showTokenCounts={uiState.showTokenCounts}
+                sessionStats={uiState.sessionStats}
               />
             </Text>
             {showMemoryUsage && <MemoryUsageDisplay />}
