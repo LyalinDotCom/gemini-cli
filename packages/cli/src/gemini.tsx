@@ -86,6 +86,7 @@ import { MouseProvider } from './ui/contexts/MouseContext.js';
 
 import { SessionStatsProvider } from './ui/contexts/SessionContext.js';
 import { VimModeProvider } from './ui/contexts/VimModeContext.js';
+import { ThinkingPanelProvider } from './ui/contexts/ThinkingPanelContext.js';
 import { KeypressProvider } from './ui/contexts/KeypressContext.js';
 import { useKittyKeyboardProtocol } from './ui/hooks/useKittyKeyboardProtocol.js';
 import {
@@ -231,13 +232,15 @@ export async function startInteractiveUI(
             <ScrollProvider>
               <SessionStatsProvider>
                 <VimModeProvider settings={settings}>
-                  <AppContainer
-                    config={config}
-                    startupWarnings={startupWarnings}
-                    version={version}
-                    resumedSessionData={resumedSessionData}
-                    initializationResult={initializationResult}
-                  />
+                  <ThinkingPanelProvider>
+                    <AppContainer
+                      config={config}
+                      startupWarnings={startupWarnings}
+                      version={version}
+                      resumedSessionData={resumedSessionData}
+                      initializationResult={initializationResult}
+                    />
+                  </ThinkingPanelProvider>
                 </VimModeProvider>
               </SessionStatsProvider>
             </ScrollProvider>

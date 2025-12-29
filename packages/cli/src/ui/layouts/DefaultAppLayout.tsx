@@ -15,52 +15,71 @@ import { useUIState } from '../contexts/UIStateContext.js';
 import { useFlickerDetector } from '../hooks/useFlickerDetector.js';
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 import { CopyModeWarning } from '../components/CopyModeWarning.js';
+import { useThinkingPanel } from '../contexts/ThinkingPanelContext.js';
+import { ThinkingPanel } from '../components/ThinkingPanel.js';
 
 export const DefaultAppLayout: React.FC = () => {
   const uiState = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
+  const { panelVisible } = useThinkingPanel();
 
-  const { rootUiRef, terminalHeight } = uiState;
+  const { rootUiRef, terminalHeight, terminalWidth } = uiState;
   useFlickerDetector(rootUiRef, terminalHeight);
+
+  // Calculate widths for split layout
+  const panelWidth = Math.floor(terminalWidth / 3);
   // If in alternate buffer mode, need to leave room to draw the scrollbar on
   // the right side of the terminal.
-  const width = isAlternateBuffer
-    ? uiState.terminalWidth
-    : uiState.mainAreaWidth;
-  return (
-    <Box
-      flexDirection="column"
-      width={width}
-      height={isAlternateBuffer ? terminalHeight - 1 : undefined}
-      flexShrink={0}
-      flexGrow={0}
-      overflow="hidden"
-      ref={uiState.rootUiRef}
-    >
-      <MainContent />
+  const baseWidth = isAlternateBuffer ? terminalWidth : uiState.mainAreaWidth;
+  // Account for panel border (2 chars) when panel is visible
+  const mainWidth = panelVisible ? baseWidth - panelWidth : baseWidth;
+  const effectiveHeight = isAlternateBuffer ? terminalHeight - 1 : undefined;
 
+  return (
+    <Box flexDirection="row">
+      {/* Main content area */}
       <Box
         flexDirection="column"
-        ref={uiState.mainControlsRef}
+        width={mainWidth}
+        height={effectiveHeight}
         flexShrink={0}
         flexGrow={0}
+        overflow="hidden"
+        ref={rootUiRef}
       >
-        <Notifications />
-        <CopyModeWarning />
+        <MainContent />
 
-        {uiState.customDialog ? (
-          uiState.customDialog
-        ) : uiState.dialogsVisible ? (
-          <DialogManager
-            terminalWidth={uiState.mainAreaWidth}
-            addItem={uiState.historyManager.addItem}
-          />
-        ) : (
-          <Composer />
-        )}
+        <Box
+          flexDirection="column"
+          ref={uiState.mainControlsRef}
+          flexShrink={0}
+          flexGrow={0}
+        >
+          <Notifications />
+          <CopyModeWarning />
 
-        <ExitWarning />
+          {uiState.customDialog ? (
+            uiState.customDialog
+          ) : uiState.dialogsVisible ? (
+            <DialogManager
+              terminalWidth={mainWidth}
+              addItem={uiState.historyManager.addItem}
+            />
+          ) : (
+            <Composer />
+          )}
+
+          <ExitWarning />
+        </Box>
       </Box>
+
+      {/* Side panel for thinking content */}
+      {panelVisible && (
+        <ThinkingPanel
+          width={panelWidth}
+          height={effectiveHeight || terminalHeight}
+        />
+      )}
     </Box>
   );
 };

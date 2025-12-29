@@ -75,6 +75,9 @@ export enum Command {
   // Suggestion expansion
   EXPAND_SUGGESTION = 'expandSuggestion',
   COLLAPSE_SUGGESTION = 'collapseSuggestion',
+
+  // Thinking panel
+  TOGGLE_THINKING_PANEL = 'toggleThinkingPanel',
 }
 
 /**
@@ -217,6 +220,9 @@ export const defaultKeyBindings: KeyBindingConfig = {
   // Suggestion expansion
   [Command.EXPAND_SUGGESTION]: [{ key: 'right' }],
   [Command.COLLAPSE_SUGGESTION]: [{ key: 'left' }],
+
+  // Thinking panel
+  [Command.TOGGLE_THINKING_PANEL]: [{ sequence: '\x1c' }], // Ctrl+\ = ASCII 28
 };
 
 interface CommandCategory {
@@ -307,6 +313,7 @@ export const commandCategories: readonly CommandCategory[] = [
       Command.TOGGLE_COPY_MODE,
       Command.SHOW_MORE_LINES,
       Command.TOGGLE_SHELL_INPUT_FOCUS,
+      Command.TOGGLE_THINKING_PANEL,
     ],
   },
   {
@@ -366,4 +373,5 @@ export const commandDescriptions: Readonly<Record<Command, string>> = {
     'Toggle focus between the shell and Gemini input.',
   [Command.EXPAND_SUGGESTION]: 'Expand an inline suggestion.',
   [Command.COLLAPSE_SUGGESTION]: 'Collapse an inline suggestion.',
+  [Command.TOGGLE_THINKING_PANEL]: 'Toggle the thinking panel sidebar.',
 };

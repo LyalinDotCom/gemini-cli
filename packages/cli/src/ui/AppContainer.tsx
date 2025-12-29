@@ -94,6 +94,7 @@ import { useFocus } from './hooks/useFocus.js';
 import { useBracketedPaste } from './hooks/useBracketedPaste.js';
 import { useKeypress, type Key } from './hooks/useKeypress.js';
 import { keyMatchers, Command } from './keyMatchers.js';
+import { useThinkingPanelActions } from './contexts/ThinkingPanelContext.js';
 import { useLoadingIndicator } from './hooks/useLoadingIndicator.js';
 import { useFolderTrust } from './hooks/useFolderTrust.js';
 import { useIdeTrustListener } from './hooks/useIdeTrustListener.js';
@@ -601,6 +602,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     useModelCommand();
 
   const { toggleVimEnabled } = useVimMode();
+  const { togglePanel: toggleThinkingPanel } = useThinkingPanelActions();
 
   const slashCommandActions = useMemo(
     () => ({
@@ -1237,6 +1239,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
         if (activePtyId || embeddedShellFocused) {
           setEmbeddedShellFocused((prev) => !prev);
         }
+      } else if (keyMatchers[Command.TOGGLE_THINKING_PANEL](key)) {
+        toggleThinkingPanel();
       }
     },
     [
@@ -1257,6 +1261,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       setCopyModeEnabled,
       copyModeEnabled,
       isAlternateBuffer,
+      toggleThinkingPanel,
     ],
   );
 

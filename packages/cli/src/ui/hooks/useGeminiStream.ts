@@ -17,6 +17,7 @@ import type {
   ToolCallRequestInfo,
   GeminiErrorEventValue,
 } from '@google/gemini-cli-core';
+import { useThinkingPanelActions } from '../contexts/ThinkingPanelContext.js';
 import {
   GeminiEventType as ServerGeminiEventType,
   getErrorMessage,
@@ -117,6 +118,15 @@ export const useGeminiStream = (
   const activeQueryIdRef = useRef<string | null>(null);
   const [isResponding, setIsResponding] = useState<boolean>(false);
   const [thought, setThought] = useState<ThoughtSummary | null>(null);
+  const { addThought, clearThoughts } = useThinkingPanelActions();
+
+  // Accumulate thoughts to the thinking panel
+  useEffect(() => {
+    if (thought) {
+      addThought(thought);
+    }
+  }, [thought, addThought]);
+
   const [pendingHistoryItem, pendingHistoryItemRef, setPendingHistoryItem] =
     useStateAndRef<HistoryItemWithoutId | null>(null);
   const processedMemoryToolsRef = useRef<Set<string>>(new Set());
@@ -941,6 +951,7 @@ export const useGeminiStream = (
                 );
               }
               startNewPrompt();
+              clearThoughts(); // Clear thinking panel history for new prompt
               setThought(null); // Reset thought when starting a new prompt
             }
 
@@ -1054,6 +1065,7 @@ export const useGeminiStream = (
       config,
       startNewPrompt,
       getPromptCount,
+      clearThoughts,
     ],
   );
 
