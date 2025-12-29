@@ -222,7 +222,7 @@ export const defaultKeyBindings: KeyBindingConfig = {
   [Command.COLLAPSE_SUGGESTION]: [{ key: 'left' }],
 
   // Thinking panel
-  [Command.TOGGLE_THINKING_PANEL]: [{ sequence: '\x1c' }], // Ctrl+\ = ASCII 28
+  [Command.TOGGLE_THINKING_PANEL]: [{ key: 'f2' }],
 };
 
 interface CommandCategory {
