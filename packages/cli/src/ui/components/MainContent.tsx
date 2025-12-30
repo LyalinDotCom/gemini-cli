@@ -12,6 +12,7 @@ import { useUIState } from '../contexts/UIStateContext.js';
 import { useAppContext } from '../contexts/AppContext.js';
 import { AppHeader } from './AppHeader.js';
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
+import { useThinkingPanel } from '../contexts/ThinkingPanelContext.js';
 import { SCROLL_TO_ITEM_END } from './shared/VirtualizedList.js';
 import { ScrollableList } from './shared/ScrollableList.js';
 import { useMemo, memo, useCallback } from 'react';
@@ -28,6 +29,11 @@ export const MainContent = () => {
   const { version } = useAppContext();
   const uiState = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
+  const { panelVisible } = useThinkingPanel();
+
+  // Use scrollable list mode when in alternate buffer OR when thinking panel is visible
+  // (Static component breaks flexbox row layout needed for side-by-side panel)
+  const useScrollableMode = isAlternateBuffer || panelVisible;
 
   const {
     pendingHistoryItems,
@@ -119,7 +125,7 @@ export const MainContent = () => {
     ],
   );
 
-  if (isAlternateBuffer) {
+  if (useScrollableMode) {
     return (
       <ScrollableList
         hasFocus={!uiState.isEditorDialogOpen}

@@ -40,19 +40,40 @@ export const ThinkingPanel: React.FC<ThinkingPanelProps> = ({
       </Box>
 
       {/* Thoughts list */}
-      <Box flexDirection="column" paddingX={1} overflow="hidden" flexGrow={1}>
+      <Box
+        flexDirection="column"
+        paddingX={1}
+        paddingY={1}
+        overflow="hidden"
+        flexGrow={1}
+      >
         {reversedThoughts.length === 0 ? (
           <Text dimColor>No thoughts yet...</Text>
         ) : (
           reversedThoughts.map((thought, index) => (
-            <Box key={index} flexDirection="column" marginBottom={1}>
-              <Text bold color={theme.text.accent}>
-                {thought.subject}
-              </Text>
-              {thought.description && (
-                <Text wrap="wrap" color={theme.text.secondary}>
-                  {thought.description}
+            <Box key={index} flexDirection="column">
+              {/* Divider between thoughts (not before first) */}
+              {index > 0 && (
+                <Box marginY={1}>
+                  <Text dimColor>{'─'.repeat(Math.max(width - 4, 10))}</Text>
+                </Box>
+              )}
+
+              {/* Subject with colored bullet */}
+              <Box>
+                <Text color="cyan">● </Text>
+                <Text bold color={theme.text.accent}>
+                  {thought.subject}
                 </Text>
+              </Box>
+
+              {/* Description with indent */}
+              {thought.description && (
+                <Box marginLeft={2}>
+                  <Text wrap="wrap" color={theme.text.secondary}>
+                    {thought.description}
+                  </Text>
+                </Box>
               )}
             </Box>
           ))

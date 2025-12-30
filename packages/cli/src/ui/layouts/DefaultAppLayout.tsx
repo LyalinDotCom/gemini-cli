@@ -33,10 +33,21 @@ export const DefaultAppLayout: React.FC = () => {
   const baseWidth = isAlternateBuffer ? terminalWidth : uiState.mainAreaWidth;
   // Account for panel border (2 chars) when panel is visible
   const mainWidth = panelVisible ? baseWidth - panelWidth : baseWidth;
-  const effectiveHeight = isAlternateBuffer ? terminalHeight - 1 : undefined;
+  // When panel is visible, we need fixed heights to create proper side-by-side layout
+  const panelHeight = terminalHeight;
+  const effectiveHeight = isAlternateBuffer
+    ? terminalHeight - 1
+    : panelVisible
+      ? terminalHeight
+      : undefined;
 
   return (
-    <Box flexDirection="row">
+    <Box
+      flexDirection="row"
+      alignItems="flex-start"
+      width={panelVisible ? terminalWidth : undefined}
+      height={panelVisible ? panelHeight : undefined}
+    >
       {/* Main content area */}
       <Box
         flexDirection="column"
