@@ -602,7 +602,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
     useModelCommand();
 
   const { toggleVimEnabled } = useVimMode();
-  const { togglePanel: toggleThinkingPanel } = useThinkingPanelActions();
+  const { togglePanel: toggleThinkingPanel, toggleInlineExpanded } =
+    useThinkingPanelActions();
 
   const slashCommandActions = useMemo(
     () => ({
@@ -1241,6 +1242,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
         }
       } else if (keyMatchers[Command.TOGGLE_THINKING_PANEL](key)) {
         toggleThinkingPanel();
+      } else if (keyMatchers[Command.TOGGLE_THINKING_INLINE](key)) {
+        toggleInlineExpanded();
       }
     },
     [
@@ -1262,6 +1265,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       copyModeEnabled,
       isAlternateBuffer,
       toggleThinkingPanel,
+      toggleInlineExpanded,
     ],
   );
 

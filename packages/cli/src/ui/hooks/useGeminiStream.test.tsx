@@ -141,6 +141,23 @@ vi.mock('../contexts/SessionContext.js', () => ({
   })),
 }));
 
+const mockAddThought = vi.fn();
+const mockClearThoughts = vi.fn();
+vi.mock('../contexts/ThinkingPanelContext.js', () => ({
+  useThinkingPanelActions: vi.fn(() => ({
+    addThought: mockAddThought,
+    clearThoughts: mockClearThoughts,
+    togglePanel: vi.fn(),
+    toggleInlineExpanded: vi.fn(),
+  })),
+  useThinkingPanel: vi.fn(() => ({
+    panelVisible: false,
+    thoughtsHistory: [],
+    inlineExpanded: false,
+    inlineEnabled: false,
+  })),
+}));
+
 vi.mock('./slashCommandProcessor.js', () => ({
   handleSlashCommand: vi.fn().mockReturnValue(false),
 }));

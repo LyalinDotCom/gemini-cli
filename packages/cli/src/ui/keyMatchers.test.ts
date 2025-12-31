@@ -80,6 +80,7 @@ describe('keyMatchers', () => {
     [Command.EXPAND_SUGGESTION]: (key: Key) => key.name === 'right',
     [Command.COLLAPSE_SUGGESTION]: (key: Key) => key.name === 'left',
     [Command.TOGGLE_THINKING_PANEL]: (key: Key) => key.name === 'f2',
+    [Command.TOGGLE_THINKING_INLINE]: (key: Key) => key.name === 'f3',
   };
 
   // Test data for each command with positive and negative test cases

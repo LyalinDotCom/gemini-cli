@@ -261,6 +261,11 @@ export type HistoryItemHooksList = HistoryItemBase & {
   }>;
 };
 
+export type HistoryItemThinking = HistoryItemBase & {
+  type: 'thinking';
+  thoughts: ThoughtSummary[];
+};
+
 // Using Omit<HistoryItem, 'id'> seems to have some issues with typescript's
 // type inference e.g. historyItem.type === 'tool_group' isn't auto-inferring that
 // 'tools' in historyItem.
@@ -286,7 +291,8 @@ export type HistoryItemWithoutId =
   | HistoryItemToolsList
   | HistoryItemMcpStatus
   | HistoryItemChatList
-  | HistoryItemHooksList;
+  | HistoryItemHooksList
+  | HistoryItemThinking;
 
 export type HistoryItem = HistoryItemWithoutId & { id: number };
 

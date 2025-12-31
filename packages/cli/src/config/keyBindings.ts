@@ -78,6 +78,7 @@ export enum Command {
 
   // Thinking panel
   TOGGLE_THINKING_PANEL = 'toggleThinkingPanel',
+  TOGGLE_THINKING_INLINE = 'toggleThinkingInline',
 }
 
 /**
@@ -223,6 +224,7 @@ export const defaultKeyBindings: KeyBindingConfig = {
 
   // Thinking panel
   [Command.TOGGLE_THINKING_PANEL]: [{ key: 'f2' }],
+  [Command.TOGGLE_THINKING_INLINE]: [{ key: 'f3' }],
 };
 
 interface CommandCategory {
@@ -314,6 +316,7 @@ export const commandCategories: readonly CommandCategory[] = [
       Command.SHOW_MORE_LINES,
       Command.TOGGLE_SHELL_INPUT_FOCUS,
       Command.TOGGLE_THINKING_PANEL,
+      Command.TOGGLE_THINKING_INLINE,
     ],
   },
   {
@@ -374,4 +377,5 @@ export const commandDescriptions: Readonly<Record<Command, string>> = {
   [Command.EXPAND_SUGGESTION]: 'Expand an inline suggestion.',
   [Command.COLLAPSE_SUGGESTION]: 'Collapse an inline suggestion.',
   [Command.TOGGLE_THINKING_PANEL]: 'Toggle the thinking panel sidebar.',
+  [Command.TOGGLE_THINKING_INLINE]: 'Expand/collapse inline thinking boxes.',
 };

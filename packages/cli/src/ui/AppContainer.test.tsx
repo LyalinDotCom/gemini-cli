@@ -140,6 +140,20 @@ vi.mock('./hooks/useAutoAcceptIndicator.js');
 vi.mock('./hooks/useGitBranchName.js');
 vi.mock('./contexts/VimModeContext.js');
 vi.mock('./contexts/SessionContext.js');
+vi.mock('./contexts/ThinkingPanelContext.js', () => ({
+  useThinkingPanelActions: vi.fn(() => ({
+    togglePanel: vi.fn(),
+    addThought: vi.fn(),
+    clearThoughts: vi.fn(),
+    toggleInlineExpanded: vi.fn(),
+  })),
+  useThinkingPanel: vi.fn(() => ({
+    panelVisible: false,
+    thoughtsHistory: [],
+    inlineExpanded: false,
+    inlineEnabled: false,
+  })),
+}));
 vi.mock('./components/shared/text-buffer.js');
 vi.mock('./hooks/useLogger.js');
 vi.mock('./hooks/useInputHistoryStore.js');

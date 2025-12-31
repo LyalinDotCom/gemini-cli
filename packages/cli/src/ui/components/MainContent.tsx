@@ -29,7 +29,7 @@ export const MainContent = () => {
   const { version } = useAppContext();
   const uiState = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
-  const { panelVisible } = useThinkingPanel();
+  const { panelVisible, inlineExpanded, inlineEnabled } = useThinkingPanel();
 
   // Use scrollable list mode when in alternate buffer OR when thinking panel is visible
   // (Static component breaks flexbox row layout needed for side-by-side panel)
@@ -51,6 +51,8 @@ export const MainContent = () => {
       item={h}
       isPending={false}
       commands={uiState.slashCommands}
+      inlineExpanded={inlineExpanded}
+      inlineEnabled={inlineEnabled}
     />
   ));
 
@@ -70,6 +72,8 @@ export const MainContent = () => {
               isFocused={!uiState.isEditorDialogOpen}
               activeShellPtyId={uiState.activePtyId}
               embeddedShellFocused={uiState.embeddedShellFocused}
+              inlineExpanded={inlineExpanded}
+              inlineEnabled={inlineEnabled}
             />
           ))}
           <ShowMoreLines constrainHeight={uiState.constrainHeight} />
@@ -84,6 +88,8 @@ export const MainContent = () => {
       uiState.isEditorDialogOpen,
       uiState.activePtyId,
       uiState.embeddedShellFocused,
+      inlineExpanded,
+      inlineEnabled,
     ],
   );
 
@@ -110,6 +116,8 @@ export const MainContent = () => {
             item={item.item}
             isPending={false}
             commands={uiState.slashCommands}
+            inlineExpanded={inlineExpanded}
+            inlineEnabled={inlineEnabled}
           />
         );
       } else {
@@ -122,6 +130,8 @@ export const MainContent = () => {
       staticAreaMaxItemHeight,
       uiState.slashCommands,
       pendingItems,
+      inlineExpanded,
+      inlineEnabled,
     ],
   );
 

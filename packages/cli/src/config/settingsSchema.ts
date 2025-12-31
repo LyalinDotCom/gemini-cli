@@ -534,6 +534,16 @@ const SETTINGS_SCHEMA = {
           'Enable incremental rendering for the UI. This option will reduce flickering but may cause rendering artifacts. Only supported when useAlternateBuffer is enabled.',
         showInDialog: true,
       },
+      showInlineThinking: {
+        type: 'boolean',
+        label: 'Show Inline Thinking',
+        category: 'UI',
+        requiresRestart: false,
+        default: false,
+        description:
+          'Show model thinking inline as collapsible boxes. Press F3 to expand/collapse.',
+        showInDialog: true,
+      },
       customWittyPhrases: {
         type: 'array',
         label: 'Custom Witty Phrases',

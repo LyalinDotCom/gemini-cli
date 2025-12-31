@@ -17,7 +17,10 @@ import type {
   ToolCallRequestInfo,
   GeminiErrorEventValue,
 } from '@google/gemini-cli-core';
-import { useThinkingPanelActions } from '../contexts/ThinkingPanelContext.js';
+import {
+  useThinkingPanelActions,
+  useThinkingPanel,
+} from '../contexts/ThinkingPanelContext.js';
 import {
   GeminiEventType as ServerGeminiEventType,
   getErrorMessage,
@@ -119,11 +122,18 @@ export const useGeminiStream = (
   const [isResponding, setIsResponding] = useState<boolean>(false);
   const [thought, setThought] = useState<ThoughtSummary | null>(null);
   const { addThought, clearThoughts } = useThinkingPanelActions();
+  const { inlineEnabled } = useThinkingPanel();
+  // Use ref to avoid callback recreation when context changes
+  const inlineEnabledRef = useRef(inlineEnabled);
+  inlineEnabledRef.current = inlineEnabled;
+  // Local buffer for accumulating thoughts during a response (for inline history item)
+  const thoughtsBufferRef = useRef<ThoughtSummary[]>([]);
 
-  // Accumulate thoughts to the thinking panel
+  // Accumulate thoughts to the thinking panel and local buffer
   useEffect(() => {
     if (thought) {
       addThought(thought);
+      thoughtsBufferRef.current.push(thought);
     }
   }, [thought, addThought]);
 
@@ -951,6 +961,7 @@ export const useGeminiStream = (
                 );
               }
               startNewPrompt();
+              thoughtsBufferRef.current = []; // Clear local buffer for new prompt
               clearThoughts(); // Clear thinking panel history for new prompt
               setThought(null); // Reset thought when starting a new prompt
             }
@@ -981,6 +992,20 @@ export const useGeminiStream = (
               if (pendingHistoryItemRef.current) {
                 addItem(pendingHistoryItemRef.current, userMessageTimestamp);
                 setPendingHistoryItem(null);
+              }
+              // Flush accumulated thoughts to history as inline thinking box (if enabled)
+              if (
+                inlineEnabledRef.current &&
+                thoughtsBufferRef.current.length > 0
+              ) {
+                addItem(
+                  {
+                    type: 'thinking',
+                    thoughts: [...thoughtsBufferRef.current],
+                  } as HistoryItemWithoutId,
+                  userMessageTimestamp,
+                );
+                thoughtsBufferRef.current = []; // Clear buffer after flushing
               }
               if (loopDetectedRef.current) {
                 loopDetectedRef.current = false;

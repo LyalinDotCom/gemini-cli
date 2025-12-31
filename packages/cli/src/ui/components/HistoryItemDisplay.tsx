@@ -32,6 +32,7 @@ import { McpStatus } from './views/McpStatus.js';
 import { ChatList } from './views/ChatList.js';
 import { HooksList } from './views/HooksList.js';
 import { ModelMessage } from './messages/ModelMessage.js';
+import { ThinkingMessage } from './messages/ThinkingMessage.js';
 
 interface HistoryItemDisplayProps {
   item: HistoryItem;
@@ -41,6 +42,8 @@ interface HistoryItemDisplayProps {
   isFocused?: boolean;
   commands?: readonly SlashCommand[];
   activeShellPtyId?: number | null;
+  inlineExpanded?: boolean;
+  inlineEnabled?: boolean;
   embeddedShellFocused?: boolean;
   availableTerminalHeightGemini?: number;
 }
@@ -55,6 +58,8 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
   activeShellPtyId,
   embeddedShellFocused,
   availableTerminalHeightGemini,
+  inlineExpanded = false,
+  inlineEnabled = false,
 }) => {
   const itemForDisplay = useMemo(() => escapeAnsiCtrlCodes(item), [item]);
 
@@ -161,6 +166,13 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
       )}
       {itemForDisplay.type === 'hooks_list' && (
         <HooksList hooks={itemForDisplay.hooks} />
+      )}
+      {itemForDisplay.type === 'thinking' && inlineEnabled && (
+        <ThinkingMessage
+          thoughts={itemForDisplay.thoughts}
+          isExpanded={inlineExpanded}
+          terminalWidth={terminalWidth}
+        />
       )}
     </Box>
   );
