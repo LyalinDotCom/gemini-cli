@@ -11,6 +11,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useRef,
 } from 'react';
 import type { ThoughtSummary } from '@google/gemini-cli-core';
 import { useSettings } from './SettingsContext.js';
@@ -20,15 +21,19 @@ const MAX_STORED_THOUGHTS = 50;
 interface ThinkingPanelState {
   panelVisible: boolean;
   thoughtsHistory: readonly ThoughtSummary[];
+  /** @deprecated Use inlineExpandedRef for immediate reads. This may lag behind. */
   inlineExpanded: boolean;
   inlineEnabled: boolean;
+  /** Ref for synchronous reads of inlineExpanded - always has the current value */
+  inlineExpandedRef: React.MutableRefObject<boolean>;
 }
 
 interface ThinkingPanelActions {
   togglePanel: () => void;
   addThought: (thought: ThoughtSummary) => void;
   clearThoughts: () => void;
-  toggleInlineExpanded: () => void;
+  /** Toggle inline expansion. Optional callback runs inside setState for proper batching. */
+  toggleInlineExpanded: (onToggle?: () => void) => void;
 }
 
 const ThinkingPanelStateContext = createContext<ThinkingPanelState | undefined>(
@@ -39,12 +44,16 @@ const ThinkingPanelActionsContext = createContext<
   ThinkingPanelActions | undefined
 >(undefined);
 
+// Default ref for when used outside provider (e.g., in tests)
+const defaultInlineExpandedRef = { current: false };
+
 // Default state for when used outside provider (e.g., in tests)
 const defaultState: ThinkingPanelState = {
   panelVisible: false,
   thoughtsHistory: [],
   inlineExpanded: false,
   inlineEnabled: false,
+  inlineExpandedRef: defaultInlineExpandedRef,
 };
 
 export const useThinkingPanel = (): ThinkingPanelState => {
@@ -72,6 +81,8 @@ export const ThinkingPanelProvider: React.FC<{ children: React.ReactNode }> = ({
   const [panelVisible, setPanelVisible] = useState(false);
   const [thoughtsHistory, setThoughtsHistory] = useState<ThoughtSummary[]>([]);
   const [inlineExpanded, setInlineExpanded] = useState(false);
+  // Ref for synchronous reads - updated BEFORE callbacks run
+  const inlineExpandedRef = useRef(false);
 
   const togglePanel = useCallback(() => {
     setPanelVisible((prev) => !prev);
@@ -89,8 +100,19 @@ export const ThinkingPanelProvider: React.FC<{ children: React.ReactNode }> = ({
     setThoughtsHistory([]);
   }, []);
 
-  const toggleInlineExpanded = useCallback(() => {
-    setInlineExpanded((prev) => !prev);
+  const toggleInlineExpanded = useCallback((onToggle?: () => void) => {
+    // Update ref FIRST - this is synchronous and immediate
+    // Components reading inlineExpandedRef.current will get the new value
+    inlineExpandedRef.current = !inlineExpandedRef.current;
+
+    // Call the callback AFTER ref is updated but BEFORE React state update
+    // This way refreshStatic() runs when ref already has the new value
+    if (onToggle) {
+      onToggle();
+    }
+
+    // Update React state to trigger re-renders
+    setInlineExpanded(inlineExpandedRef.current);
   }, []);
 
   const stateValue = useMemo(
@@ -99,6 +121,7 @@ export const ThinkingPanelProvider: React.FC<{ children: React.ReactNode }> = ({
       thoughtsHistory,
       inlineExpanded,
       inlineEnabled,
+      inlineExpandedRef,
     }),
     [panelVisible, thoughtsHistory, inlineExpanded, inlineEnabled],
   );

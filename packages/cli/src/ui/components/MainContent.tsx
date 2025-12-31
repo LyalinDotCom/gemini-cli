@@ -29,7 +29,11 @@ export const MainContent = () => {
   const { version } = useAppContext();
   const uiState = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
-  const { panelVisible, inlineExpanded, inlineEnabled } = useThinkingPanel();
+  const { panelVisible, inlineExpandedRef, inlineEnabled } = useThinkingPanel();
+
+  // Read from ref for synchronous access - this ensures we get the correct value
+  // even when Static remounts before React state has propagated
+  const inlineExpanded = inlineExpandedRef.current;
 
   // Use scrollable list mode when in alternate buffer OR when thinking panel is visible
   // (Static component breaks flexbox row layout needed for side-by-side panel)

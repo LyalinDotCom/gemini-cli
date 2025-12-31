@@ -1243,7 +1243,9 @@ Logging in with Google... Restarting Gemini CLI to continue.
       } else if (keyMatchers[Command.TOGGLE_THINKING_PANEL](key)) {
         toggleThinkingPanel();
       } else if (keyMatchers[Command.TOGGLE_THINKING_INLINE](key)) {
-        toggleInlineExpanded();
+        // Pass refreshStatic as callback to run inside setState for proper batching
+        // (same pattern as markdown toggle - refreshStatic must happen atomically with state update)
+        toggleInlineExpanded(refreshStatic);
       }
     },
     [
