@@ -3,10 +3,31 @@
  *
  * Handles incoming WebSocket messages from the browser client
  * and translates them to stdin events for the CLI components.
+ *
+ * Note: When bundled with esbuild alias, 'ink' imports will resolve
+ * to our ink-shim, giving us the mock stdin/stdout.
  */
 
 import type { WebSocket } from 'ws';
-import { emitStdinData, emitKeypress, getMockStdout, setInputWebSocket } from './ink-adapters.js';
+// When bundled, this imports from ink-shim
+import { emitStdinData, emitKeypress, getMockStdout } from 'ink';
+
+// Track connected WebSocket for sending responses
+let inputWs: WebSocket | null = null;
+
+/**
+ * Set the WebSocket connection for receiving user input
+ */
+export function setInputWebSocket(ws: WebSocket | null) {
+  inputWs = ws;
+}
+
+/**
+ * Get the current input WebSocket
+ */
+export function getInputWebSocket(): WebSocket | null {
+  return inputWs;
+}
 
 export interface InputMessage {
   type: 'input' | 'keypress' | 'resize' | 'paste';

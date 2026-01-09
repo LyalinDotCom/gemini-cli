@@ -5,15 +5,21 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev": "concurrently \"npm run dev:cli\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
     "dev:reconciler": "tsx watch server/src/reconciler-server.tsx",
     "dev:client": "cd client && npm run dev",
-    "build": "npm run build:server && npm run build:client",
+    "build": "npm run build:server && npm run build:cli-server && npm run build:client",
     "build:server": "tsc -p tsconfig.json",
     "build:client": "cd client && npm run build",
+    "build:cli-server": "node esbuild.config.js",
+    "dev:cli": "tsx --import ./server/src/register-loader.mjs server/src/cli-reconciler-server.tsx",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "start:cli": "node --import ./server/src/register-loader.mjs dist/cli-server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@google/gemini-cli-core": "file:../core",
@@ -30,9 +36,12 @@
     "@types/ws": "^8.18.0",
     "@types/cors": "^2.8.17",
     "@types/uuid": "^10.0.0",
+    "@types/react": "^19.2.0",
     "concurrently": "^9.1.2",
+    "esbuild": "^0.24.0",
     "tsx": "^4.20.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.1.1"
   },
   "engines": {
     "node": ">=20"

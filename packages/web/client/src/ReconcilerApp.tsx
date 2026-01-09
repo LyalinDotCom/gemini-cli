@@ -242,7 +242,8 @@ export function ReconcilerApp(): React.ReactElement {
 
         .ws-root {
           font-size: 14px;
-          line-height: 1.5;
+          line-height: 1;
+          white-space: pre;
         }
 
         .ink-box {
@@ -250,7 +251,7 @@ export function ReconcilerApp(): React.ReactElement {
         }
 
         .ink-text {
-          white-space: pre-wrap;
+          white-space: pre;
         }
       `}</style>
     </div>

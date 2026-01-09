@@ -1,41 +1,163 @@
 /**
  * Ink Shim Module
  *
- * This module provides Ink-compatible exports that use our WebSocket-based
- * implementations. It's designed to be used via tsconfig paths or bundler
- * aliasing to intercept imports from 'ink'.
+ * This module completely replaces 'ink' when bundled with esbuild aliasing.
+ * It provides Ink-compatible exports that use our WebSocket-based implementations.
+ *
+ * IMPORTANT: This file must NOT import from 'ink' as it would cause a circular
+ * dependency when 'ink' is aliased to this file.
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, forwardRef, type ReactNode, type Ref, type ReactElement } from 'react';
 import { EventEmitter } from 'events';
 
-// Re-export all types from real ink
-export * from 'ink';
-
 // ============================================
-// Context Types
+// Type Definitions (matching Ink's types)
 // ============================================
 
-interface StdinContextValue {
-  stdin: NodeJS.ReadStream | EventEmitter;
-  internal_eventEmitter: EventEmitter;
-  setRawMode: (mode: boolean) => void;
-  isRawModeSupported: boolean;
-  internal_exitOnCtrlC: boolean;
+export interface DOMElement {
+  nodeName: string;
+  attributes: Record<string, unknown>;
+  childNodes: DOMElement[];
+  parentNode: DOMElement | null;
+  textContent?: string;
+  style?: Record<string, unknown>;
+  yogaNode?: unknown;
+  internal_staticRecords?: unknown;
 }
 
-interface StdoutContextValue {
-  stdout: NodeJS.WriteStream | { write: (data: string) => boolean; columns: number; rows: number };
-  write: (data: string) => void;
+export interface BoxProps {
+  children?: ReactNode;
+  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  flexGrow?: number;
+  flexShrink?: number;
+  flexBasis?: number | string;
+  flexWrap?: 'wrap' | 'nowrap' | 'wrap-reverse';
+  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  alignSelf?: 'flex-start' | 'center' | 'flex-end' | 'auto';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
+  padding?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  paddingX?: number;
+  paddingY?: number;
+  margin?: number;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
+  marginX?: number;
+  marginY?: number;
+  width?: number | string;
+  height?: number | string;
+  minWidth?: number | string;
+  minHeight?: number | string;
+  maxWidth?: number | string;
+  maxHeight?: number | string;
+  gap?: number;
+  columnGap?: number;
+  rowGap?: number;
+  borderStyle?: 'single' | 'double' | 'round' | 'bold' | 'singleDouble' | 'doubleSingle' | 'classic';
+  borderColor?: string;
+  borderTop?: boolean;
+  borderBottom?: boolean;
+  borderLeft?: boolean;
+  borderRight?: boolean;
+  overflow?: 'visible' | 'hidden';
+  overflowX?: 'visible' | 'hidden';
+  overflowY?: 'visible' | 'hidden';
 }
 
-interface AppContextValue {
-  exit: (error?: Error) => void;
-  rerender: () => void;
+export interface TextProps {
+  children?: ReactNode;
+  color?: string;
+  backgroundColor?: string;
+  dimColor?: boolean;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  inverse?: boolean;
+  wrap?: 'wrap' | 'truncate' | 'truncate-start' | 'truncate-middle' | 'truncate-end';
+}
+
+export interface Key {
+  upArrow: boolean;
+  downArrow: boolean;
+  leftArrow: boolean;
+  rightArrow: boolean;
+  pageDown: boolean;
+  pageUp: boolean;
+  return: boolean;
+  escape: boolean;
+  ctrl: boolean;
+  shift: boolean;
+  tab: boolean;
+  backspace: boolean;
+  delete: boolean;
+  meta: boolean;
 }
 
 // ============================================
-// Mock Implementations
+// Components (render as element types our reconciler handles)
+// ============================================
+
+/**
+ * Box component - renders as 'ink-box'
+ */
+export const Box = forwardRef<DOMElement, BoxProps>(function Box(props, ref) {
+  return React.createElement('ink-box', { ...props, ref }, props.children);
+});
+
+/**
+ * Text component - renders as 'ink-text'
+ */
+export const Text = forwardRef<DOMElement, TextProps>(function Text(props, ref) {
+  return React.createElement('ink-text', { ...props, ref }, props.children);
+});
+
+/**
+ * Newline component - renders a newline
+ */
+export function Newline({ count = 1 }: { count?: number }) {
+  return React.createElement('ink-text', {}, '\n'.repeat(count));
+}
+
+/**
+ * Static component - renders children that won't update
+ */
+export function Static<T>({ items, children, style }: {
+  items: T[];
+  children: (item: T, index: number) => ReactNode;
+  style?: Record<string, unknown>;
+}) {
+  return React.createElement('ink-static', { style },
+    items.map((item, index) => children(item, index))
+  );
+}
+
+/**
+ * Transform component - transforms text content
+ */
+export function Transform({ children, transform }: {
+  children: ReactNode;
+  transform: (text: string) => string;
+}) {
+  // In web context, we just pass through - transform is applied on render
+  return React.createElement('ink-transform', { transform }, children);
+}
+
+/**
+ * Spacer component - flexible space
+ */
+export function Spacer() {
+  return React.createElement('ink-box', { flexGrow: 1 });
+}
+
+// ============================================
+// Mock I/O Classes
 // ============================================
 
 class MockStdin extends EventEmitter {
@@ -65,7 +187,8 @@ class MockStdout extends EventEmitter {
   columns = 120;
   rows = 40;
 
-  write(data: string | Buffer) {
+  write(_data: string | Buffer) {
+    // Output is handled by reconciler broadcasting
     return true;
   }
 
@@ -79,34 +202,72 @@ class MockStdout extends EventEmitter {
   }
 }
 
-// Singleton instances
+// ============================================
+// Singleton Instances
+// ============================================
+
 const mockStdin = new MockStdin();
 const mockStdout = new MockStdout();
 const internalEventEmitter = new EventEmitter();
 
-// Exit/rerender callbacks
+// Callbacks for app control
 let exitCallback: ((error?: Error) => void) | null = null;
 let rerenderCallback: (() => void) | null = null;
 
 /**
- * Set the exit callback
+ * Set the exit callback (called by reconciler server)
  */
 export function setExitCallback(cb: (error?: Error) => void) {
   exitCallback = cb;
 }
 
 /**
- * Set the rerender callback
+ * Set the rerender callback (called by reconciler server)
  */
 export function setRerenderCallback(cb: () => void) {
   rerenderCallback = cb;
 }
 
 /**
- * Emit data to stdin (called from WebSocket input)
+ * Emit data to stdin (called from WebSocket input handler)
  */
 export function emitStdinData(data: string | Buffer) {
   mockStdin.emit('data', Buffer.from(data));
+}
+
+/**
+ * Emit keypress event
+ */
+export function emitKeypress(key: string, ctrl = false, meta = false, shift = false) {
+  const keyObj: Key = {
+    upArrow: key === 'up',
+    downArrow: key === 'down',
+    leftArrow: key === 'left',
+    rightArrow: key === 'right',
+    pageDown: key === 'pagedown',
+    pageUp: key === 'pageup',
+    return: key === 'return' || key === 'enter',
+    escape: key === 'escape',
+    ctrl,
+    shift,
+    tab: key === 'tab',
+    backspace: key === 'backspace',
+    delete: key === 'delete',
+    meta,
+  };
+
+  // Emit on internal event emitter for Ink compatibility
+  internalEventEmitter.emit('input', key, keyObj);
+
+  // Also emit as raw data for stdin handlers
+  let charCode = key;
+  if (key === 'return' || key === 'enter') charCode = '\r';
+  else if (key === 'escape') charCode = '\x1b';
+  else if (key === 'tab') charCode = '\t';
+  else if (key === 'backspace') charCode = '\x7f';
+  else if (ctrl && key.length === 1) charCode = String.fromCharCode(key.charCodeAt(0) - 96);
+
+  mockStdin.emit('data', Buffer.from(charCode));
 }
 
 /**
@@ -116,9 +277,34 @@ export function getMockStdout() {
   return mockStdout;
 }
 
+/**
+ * Get mock stdin
+ */
+export function getMockStdin() {
+  return mockStdin;
+}
+
 // ============================================
-// Contexts
+// Context Definitions
 // ============================================
+
+interface StdinContextValue {
+  stdin: NodeJS.ReadStream | EventEmitter;
+  internal_eventEmitter: EventEmitter;
+  setRawMode: (mode: boolean) => void;
+  isRawModeSupported: boolean;
+  internal_exitOnCtrlC: boolean;
+}
+
+interface StdoutContextValue {
+  stdout: NodeJS.WriteStream | MockStdout;
+  write: (data: string) => void;
+}
+
+interface AppContextValue {
+  exit: (error?: Error) => void;
+  rerender: () => void;
+}
 
 const StdinContext = createContext<StdinContextValue>({
   stdin: mockStdin as unknown as NodeJS.ReadStream,
@@ -146,30 +332,40 @@ const AppContext = createContext<AppContextValue>({
   },
 });
 
-const AccessibilityContext = createContext({
-  isScreenReaderEnabled: false,
+const FocusContext = createContext({
+  activeId: undefined as string | undefined,
+  add: (_id: string) => {},
+  remove: (_id: string) => {},
+  activate: (_id: string) => {},
+  deactivate: (_id: string) => {},
+  enableFocus: () => {},
+  disableFocus: () => {},
+  focusNext: () => {},
+  focusPrevious: () => {},
+  focus: (_id: string) => {},
+  isEnabled: true,
 });
 
 // ============================================
-// Hooks (Override Ink's hooks)
+// Hooks
 // ============================================
 
 /**
- * useStdin - Returns mock stdin
+ * useStdin - Returns mock stdin context
  */
 export function useStdin() {
   return useContext(StdinContext);
 }
 
 /**
- * useStdout - Returns mock stdout
+ * useStdout - Returns mock stdout context
  */
 export function useStdout() {
   return useContext(StdoutContext);
 }
 
 /**
- * useApp - Returns app controls
+ * useApp - Returns app controls (exit, rerender)
  */
 export function useApp() {
   return useContext(AppContext);
@@ -179,93 +375,193 @@ export function useApp() {
  * useIsScreenReaderEnabled - Always false for web
  */
 export function useIsScreenReaderEnabled() {
-  return useContext(AccessibilityContext).isScreenReaderEnabled;
+  return false;
 }
 
 /**
  * useInput - Keyboard input handler
  */
 export function useInput(
-  inputHandler: (input: string, key: { escape: boolean; return: boolean; tab: boolean; backspace: boolean; delete: boolean; upArrow: boolean; downArrow: boolean; leftArrow: boolean; rightArrow: boolean; pageDown: boolean; pageUp: boolean; meta: boolean; ctrl: boolean; shift: boolean }) => void,
+  inputHandler: (input: string, key: Key) => void,
   options?: { isActive?: boolean }
 ) {
-  const { stdin } = useStdin();
+  const { stdin, internal_eventEmitter } = useStdin();
   const isActive = options?.isActive ?? true;
 
   React.useEffect(() => {
     if (!isActive) return;
 
-    const handleData = (data: Buffer) => {
-      const input = data.toString();
-      const key = {
-        escape: input === '\x1b',
-        return: input === '\r',
-        tab: input === '\t',
-        backspace: input === '\x7f',
-        delete: input === '\x1b[3~',
-        upArrow: input === '\x1b[A',
-        downArrow: input === '\x1b[B',
-        leftArrow: input === '\x1b[D',
-        rightArrow: input === '\x1b[C',
-        pageDown: input === '\x1b[6~',
-        pageUp: input === '\x1b[5~',
-        meta: false,
-        ctrl: data[0] !== undefined && data[0] < 32,
-        shift: false,
-      };
+    const handleInput = (input: string, key: Key) => {
       inputHandler(input, key);
     };
 
-    stdin.on('data', handleData);
+    internal_eventEmitter.on('input', handleInput);
     return () => {
-      stdin.off('data', handleData);
+      internal_eventEmitter.off('input', handleInput);
     };
-  }, [stdin, inputHandler, isActive]);
+  }, [stdin, internal_eventEmitter, inputHandler, isActive]);
 }
 
 /**
- * useFocus - Focus management (stub)
+ * useFocus - Focus management
  */
 export function useFocus(options?: { autoFocus?: boolean; isActive?: boolean; id?: string }) {
+  const focusContext = useContext(FocusContext);
+  const id = options?.id ?? React.useId();
+
+  React.useEffect(() => {
+    focusContext.add(id);
+    if (options?.autoFocus) {
+      focusContext.activate(id);
+    }
+    return () => {
+      focusContext.remove(id);
+    };
+  }, [id, options?.autoFocus]);
+
   return {
-    isFocused: options?.autoFocus ?? false,
-    focus: () => {},
+    isFocused: focusContext.activeId === id,
+    focus: () => focusContext.focus(id),
   };
 }
 
 /**
- * useFocusManager - Focus manager (stub)
+ * useFocusManager - Focus manager
  */
 export function useFocusManager() {
+  const focusContext = useContext(FocusContext);
   return {
-    focusNext: () => {},
-    focusPrevious: () => {},
-    enableFocus: () => {},
-    disableFocus: () => {},
-    focus: (_id: string) => {},
+    focusNext: focusContext.focusNext,
+    focusPrevious: focusContext.focusPrevious,
+    enableFocus: focusContext.enableFocus,
+    disableFocus: focusContext.disableFocus,
+    focus: focusContext.focus,
   };
 }
+
+// ============================================
+// Utilities
+// ============================================
 
 /**
  * measureElement - Measure component dimensions
  * Returns mock values - actual measurement happens on client
  */
-export function measureElement(_element: unknown): { width: number; height: number; x: number; y: number } {
+export function measureElement(_element: DOMElement | null): { width: number; height: number } {
   return {
     width: mockStdout.columns,
     height: 1,
-    x: 0,
-    y: 0,
+  };
+}
+
+/**
+ * getBoundingBox - Get element bounding box
+ * Returns mock values - actual measurement happens on client
+ */
+export function getBoundingBox(
+  _node: DOMElement | null
+): { left: number; top: number; width: number; height: number } | undefined {
+  return {
+    left: 0,
+    top: 0,
+    width: mockStdout.columns,
+    height: 1,
   };
 }
 
 // ============================================
-// Export contexts for provider use
+// render function (not used with our reconciler, but exported for compatibility)
 // ============================================
 
-export {
-  StdinContext,
-  StdoutContext,
-  AppContext,
-  AccessibilityContext,
-};
+export interface RenderOptions {
+  stdout?: NodeJS.WriteStream;
+  stdin?: NodeJS.ReadStream;
+  stderr?: NodeJS.WriteStream;
+  debug?: boolean;
+  exitOnCtrlC?: boolean;
+  patchConsole?: boolean;
+  isScreenReaderEnabled?: boolean;
+}
+
+export interface Instance {
+  rerender: (tree: ReactElement) => void;
+  unmount: () => void;
+  waitUntilExit: () => Promise<void>;
+  clear: () => void;
+}
+
+/**
+ * render - Main Ink render function
+ * This is a stub - our reconciler uses renderToWebSocket instead
+ */
+export function render(_tree: ReactElement, _options?: RenderOptions): Instance {
+  console.warn('[ink-shim] render() called - use renderToWebSocket() instead for WebSocket reconciler');
+  return {
+    rerender: () => {},
+    unmount: () => {},
+    waitUntilExit: () => Promise.resolve(),
+    clear: () => {},
+  };
+}
+
+// ============================================
+// Context Providers (for wrapping components)
+// ============================================
+
+interface InkProviderProps {
+  children: ReactNode;
+  onExit?: (error?: Error) => void;
+  onRerender?: () => void;
+}
+
+/**
+ * InkProvider - Provides all Ink contexts with WebSocket-based implementations
+ */
+export function InkProvider({ children, onExit, onRerender }: InkProviderProps) {
+  // Set callbacks
+  React.useEffect(() => {
+    if (onExit) setExitCallback(onExit);
+    if (onRerender) setRerenderCallback(onRerender);
+    return () => {
+      setExitCallback(() => {});
+      setRerenderCallback(() => {});
+    };
+  }, [onExit, onRerender]);
+
+  const stdinValue = React.useMemo(() => ({
+    stdin: mockStdin as unknown as NodeJS.ReadStream,
+    internal_eventEmitter: internalEventEmitter,
+    setRawMode: (mode: boolean) => {
+      mockStdin.setRawMode(mode);
+    },
+    isRawModeSupported: true,
+    internal_exitOnCtrlC: false,
+  }), []);
+
+  const stdoutValue = React.useMemo(() => ({
+    stdout: mockStdout as unknown as NodeJS.WriteStream,
+    write: (data: string) => {
+      mockStdout.write(data);
+    },
+  }), []);
+
+  const appValue = React.useMemo(() => ({
+    exit: (error?: Error) => {
+      onExit?.(error);
+    },
+    rerender: () => {
+      onRerender?.();
+    },
+  }), [onExit, onRerender]);
+
+  return React.createElement(StdinContext.Provider, { value: stdinValue },
+    React.createElement(StdoutContext.Provider, { value: stdoutValue },
+      React.createElement(AppContext.Provider, { value: appValue },
+        children
+      )
+    )
+  );
+}
+
+// Export contexts for advanced usage
+export { StdinContext, StdoutContext, AppContext, FocusContext };

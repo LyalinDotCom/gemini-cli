@@ -32,6 +32,18 @@ interface TreeRendererProps {
 /**
  * Convert Ink props to CSS styles
  */
+function toCh(value: number | string | undefined): string | undefined {
+  if (typeof value === 'number') return `${value}ch`;
+  if (typeof value === 'string') return value;
+  return undefined;
+}
+
+function toEm(value: number | string | undefined): string | undefined {
+  if (typeof value === 'number') return `${value}em`;
+  if (typeof value === 'string') return value;
+  return undefined;
+}
+
 function inkPropsToStyle(props: Record<string, unknown>): React.CSSProperties {
   const style: React.CSSProperties = {};
 
@@ -56,41 +68,41 @@ function inkPropsToStyle(props: Record<string, unknown>): React.CSSProperties {
   if (props.justifyContent) style.justifyContent = props.justifyContent as string;
 
   // Dimensions
-  if (typeof props.width === 'number') style.width = props.width;
-  if (typeof props.height === 'number') style.height = props.height;
-  if (typeof props.minWidth === 'number') style.minWidth = props.minWidth;
-  if (typeof props.minHeight === 'number') style.minHeight = props.minHeight;
-  if (typeof props.maxWidth === 'number') style.maxWidth = props.maxWidth;
-  if (typeof props.maxHeight === 'number') style.maxHeight = props.maxHeight;
+  style.width = toCh(props.width as number | string | undefined);
+  style.minWidth = toCh(props.minWidth as number | string | undefined);
+  style.maxWidth = toCh(props.maxWidth as number | string | undefined);
+  style.height = toEm(props.height as number | string | undefined);
+  style.minHeight = toEm(props.minHeight as number | string | undefined);
+  style.maxHeight = toEm(props.maxHeight as number | string | undefined);
 
   // Margin
-  if (typeof props.margin === 'number') style.margin = props.margin * 8;
-  if (typeof props.marginTop === 'number') style.marginTop = props.marginTop * 8;
-  if (typeof props.marginBottom === 'number') style.marginBottom = props.marginBottom * 8;
-  if (typeof props.marginLeft === 'number') style.marginLeft = props.marginLeft * 8;
-  if (typeof props.marginRight === 'number') style.marginRight = props.marginRight * 8;
+  if (typeof props.margin === 'number') style.margin = `${props.margin}ch`;
+  if (typeof props.marginTop === 'number') style.marginTop = `${props.marginTop}em`;
+  if (typeof props.marginBottom === 'number') style.marginBottom = `${props.marginBottom}em`;
+  if (typeof props.marginLeft === 'number') style.marginLeft = `${props.marginLeft}ch`;
+  if (typeof props.marginRight === 'number') style.marginRight = `${props.marginRight}ch`;
   if (typeof props.marginX === 'number') {
-    style.marginLeft = props.marginX * 8;
-    style.marginRight = props.marginX * 8;
+    style.marginLeft = `${props.marginX}ch`;
+    style.marginRight = `${props.marginX}ch`;
   }
   if (typeof props.marginY === 'number') {
-    style.marginTop = props.marginY * 8;
-    style.marginBottom = props.marginY * 8;
+    style.marginTop = `${props.marginY}em`;
+    style.marginBottom = `${props.marginY}em`;
   }
 
   // Padding
-  if (typeof props.padding === 'number') style.padding = props.padding * 8;
-  if (typeof props.paddingTop === 'number') style.paddingTop = props.paddingTop * 8;
-  if (typeof props.paddingBottom === 'number') style.paddingBottom = props.paddingBottom * 8;
-  if (typeof props.paddingLeft === 'number') style.paddingLeft = props.paddingLeft * 8;
-  if (typeof props.paddingRight === 'number') style.paddingRight = props.paddingRight * 8;
+  if (typeof props.padding === 'number') style.padding = `${props.padding}ch`;
+  if (typeof props.paddingTop === 'number') style.paddingTop = `${props.paddingTop}em`;
+  if (typeof props.paddingBottom === 'number') style.paddingBottom = `${props.paddingBottom}em`;
+  if (typeof props.paddingLeft === 'number') style.paddingLeft = `${props.paddingLeft}ch`;
+  if (typeof props.paddingRight === 'number') style.paddingRight = `${props.paddingRight}ch`;
   if (typeof props.paddingX === 'number') {
-    style.paddingLeft = props.paddingX * 8;
-    style.paddingRight = props.paddingX * 8;
+    style.paddingLeft = `${props.paddingX}ch`;
+    style.paddingRight = `${props.paddingX}ch`;
   }
   if (typeof props.paddingY === 'number') {
-    style.paddingTop = props.paddingY * 8;
-    style.paddingBottom = props.paddingY * 8;
+    style.paddingTop = `${props.paddingY}em`;
+    style.paddingBottom = `${props.paddingY}em`;
   }
 
   // Border
@@ -110,7 +122,7 @@ function inkPropsToStyle(props: Record<string, unknown>): React.CSSProperties {
   }
 
   // Gap
-  if (typeof props.gap === 'number') style.gap = props.gap * 8;
+  if (typeof props.gap === 'number') style.gap = `${props.gap}ch`;
 
   return style;
 }

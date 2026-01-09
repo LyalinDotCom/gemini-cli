@@ -58,7 +58,16 @@ export interface ReconcilerActions {
   reconnect: () => void;
 }
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001/ws';
+function getDefaultWsUrl(): string {
+  if (typeof window === 'undefined') {
+    return 'ws://localhost:3001/ws';
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const host = window.location.hostname || 'localhost';
+  return `${protocol}://${host}:3001/ws`;
+}
+
+const WS_URL = import.meta.env.VITE_WS_URL || getDefaultWsUrl();
 
 export function useReconcilerWebSocket(): [ReconcilerState, ReconcilerActions] {
   const [tree, setTree] = useState<SerializedElement | null>(null);
