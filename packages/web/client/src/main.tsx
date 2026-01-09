@@ -6,11 +6,13 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+// Use ReconcilerApp for WebSocket reconciler mode
+// Switch back to App for the original chat mode
+import ReconcilerApp from './ReconcilerApp';
 import './styles/terminal.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ReconcilerApp />
   </React.StrictMode>,
 );

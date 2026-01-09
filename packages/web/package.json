@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
+    "dev:reconciler": "tsx watch server/src/reconciler-server.tsx",
     "dev:client": "cd client && npm run dev",
     "build": "npm run build:server && npm run build:client",
     "build:server": "tsc -p tsconfig.json",
@@ -16,10 +17,13 @@
   },
   "dependencies": {
     "@google/gemini-cli-core": "file:../core",
+    "@google/gemini-cli": "file:../cli",
     "express": "^5.1.0",
     "ws": "^8.18.0",
     "uuid": "^13.0.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "react": "^19.2.0",
+    "react-reconciler": "^0.33.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

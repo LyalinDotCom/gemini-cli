@@ -13,7 +13,12 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "ink": ["./server/src/ink-shim/index.ts"]
+    },
+    "jsx": "react-jsx"
   },
   "include": ["server/src/**/*"],
   "exclude": ["node_modules", "dist", "client"]
