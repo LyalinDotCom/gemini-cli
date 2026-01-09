@@ -1,0 +1,36 @@
+{
+  "name": "@anthropic/gemini-cli-web",
+  "version": "0.1.0",
+  "description": "Gemini CLI Web Interface",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "tsc -p tsconfig.json",
+    "build:client": "cd client && npm run build",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/gemini-cli-core": "file:../core",
+    "express": "^5.1.0",
+    "ws": "^8.18.0",
+    "uuid": "^13.0.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/ws": "^8.18.0",
+    "@types/cors": "^2.8.17",
+    "@types/uuid": "^10.0.0",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
