@@ -75,7 +75,14 @@ tool to proceed.
 Gemini CLI's built-in tools can be broadly categorized as follows:
 
 - **[File System Tools](./file-system.md):** For interacting with files and
-  directories (reading, writing, listing, searching, etc.).
+  directories (reading, writing, listing, searching, etc.). Includes:
+  - `read_file` - Read single files
+  - `read_many_files` - Batch read multiple files by glob pattern
+  - `write_file` - Create or overwrite files
+  - `list_directory` - List directory contents
+  - `glob` - Find files by pattern
+  - `search_file_content` - Search within files
+  - `replace` - Edit files with find/replace
 - **[Shell Tool](./shell.md) (`run_shell_command`):** For executing shell
   commands.
 - **[Web Fetch Tool](./web-fetch.md) (`web_fetch`):** For retrieving content

@@ -138,6 +138,10 @@
         "slug": "docs/core"
       },
       {
+        "label": "Agents",
+        "slug": "docs/core/agents"
+      },
+      {
         "label": "Tools API",
         "slug": "docs/core/tools-api"
       },
@@ -148,6 +152,10 @@
       {
         "label": "Policy Engine",
         "slug": "docs/core/policy-engine"
+      },
+      {
+        "label": "Safety",
+        "slug": "docs/core/safety"
       }
     ]
   },
@@ -185,6 +193,23 @@
       {
         "label": "MCP servers",
         "slug": "docs/tools/mcp-server"
+      }
+    ]
+  },
+  {
+    "label": "A2A Server",
+    "items": [
+      {
+        "label": "Introduction",
+        "slug": "docs/a2a-server"
+      },
+      {
+        "label": "Protocol",
+        "slug": "docs/a2a-server/protocol"
+      },
+      {
+        "label": "Commands",
+        "slug": "docs/a2a-server/commands"
       }
     ]
   },

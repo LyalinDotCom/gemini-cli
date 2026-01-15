@@ -7,12 +7,16 @@ requests sent from `packages/cli`. For a general overview of Gemini CLI, see the
 
 ## Navigating this section
 
+- **[Agents](./agents.md):** Built-in agents, custom agent creation, and agent
+  delegation for specialized tasks.
 - **[Core tools API](./tools-api.md):** Information on how tools are defined,
   registered, and used by the core.
 - **[Memory Import Processor](./memport.md):** Documentation for the modular
   GEMINI.md import feature using @file.md syntax.
 - **[Policy Engine](./policy-engine.md):** Use the Policy Engine for
   fine-grained control over tool execution.
+- **[Safety](./safety.md):** Loop detection, tool confirmation, environment
+  sanitization, and security features.
 
 ## Role of the core
 
@@ -34,6 +38,8 @@ While the `packages/cli` portion of Gemini CLI provides the user interface,
   including history and any relevant context required for coherent interactions.
 - **Configuration:** Managing core-specific configurations, such as API key
   access, model selection, and tool settings.
+- **Agent orchestration:** Managing built-in and custom agents, handling agent
+  delegation, and coordinating multi-agent workflows.
 
 ## Security considerations
 

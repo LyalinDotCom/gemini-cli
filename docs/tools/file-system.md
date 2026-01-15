@@ -213,5 +213,59 @@ context around the `old_string` to ensure it modifies the correct location.
 - **Confirmation:** Yes. Shows a diff of the proposed changes and asks for user
   approval before writing to the file.
 
+## 7. `read_many_files` (ReadFiles)
+
+`read_many_files` reads content from multiple files matching glob patterns and
+concatenates them into a single response. This tool is designed for getting an
+overview of multiple files simultaneously, such as reviewing codebases or
+analyzing collections of files.
+
+- **Tool name:** `read_many_files`
+- **Display name:** ReadFiles
+- **File:** `read-many-files.ts`
+- **Parameters:**
+  - `include` (array of strings, required): Glob patterns for files to include
+    (e.g., `["src/**/*.ts", "*.md"]`).
+  - `exclude` (array of strings, optional): Glob patterns for files to exclude
+    (e.g., `["**/*.test.ts", "node_modules/**"]`).
+  - `recursive` (boolean, optional): Whether to search recursively. Defaults to
+    `true`.
+  - `useDefaultExcludes` (boolean, optional): Whether to apply default exclusion
+    patterns (like `node_modules`, `.git`). Defaults to `true`.
+  - `file_filtering_options` (object, optional):
+    - `respect_git_ignore` (boolean, optional): Whether to respect `.gitignore`.
+      Defaults to `true`.
+    - `respect_gemini_ignore` (boolean, optional): Whether to respect
+      `.geminiignore`. Defaults to `true`.
+- **Behavior:**
+  - Finds all files matching the include patterns.
+  - Excludes files matching exclude patterns.
+  - Reads and concatenates content from matching files.
+  - Handles text files, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files
+    (MP3, WAV, etc.), and PDFs when explicitly named.
+  - Respects file size and count limits to prevent overwhelming responses.
+- **Output (`llmContent`):** Concatenated content from all matching files, with
+  file path headers separating each file's content.
+- **Confirmation:** No.
+- **Use cases:**
+  - Getting an overview of a codebase or directory structure.
+  - Finding where specific functionality is implemented across files.
+  - Reviewing multiple documentation files at once.
+  - Gathering context from multiple configuration files.
+
+**Example patterns:**
+
+```text
+# Read all TypeScript files in src
+include: ["src/**/*.ts"]
+exclude: ["**/*.test.ts"]
+
+# Read specific documentation files
+include: ["README.md", "docs/**/*.md"]
+
+# Read all config files
+include: ["*.json", "*.yaml", "*.yml"]
+```
+
 These file system tools provide a foundation for the Gemini CLI to understand
 and interact with your local project context.

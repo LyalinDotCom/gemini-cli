@@ -186,3 +186,111 @@ entire skill directory, allowing it to discover and utilize these assets.
       it permission to read any bundled assets.
 5.  **Execution**: The model proceeds with the specialized expertise active. It
     is instructed to prioritize the skill's procedural guidance within reason.
+
+## The `activate_skill` Tool
+
+The `activate_skill` tool is what Gemini uses internally to activate skills. You
+typically don't need to call it directly, but understanding how it works can
+help you create better skills.
+
+### Tool Schema
+
+```typescript
+{
+  name: string  // Required. Name of the skill to activate
+                // Must match exactly as shown in <available_skills> section
+}
+```
+
+### What Happens When a Skill is Activated
+
+1. **Confirmation Dialog**: For non-builtin skills, a confirmation prompt
+   appears showing:
+   - Skill name and description
+   - Resources that will be shared with the model
+   - Folder structure of the skill directory
+
+2. **Resource Discovery**: The tool fetches the folder structure of the skill
+   directory, giving the model visibility into available assets.
+
+3. **Skill Injection**: Upon approval:
+   - The `SKILL.md` body is wrapped in `<activated_skill>` tags
+   - Available resources are listed
+   - The skill directory is added to allowed file paths
+
+4. **Context Update**: The model receives the specialized instructions and can
+   now access skill resources.
+
+### Skill Conflicts
+
+When multiple skills have the same name across different discovery tiers, the
+higher-precedence location wins. The CLI will warn you about conflicts:
+
+- **Workspace** skills override **User** skills
+- **User** skills override **Extension** skills
+
+To see which skills are active and check for conflicts:
+
+```bash
+/skills list
+```
+
+### Security Considerations
+
+- **Consent Required**: Non-builtin skills always require user confirmation
+- **Path Restrictions**: Skills can only access their own directory and the
+  workspace
+- **Resource Visibility**: All resources shared with the model are shown in the
+  confirmation dialog
+- **Admin Controls**: Enterprise deployments can enforce skill settings via
+  admin configuration
+
+## Built-in Skills
+
+Gemini CLI includes several built-in skills that don't require installation:
+
+### `skill-creator`
+
+Helps you create new skills by generating the proper folder structure and
+`SKILL.md` template.
+
+```bash
+> Help me create a skill for database migrations
+# Gemini will activate the skill-creator and guide you
+```
+
+### `pr-creator`
+
+Assists in creating well-structured pull requests with proper titles,
+descriptions, and test plans.
+
+```bash
+> Create a PR for my changes
+# Gemini will activate pr-creator to help format the PR
+```
+
+## Troubleshooting
+
+### Skill not being discovered
+
+1. Verify the skill is in the correct location:
+   - Workspace: `.gemini/skills/<skill-name>/SKILL.md`
+   - User: `~/.gemini/skills/<skill-name>/SKILL.md`
+
+2. Check that the `SKILL.md` has valid YAML frontmatter
+
+3. Run `/skills reload` to refresh the skill list
+
+### Skill not activating
+
+1. Check that the skill is enabled: `/skills list`
+2. Verify the description is specific enough for Gemini to match
+3. Try explicitly asking Gemini to use the skill by name
+
+### Permission issues
+
+For workspace-level skills, ensure the folder is trusted:
+
+```bash
+/trust .gemini/skills
+```

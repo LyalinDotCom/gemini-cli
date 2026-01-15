@@ -37,6 +37,27 @@ input:
     - **Interaction:** `packages/core` invokes these tools based on requests
       from the Gemini model.
 
+4.  **A2A Server (`packages/a2a-server/`):**
+    - **Purpose:** An HTTP-based agent server implementing the A2A
+      (Agent-to-Agent) protocol. Enables integration with IDEs, web
+      applications, and other clients.
+    - **Key functions:**
+      - HTTP endpoints for task creation and message streaming
+      - Server-Sent Events (SSE) for real-time updates
+      - Tool confirmation workflow
+      - Task persistence (GCS or in-memory)
+      - Built-in commands (init, memory, restore)
+
+5.  **Agents (`packages/core/src/agents/`):**
+    - **Purpose:** Specialized AI assistants that can be delegated tasks.
+      Includes built-in agents (codebase_investigator, cli_help) and support
+      for custom agents.
+    - **Key functions:**
+      - Agent registration and discovery
+      - Local and remote agent execution
+      - Agent delegation via `delegate_to_agent` tool
+      - Structured output validation
+
 ## Interaction flow
 
 A typical interaction with the Gemini CLI follows this flow:
@@ -75,6 +96,11 @@ A typical interaction with the Gemini CLI follows this flow:
   for independent development and potential future extensions (e.g., different
   frontends for the same backend).
 - **Extensibility:** The tool system is designed to be extensible, allowing new
-  capabilities to be added.
+  capabilities to be added. MCP servers, extensions, hooks, skills, and custom
+  agents all provide extension points.
 - **User experience:** The CLI focuses on providing a rich and interactive
   terminal experience.
+- **Multi-agent support:** The agent system enables task delegation to
+  specialized agents for complex workflows.
+- **Protocol standards:** The A2A server implements the A2A protocol for
+  interoperability with other tools and platforms.

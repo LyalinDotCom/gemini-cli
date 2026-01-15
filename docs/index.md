@@ -1,18 +1,36 @@
 # Welcome to Gemini CLI documentation
 
+Gemini CLI is Google's open-source, terminal-first AI agent that brings the
+power of Gemini directly to your command line. Built for developers, Gemini CLI
+offers:
+
+- **1M token context window** - Work with entire codebases in a single
+  conversation
+- **Generous free tier** - 60 requests/min, 1,000 requests/day with a personal
+  Google account
+- **Built-in tools** - File operations, shell commands, web search, and more
+- **Extensibility** - MCP servers, extensions, hooks, skills, and custom agents
+- **Multi-agent support** - Delegate specialized tasks to built-in or custom
+  agents
+
 This documentation provides a comprehensive guide to installing, using, and
-developing Gemini CLI, a tool that lets you interact with Gemini models through
-a command-line interface.
+developing Gemini CLI.
 
 ## Gemini CLI overview
 
 Gemini CLI brings the capabilities of Gemini models to your terminal in an
-interactive Read-Eval-Print Loop (REPL) environment. Gemini CLI consists of a
-client-side application (`packages/cli`) that communicates with a local server
-(`packages/core`), which in turn manages requests to the Gemini API and its AI
-models. Gemini CLI also contains a variety of tools for tasks such as performing
-file system operations, running shells, and web fetching, which are managed by
-`packages/core`.
+interactive Read-Eval-Print Loop (REPL) environment. The architecture consists
+of:
+
+- **CLI package** (`packages/cli`) - The user-facing terminal interface
+- **Core package** (`packages/core`) - Backend handling API communication, tools,
+  and agents
+- **A2A Server** (`packages/a2a-server`) - HTTP server for IDE and web
+  integrations
+
+Gemini CLI provides a rich set of tools for file operations, shell commands,
+web fetching, and more. It also supports MCP (Model Context Protocol) servers
+for extending capabilities with external services.
 
 ## Navigating the documentation
 
@@ -70,14 +88,17 @@ This documentation is organized into the following sections:
 
 - **[Introduction: Gemini CLI core](./core/index.md):** Information about Gemini
   CLI core.
+- **[Agents](./core/agents.md):** Built-in agents, custom agent creation, and
+  agent delegation.
 - **[Memport](./core/memport.md):** Using the Memory Import Processor.
 - **[Tools API](./core/tools-api.md):** Information on how the core manages and
   exposes tools.
 - **[System Prompt Override](./cli/system-prompt.md):** Replace built-in system
   instructions using `GEMINI_SYSTEM_MD`.
-
 - **[Policy Engine](./core/policy-engine.md):** Use the Policy Engine for
   fine-grained control over tool execution.
+- **[Safety](./core/safety.md):** Loop detection, tool confirmation, and
+  security features.
 
 ### Tools
 
@@ -113,6 +134,13 @@ This documentation is organized into the following sections:
   hook with a comprehensive example.
 - **[Best Practices](./hooks/best-practices.md):** Security, performance, and
   debugging guidelines for hooks.
+
+### A2A Server
+
+- **[Introduction: A2A Server](./a2a-server/index.md):** HTTP-based agent server
+  for IDE integrations and web applications.
+- **[Protocol](./a2a-server/protocol.md):** Event types and message formats.
+- **[Commands](./a2a-server/commands.md):** Available server commands.
 
 ### IDE integration
 
