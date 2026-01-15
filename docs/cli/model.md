@@ -1,13 +1,14 @@
-# Gemini CLI model selection (`/model` command)
+# `/model` command
 
-Select your Gemini CLI model. The `/model` command lets you configure the model
-used by Gemini CLI, giving you more control over your results. Use **Pro**
-models for complex tasks and reasoning, **Flash** models for high speed results,
-or the (recommended) **Auto** setting to choose the best model for your tasks.
+The `/model` command lets you switch between Gemini models during a session.
+Choose **Auto** for intelligent routing, or select a specific model for your
+needs.
 
-> **Note:** The `/model` command (and the `--model` flag) does not override the
-> model used by sub-agents. Consequently, even when using the `/model` flag you
-> may see other models used in your model usage reports.
+For a complete guide to available models, capabilities, and when to use each,
+see **[Gemini CLI models](./models.md)**.
+
+> **Note:** The `/model` command does not affect sub-agents, which use their own
+> model configurations.
 
 ## How to use the `/model` command
 

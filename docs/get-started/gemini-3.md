@@ -1,6 +1,10 @@
-# Gemini 3 Pro and Gemini 3 Flash on Gemini CLI
+# Enabling Gemini 3
 
-Gemini 3 Pro and Gemini 3 Flash are available on Gemini CLI for all users!
+Gemini 3 Pro and Gemini 3 Flash are available on Gemini CLI for all users. This
+guide covers how to enable and use Gemini 3 models.
+
+For a complete comparison of all available models, see
+[Gemini CLI models](../cli/models.md).
 
 ## How to get started with Gemini 3 on Gemini CLI
 
@@ -39,24 +43,16 @@ or fallback to Gemini 2.5 Pro.
 > doesn't happen immediately, please wait a few minutes for the request to
 > process.
 
-### Model selection and routing types
+### Model selection and routing
 
-When using Gemini CLI, you may want to control how your requests are routed
-between models. By default, Gemini CLI uses **Auto** routing.
+With Gemini 3 enabled, Auto mode will intelligently route between Gemini 3 Pro
+(for complex tasks) and Gemini 3 Flash (for simpler tasks).
 
-When using Gemini 3 Pro, you may want to use Auto routing or Pro routing to
-manage your usage limits:
+To always use the most capable model, select **Pro** via `/model`. This
+prioritizes Gemini 3 Pro when enabled.
 
-- **Auto routing:** Auto routing first determines whether a prompt involves a
-  complex or simple operation. For simple prompts, it will automatically use
-  Gemini 2.5 Flash. For complex prompts, if Gemini 3 Pro is enabled, it will use
-  Gemini 3 Pro; otherwise, it will use Gemini 2.5 Pro.
-- **Pro routing:** If you want to ensure your task is processed by the most
-  capable model, use `/model` and select **Pro**. Gemini CLI will prioritize the
-  most capable model available, including Gemini 3 Pro if it has been enabled.
-
-To learn more about selecting a model and routing, refer to
-[Gemini CLI Model Selection](../cli/model.md).
+For a complete guide to model selection and Auto mode, see
+[Gemini CLI models](../cli/models.md).
 
 ## How to enable Gemini 3 with Gemini CLI on Gemini Code Assist
 

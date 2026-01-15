@@ -1,8 +1,11 @@
-# Model routing
+# Model fallback and recovery
 
-Gemini CLI includes a model routing feature that automatically switches to a
-fallback model in case of a model failure. This feature is enabled by default
-and provides resilience when the primary model is unavailable.
+Gemini CLI automatically handles model failures by offering fallback options.
+This feature provides resilience when your primary model is unavailable due to
+quota limits or capacity issues.
+
+For information on **Auto mode** (intelligent routing between Pro and Flash
+based on task complexity), see [Gemini CLI models](./models.md#auto-mode-recommended).
 
 ## How it works
 

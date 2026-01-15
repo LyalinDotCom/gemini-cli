@@ -1,20 +1,67 @@
 # Gemini CLI extensions
 
-_This documentation is up-to-date with the v0.4.0 release._
+Extend Gemini CLI with new capabilities - connect to databases, integrate APIs,
+add custom workflows, and more. Install community extensions or build your own.
 
-Gemini CLI extensions package prompts, MCP servers, and custom commands into a
-familiar and user-friendly format. With extensions, you can expand the
-capabilities of Gemini CLI and share those capabilities with others. They are
-designed to be easily installable and shareable.
+## Discover 288+ extensions
 
-To see examples of extensions, you can browse a gallery of
-[Gemini CLI extensions](https://geminicli.com/extensions/browse/).
+Browse the **[Extensions Gallery](https://geminicli.com/extensions)** to find
+extensions for:
 
-See [getting started docs](getting-started-extensions.md) for a guide on
-creating your first extension.
+| Category | Examples |
+|----------|----------|
+| **Databases** | PostgreSQL, MySQL, MongoDB, Redis, Neo4j, BigQuery |
+| **Developer tools** | GitHub, GitLab, Chrome DevTools, Kubernetes, Terraform |
+| **APIs & services** | Stripe, Slack, Jira, Notion, Figma, Postman |
+| **AI & agents** | Custom personas, workflow automation, agent orchestration |
+| **Utilities** | Screenshots, browser automation, file search, notifications |
 
-See [releasing docs](extension-releasing.md) for an advanced guide on setting up
-GitHub releases.
+## Quick install
+
+Install any extension with a single command:
+
+```bash
+# Install from GitHub
+gemini extensions install https://github.com/anthropics/github-mcp-server
+
+# Install from the gallery
+gemini extensions install context7
+```
+
+**Popular extensions:**
+
+```bash
+# GitHub - PRs, issues, code review
+gemini extensions install https://github.com/anthropics/github-mcp-server
+
+# PostgreSQL - Query databases directly
+gemini extensions install https://github.com/anthropics/postgres-mcp-server
+
+# Context7 - Up-to-date code documentation
+gemini extensions install context7
+
+# Jules - Agent orchestration for coding tasks
+gemini extensions install gemini-cli-jules
+```
+
+## Build your own
+
+Create extensions to package and share your custom integrations:
+
+```bash
+# Create a new extension from a template
+gemini extensions new my-extension mcp-server
+
+# Link for development
+gemini extensions link ./my-extension
+
+# Validate before publishing
+gemini extensions validate ./my-extension
+```
+
+**[Build your first extension →](getting-started-extensions.md)**
+
+**[Publish to the gallery →](extension-releasing.md)**
 
 ## Extension management
 

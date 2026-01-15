@@ -1,71 +1,205 @@
 # Get started with Gemini CLI
 
-Welcome to Gemini CLI! This guide will help you install, configure, and start
-using the Gemini CLI to enhance your workflow right from your terminal.
+Go from zero to AI-powered development in under a minute.
 
-## Quickstart: Install, authenticate, configure, and use Gemini CLI
+## Quick install
 
-Gemini CLI brings the power of advanced language models directly to your command
-line interface. As an AI-powered assistant, Gemini CLI can help you with a
-variety of tasks, from understanding and generating code to reviewing and
-editing documents.
+```bash
+npm install -g @google/gemini-cli
+gemini
+```
 
-## Install
+That's it. Select "Login with Google" when prompted, and you're ready to go.
 
-The standard method to install and run Gemini CLI uses `npm`:
+## Your first conversation
+
+Once authenticated, try these prompts to see what Gemini CLI can do:
+
+### Explore a codebase
+
+```
+> What does this project do? Give me a high-level overview.
+```
+
+Gemini CLI analyzes your files, dependencies, and structure to provide an
+accurate summary.
+
+### Make changes
+
+```
+> Add error handling to the fetchUser function in src/api/users.ts
+```
+
+Watch as it reads the file, understands the context, proposes changes, and asks
+for your approval before writing.
+
+### Run commands
+
+```
+> Run the tests and fix any failures
+```
+
+Gemini CLI executes `npm test` (or your test command), analyzes failures, and
+implements fixes.
+
+### Search the web
+
+```
+> What's the recommended way to handle authentication in Next.js 15?
+```
+
+Get up-to-date answers grounded in current documentation and best practices.
+
+## What you get for free
+
+With your Google account, you get:
+
+| Limit | Amount |
+|-------|--------|
+| Requests per minute | 60 |
+| Requests per day | 1,000 |
+| Context window | 1M tokens |
+| Credit card required | No |
+
+This is enough for most individual developers. Need more?
+[See pricing options](../quota-and-pricing.md).
+
+## Supercharge with extensions
+
+Gemini CLI becomes even more powerful with extensions. Browse **288+
+extensions** in the [Extensions Gallery](https://geminicli.com/extensions) or
+install popular ones directly:
+
+```bash
+# GitHub integration for PRs, issues, and code review
+gemini extensions install https://github.com/anthropics/github-mcp-server
+
+# PostgreSQL database access
+gemini extensions install https://github.com/anthropics/postgres-mcp-server
+
+# Filesystem operations across directories
+gemini extensions install https://github.com/anthropics/filesystem-mcp-server
+```
+
+Extensions add new capabilities like database access, API integrations, and
+specialized workflows. [Learn more about extensions →](../extensions/index.md)
+
+## Installation options
+
+### npm (recommended)
 
 ```bash
 npm install -g @google/gemini-cli
 ```
 
-Once Gemini CLI is installed, run Gemini CLI from your command line:
+### npx (no install)
 
 ```bash
+npx @google/gemini-cli
+```
+
+### Homebrew (macOS)
+
+```bash
+brew install gemini-cli
+```
+
+### From source
+
+```bash
+git clone https://github.com/google-gemini/gemini-cli.git
+cd gemini-cli
+npm install
+npm run build
+npm link
+```
+
+[Complete installation guide →](./installation.md)
+
+## Authentication methods
+
+### Google account (easiest)
+
+When you run `gemini` for the first time, select "Login with Google". This gives
+you access to the free tier immediately.
+
+### API key
+
+For programmatic access or custom quotas:
+
+```bash
+export GEMINI_API_KEY="your-api-key"
 gemini
 ```
 
-For more installation options, see [Gemini CLI Installation](./installation.md).
+Get your API key from [Google AI Studio](https://aistudio.google.com/apikey).
 
-## Authenticate
+### Vertex AI (enterprise)
 
-To begin using Gemini CLI, you must authenticate with a Google service. In most
-cases, you can log in with your existing Google account:
+For organizations using Google Cloud:
 
-1. Run Gemini CLI after installation:
+```bash
+export GOOGLE_CLOUD_PROJECT="your-project-id"
+export GOOGLE_CLOUD_LOCATION="us-central1"
+gemini
+```
 
-   ```bash
-   gemini
-   ```
+[Complete authentication guide →](./authentication.md)
 
-2. When asked "How would you like to authenticate for this project?" select **1.
-   Login with Google**.
+## Configure your experience
 
-3. Select your Google account.
+### Set your preferred editor
 
-4. Click on **Sign in**.
+```bash
+# In ~/.gemini/settings.json
+{
+  "general": {
+    "preferredEditor": "code"
+  }
+}
+```
 
-Certain account types may require you to configure a Google Cloud project. For
-more information, including other authentication methods, see
-[Gemini CLI Authentication Setup](./authentication.md).
+### Enable Vim mode
 
-## Configure
+```bash
+{
+  "general": {
+    "vimMode": true
+  }
+}
+```
 
-Gemini CLI offers several ways to configure its behavior, including environment
-variables, command-line arguments, and settings files.
+### Choose a theme
 
-To explore your configuration options, see
-[Gemini CLI Configuration](./configuration.md).
+```bash
+{
+  "ui": {
+    "theme": "GitHub"
+  }
+}
+```
 
-## Use
+[Complete configuration guide →](./configuration.md)
 
-Once installed and authenticated, you can start using Gemini CLI by issuing
-commands and prompts in your terminal. Ask it to generate code, explain files,
-and more.
+## Next steps
 
-To explore the power of Gemini CLI, see [Gemini CLI examples](./examples.md).
+Now that you're set up, explore what's possible:
 
-## What's next?
+| I want to... | Go here |
+|--------------|---------|
+| See example workflows | [Examples](./examples.md) |
+| Learn the commands | [Commands reference](../cli/commands.md) |
+| Install extensions | [Extensions gallery](https://geminicli.com/extensions) |
+| Build my own extension | [Extension development](../extensions/index.md) |
+| Use in CI/CD pipelines | [Headless mode](../cli/headless.md) |
+| Deploy to my team | [Enterprise setup](../cli/enterprise.md) |
+| Try the latest model | [Gemini 3](./gemini-3.md) |
 
-- Find out more about [Gemini CLI's tools](../tools/index.md).
-- Review [Gemini CLI's commands](../cli/commands.md).
-- Learn how to [get started with Gemini 3](./gemini-3.md).
+## Get help
+
+Stuck? Here's where to find answers:
+
+- **[FAQ](../faq.md)** - Common questions and answers
+- **[Troubleshooting](../troubleshooting.md)** - Solutions to common problems
+- **[GitHub Issues](https://github.com/google-gemini/gemini-cli/issues)** -
+  Report bugs or request features

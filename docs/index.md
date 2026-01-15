@@ -1,175 +1,182 @@
-# Welcome to Gemini CLI documentation
+# Gemini CLI
 
-Gemini CLI is Google's open-source, terminal-first AI agent that brings the
-power of Gemini directly to your command line. Built for developers, Gemini CLI
-offers:
+**The AI coding agent that lives in your terminal.**
 
-- **1M token context window** - Work with entire codebases in a single
-  conversation
-- **Generous free tier** - 60 requests/min, 1,000 requests/day with a personal
-  Google account
-- **Built-in tools** - File operations, shell commands, web search, and more
-- **Extensibility** - MCP servers, extensions, hooks, skills, and custom agents
-- **Multi-agent support** - Delegate specialized tasks to built-in or custom
-  agents
+Gemini CLI is Google's open-source AI agent that brings the full power of Gemini
+directly to your command line. Ship features faster, debug smarter, and automate
+the tedious parts of development - all without leaving your terminal.
 
-This documentation provides a comprehensive guide to installing, using, and
-developing Gemini CLI.
+```bash
+npm install -g @google/gemini-cli && gemini
+```
 
-## Gemini CLI overview
+## Why developers choose Gemini CLI
 
-Gemini CLI brings the capabilities of Gemini models to your terminal in an
-interactive Read-Eval-Print Loop (REPL) environment. The architecture consists
-of:
+### Understand entire codebases instantly
 
-- **CLI package** (`packages/cli`) - The user-facing terminal interface
-- **Core package** (`packages/core`) - Backend handling API communication, tools,
-  and agents
-- **A2A Server** (`packages/a2a-server`) - HTTP server for IDE and web
-  integrations
+With a **1 million token context window**, Gemini CLI can analyze your entire
+codebase in a single conversation. No more jumping between files or losing
+context.
 
-Gemini CLI provides a rich set of tools for file operations, shell commands,
-web fetching, and more. It also supports MCP (Model Context Protocol) servers
-for extending capabilities with external services.
+```
+> Where is authentication handled in this codebase?
 
-## Navigating the documentation
+I found the authentication system across several files:
 
-This documentation is organized into the following sections:
+- src/auth/provider.ts:42 - Main OAuth provider implementation
+- src/middleware/session.ts:15 - Session validation middleware
+- src/routes/login.ts:8 - Login endpoint handler
 
-### Overview
+The flow starts when...
+```
 
-- **[Architecture overview](./architecture.md):** Understand the high-level
-  design of Gemini CLI, including its components and how they interact.
-- **[Contribution guide](../CONTRIBUTING.md):** Information for contributors and
-  developers, including setup, building, testing, and coding conventions.
+### Execute real tasks, not just chat
 
-### Get started
+Gemini CLI isn't just a chatbot - it's an agent that takes action. It reads
+files, writes code, runs commands, and searches the web to complete your tasks.
 
-- **[Gemini CLI quickstart](./get-started/index.md):** Let's get started with
-  Gemini CLI.
-- **[Gemini 3 Pro on Gemini CLI](./get-started/gemini-3.md):** Learn how to
-  enable and use Gemini 3.
-- **[Authentication](./get-started/authentication.md):** Authenticate to Gemini
-  CLI.
-- **[Configuration](./get-started/configuration.md):** Learn how to configure
-  the CLI.
-- **[Installation](./get-started/installation.md):** Install and run Gemini CLI.
-- **[Examples](./get-started/examples.md):** Example usage of Gemini CLI.
+```
+> Add input validation to the user registration form and write tests for it
 
-### CLI
+Creating validation schema in src/validation/user.ts...
+Updating UserRegistrationForm component...
+Writing test cases in tests/user-registration.test.ts...
+Running npm test to verify...
 
-- **[Introduction: Gemini CLI](./cli/index.md):** Overview of the command-line
-  interface.
-- **[Commands](./cli/commands.md):** Description of available CLI commands.
-- **[Checkpointing](./cli/checkpointing.md):** Documentation for the
-  checkpointing feature.
-- **[Custom commands](./cli/custom-commands.md):** Create your own commands and
-  shortcuts for frequently used prompts.
-- **[Enterprise](./cli/enterprise.md):** Gemini CLI for enterprise.
-- **[Headless mode](./cli/headless.md):** Use Gemini CLI programmatically for
-  scripting and automation.
-- **[Keyboard shortcuts](./cli/keyboard-shortcuts.md):** A reference for all
-  keyboard shortcuts to improve your workflow.
-- **[Model selection](./cli/model.md):** Select the model used to process your
-  commands with `/model`.
-- **[Sandbox](./cli/sandbox.md):** Isolate tool execution in a secure,
-  containerized environment.
-- **[Settings](./cli/settings.md):** Configure various aspects of the CLI's
-  behavior and appearance with `/settings`.
-- **[Telemetry](./cli/telemetry.md):** Overview of telemetry in the CLI.
-- **[Themes](./cli/themes.md):** Themes for Gemini CLI.
-- **[Token caching](./cli/token-caching.md):** Token caching and optimization.
-- **[Trusted Folders](./cli/trusted-folders.md):** An overview of the Trusted
-  Folders security feature.
-- **[Tutorials](./cli/tutorials.md):** Tutorials for Gemini CLI.
-- **[Uninstall](./cli/uninstall.md):** Methods for uninstalling the Gemini CLI.
+✓ All 12 tests passed. Changes ready for review.
+```
 
-### Core
+### Generous free tier
 
-- **[Introduction: Gemini CLI core](./core/index.md):** Information about Gemini
-  CLI core.
-- **[Agents](./core/agents.md):** Built-in agents, custom agent creation, and
-  agent delegation.
-- **[Memport](./core/memport.md):** Using the Memory Import Processor.
-- **[Tools API](./core/tools-api.md):** Information on how the core manages and
-  exposes tools.
-- **[System Prompt Override](./cli/system-prompt.md):** Replace built-in system
-  instructions using `GEMINI_SYSTEM_MD`.
-- **[Policy Engine](./core/policy-engine.md):** Use the Policy Engine for
-  fine-grained control over tool execution.
-- **[Safety](./core/safety.md):** Loop detection, tool confirmation, and
-  security features.
+Get started immediately with your Google account:
 
-### Tools
+- **60 requests per minute**
+- **1,000 requests per day**
+- **No credit card required**
 
-- **[Introduction: Gemini CLI tools](./tools/index.md):** Information about
-  Gemini CLI's tools.
-- **[File system tools](./tools/file-system.md):** Documentation for the
-  `read_file` and `write_file` tools.
-- **[Shell tool](./tools/shell.md):** Documentation for the `run_shell_command`
-  tool.
-- **[Web fetch tool](./tools/web-fetch.md):** Documentation for the `web_fetch`
-  tool.
-- **[Web search tool](./tools/web-search.md):** Documentation for the
-  `google_web_search` tool.
-- **[Memory tool](./tools/memory.md):** Documentation for the `save_memory`
-  tool.
-- **[Todo tool](./tools/todos.md):** Documentation for the `write_todos` tool.
-- **[MCP servers](./tools/mcp-server.md):** Using MCP servers with Gemini CLI.
+Need more? [Explore paid options](./quota-and-pricing.md) for higher limits.
 
-### Extensions
+### Extend without limits
 
-- **[Introduction: Extensions](./extensions/index.md):** How to extend the CLI
-  with new functionality.
-- **[Get Started with extensions](./extensions/getting-started-extensions.md):**
-  Learn how to build your own extension.
-- **[Extension releasing](./extensions/extension-releasing.md):** How to release
-  Gemini CLI extensions.
+Build on top of Gemini CLI with a powerful extension system:
 
-### Hooks
+- **[MCP Servers](./tools/mcp-server.md)** - Connect to databases, APIs, and
+  external services
+- **[Extensions](./extensions/index.md)** - Package and share custom
+  capabilities
+- **[Hooks](./hooks/index.md)** - Intercept and customize behavior at any point
+- **[Skills](./cli/skills.md)** - Create reusable workflows for common tasks
+- **[Custom Agents](./core/agents.md)** - Build specialized AI assistants
 
-- **[Hooks](./hooks/index.md):** Intercept and customize Gemini CLI behavior at
-  key lifecycle points.
-- **[Writing Hooks](./hooks/writing-hooks.md):** Learn how to create your first
-  hook with a comprehensive example.
-- **[Best Practices](./hooks/best-practices.md):** Security, performance, and
-  debugging guidelines for hooks.
+## Get started in 60 seconds
 
-### A2A Server
+### 1. Install
 
-- **[Introduction: A2A Server](./a2a-server/index.md):** HTTP-based agent server
-  for IDE integrations and web applications.
-- **[Protocol](./a2a-server/protocol.md):** Event types and message formats.
-- **[Commands](./a2a-server/commands.md):** Available server commands.
+```bash
+npm install -g @google/gemini-cli
+```
 
-### IDE integration
+### 2. Launch and authenticate
 
-- **[Introduction to IDE integration](./ide-integration/index.md):** Connect the
-  CLI to your editor.
-- **[IDE companion extension spec](./ide-integration/ide-companion-spec.md):**
-  Spec for building IDE companion extensions.
+```bash
+gemini
+```
 
-### Development
+Select "Login with Google" and sign in with your Google account.
 
-- **[NPM](./npm.md):** Details on how the project's packages are structured.
-- **[Releases](./releases.md):** Information on the project's releases and
-  deployment cadence.
-- **[Changelog](./changelogs/index.md):** Highlights and notable changes to
-  Gemini CLI.
-- **[Integration tests](./integration-tests.md):** Information about the
-  integration testing framework used in this project.
-- **[Issue and PR automation](./issue-and-pr-automation.md):** A detailed
-  overview of the automated processes we use to manage and triage issues and
-  pull requests.
+### 3. Start building
 
-### Support
+```
+> Explain what this codebase does and suggest improvements
+```
 
-- **[FAQ](./faq.md):** Frequently asked questions.
-- **[Troubleshooting guide](./troubleshooting.md):** Find solutions to common
-  problems.
-- **[Quota and pricing](./quota-and-pricing.md):** Learn about the free tier and
-  paid options.
-- **[Terms of service and privacy notice](./tos-privacy.md):** Information on
-  the terms of service and privacy notices applicable to your use of Gemini CLI.
+**[Complete installation guide →](./get-started/installation.md)**
 
-We hope this documentation helps you make the most of Gemini CLI!
+## What can you build?
+
+### Automate your workflow
+
+```bash
+# Generate commit messages from staged changes
+git diff --staged | gemini -p "Write a commit message for these changes"
+
+# Explain error logs
+cat error.log | gemini -p "What went wrong and how do I fix it?"
+
+# Generate documentation
+gemini -p "Document all public functions in src/api/"
+```
+
+### Integrate with your IDE
+
+The [A2A Server](./a2a-server/index.md) enables deep IDE integration, powering
+AI-assisted development in VS Code and other editors.
+
+### Deploy to your team
+
+[Enterprise configuration](./cli/enterprise.md) supports centralized settings,
+policy enforcement, and compliance controls for teams of any size.
+
+## Documentation
+
+### Getting started
+
+| Guide | Description |
+|-------|-------------|
+| [Quickstart](./get-started/index.md) | Install and run your first command |
+| [Authentication](./get-started/authentication.md) | Configure Google or API key auth |
+| [Configuration](./get-started/configuration.md) | Customize CLI behavior |
+| [Examples](./get-started/examples.md) | Common use cases and patterns |
+
+### Core concepts
+
+| Topic | Description |
+|-------|-------------|
+| [Commands](./cli/commands.md) | Built-in slash commands reference |
+| [Tools](./tools/index.md) | File, shell, web, and memory tools |
+| [Agents](./core/agents.md) | Built-in and custom agent system |
+| [Safety](./core/safety.md) | Security features and tool confirmation |
+
+### Extending Gemini CLI
+
+| Topic | Description |
+|-------|-------------|
+| [MCP Servers](./tools/mcp-server.md) | Connect external services |
+| [Extensions](./extensions/index.md) | Package custom functionality |
+| [Hooks](./hooks/index.md) | Lifecycle event handlers |
+| [Skills](./cli/skills.md) | Reusable task workflows |
+
+### Advanced topics
+
+| Topic | Description |
+|-------|-------------|
+| [Headless mode](./cli/headless.md) | Scripting and automation |
+| [Sandboxing](./cli/sandbox.md) | Isolated execution environments |
+| [A2A Server](./a2a-server/index.md) | IDE and web integration |
+| [Policy Engine](./core/policy-engine.md) | Fine-grained tool control |
+
+### Reference
+
+| Topic | Description |
+|-------|-------------|
+| [Architecture](./architecture.md) | System design overview |
+| [FAQ](./faq.md) | Common questions |
+| [Troubleshooting](./troubleshooting.md) | Problem resolution |
+| [Changelog](./changelogs/index.md) | Release history |
+
+## Join the community
+
+Gemini CLI is open source and community-driven.
+
+- **[GitHub](https://github.com/google-gemini/gemini-cli)** - Star the repo,
+  report issues, contribute code
+- **[Extensions Gallery](https://geminicli.com/extensions/browse/)** - Discover
+  and share extensions
+
+---
+
+Ready to supercharge your development workflow?
+
+```bash
+npm install -g @google/gemini-cli && gemini
+```
