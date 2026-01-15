@@ -109,6 +109,16 @@ Slash commands provide meta-level control over the CLI itself.
   - **Description:** Display help information about Gemini CLI, including
     available commands and their usage.
 
+- **`/hooks`**
+  - **Description:** Manage hooks (when hooks UI is enabled).
+  - **Sub-commands:**
+    - **`panel`** (or **`list`**, **`show`**, default): Display all registered
+      hooks with their status.
+    - **`enable <name>`**: Enable a hook by name.
+    - **`disable <name>`**: Disable a hook by name.
+    - **`enable-all`**: Enable all disabled hooks.
+    - **`disable-all`**: Disable all enabled hooks.
+
 - **`/mcp`**
   - **Description:** Manage configured Model Context Protocol (MCP) servers.
   - **Sub-commands:**
@@ -204,6 +214,15 @@ Slash commands provide meta-level control over the CLI itself.
     modify them as desired. Changes to some settings are applied immediately,
     while others require a restart.
 
+- [**`/skills`**](./skills.md)
+  - **Description:** Manage agent skills (when skills are enabled via
+    `experimental.skills`).
+  - **Sub-commands:**
+    - **`list`** (default): Shows all discovered skills and their status.
+    - **`disable <name>`**: Prevents a specific skill from being used.
+    - **`enable <name>`**: Re-enables a disabled skill.
+    - **`reload`**: Refreshes the list of discovered skills from all tiers.
+
 - **`/stats`**
   - **Description:** Display detailed statistics for the current Gemini CLI
     session, including token usage, cached token savings (when available), and
@@ -223,6 +242,15 @@ Slash commands provide meta-level control over the CLI itself.
   - **Description:** Show version info. Please share this information when
     filing issues.
 
+- **`/agents`**
+  - **Description:** Manage agents (when agents are enabled via
+    `experimental.agents`).
+  - **Sub-commands:**
+    - **`list`** (default): List available local and remote agents.
+    - **`enable <name>`**: Enable a disabled agent.
+    - **`disable <name>`**: Disable an enabled agent.
+    - **`refresh`**: Reload the agent registry.
+
 - [**`/tools`**](../tools/index.md)
   - **Description:** Display a list of tools that are currently available within
     Gemini CLI.
@@ -233,6 +261,12 @@ Slash commands provide meta-level control over the CLI itself.
         tool's name with its full description as provided to the model.
     - **`nodesc`** or **`nodescriptions`**:
       - **Description:** Hide tool descriptions, showing only the tool names.
+
+- **`/policies`**
+  - **Description:** Manage and view tool execution policies.
+  - **Sub-commands:**
+    - **`list`** (default): List all active policies, showing their decision
+      (ALLOW/DENY), tool scope, argument patterns, and priorities.
 
 - **`/privacy`**
   - **Description:** Display the Privacy Notice and allow users to select

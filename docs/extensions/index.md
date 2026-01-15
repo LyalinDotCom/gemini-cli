@@ -128,6 +128,36 @@ gemini extensions link <path>
 
 - `<path>`: The path of the extension to link.
 
+### Validate an extension
+
+You can validate an extension before installing or publishing it using the
+`gemini extensions validate` command. This checks:
+
+- That the `gemini-extension.json` file is valid
+- That referenced context files exist
+- That the version follows semver format (warnings if not)
+
+```
+gemini extensions validate <path>
+```
+
+- `<path>`: The path of the extension to validate.
+
+### Configure extension settings
+
+Extensions can define settings that users provide during installation. You can
+also reconfigure these settings after installation:
+
+```
+gemini extensions configure <extension-name> [setting-name] [--scope <scope>]
+```
+
+- `<extension-name>`: The name of the extension to configure.
+- `[setting-name]`: Optional. The specific setting to configure. If omitted, all
+  settings will be shown.
+- `--scope`: The scope to set the setting in (`user` or `workspace`). Defaults
+  to `user`.
+
 ## How it works
 
 On startup, Gemini CLI looks for extensions in `<home>/.gemini/extensions`

@@ -2,6 +2,10 @@
 
 This document describes the `write_todos` tool for the Gemini CLI.
 
+- **Tool name:** `write_todos`
+- **Display name:** WriteTodos
+- **File:** `write-todos.ts`
+
 ## Description
 
 The `write_todos` tool allows the Gemini agent to create and manage a list of
@@ -48,10 +52,29 @@ write_todos({
 });
 ```
 
+## When to use this tool
+
+The agent uses this tool for complex queries that require multiple steps. If a
+task requires multiple steps, planning, or is higher complexity than a simple
+Q&A, the agent will use this tool.
+
+The agent does NOT use this tool:
+
+- For simple tasks that can be completed in less than 2 steps.
+- If the user query is simple and straightforward.
+- If the agent can respond with an answer in a single turn.
+
+## Validation rules
+
+- Only one task can be marked as `in_progress` at a time.
+- Each todo must have a non-empty description string.
+- Each todo must have a valid status (`pending`, `in_progress`, `completed`, or
+  `cancelled`).
+
 ## Important notes
 
 - **Enabling:** This tool is enabled by default. You can disable it in your
   `settings.json` file by setting `"useWriteTodos": false`.
-
 - **Intended use:** This tool is primarily used by the agent for complex,
   multi-turn tasks. It is generally not used for simple, single-turn questions.
+- **No confirmation:** This tool does not require user confirmation.

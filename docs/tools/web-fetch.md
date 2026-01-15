@@ -51,9 +51,37 @@ Compare two articles:
 web_fetch(prompt="What are the differences in the conclusions of these two papers: https://arxiv.org/abs/2401.0001 and https://arxiv.org/abs/2401.0002?")
 ```
 
+## Fallback behavior
+
+When the primary URL fetching method fails or for certain URLs, `web_fetch` uses
+a fallback mechanism:
+
+- **Private IP addresses:** URLs pointing to localhost or private network
+  addresses are automatically handled via the fallback fetch.
+- **Failed primary fetch:** If the Gemini API cannot access the URL, the tool
+  automatically falls back to fetching content directly from your local machine.
+- **GitHub URLs:** GitHub blob URLs (e.g.,
+  `github.com/user/repo/blob/main/file.txt`) are automatically converted to raw
+  URLs (`raw.githubusercontent.com/user/repo/main/file.txt`).
+- **Content limit:** Fetched content is limited to 100,000 characters to ensure
+  processing remains efficient.
+
+## Source attribution
+
+When fetching URLs, the tool includes source attribution and inline citations:
+
+- Sources are listed at the end of the response with titles and URLs.
+- Inline citation markers (e.g., `[1]`, `[2]`) are inserted in the response text
+  to indicate where information came from specific sources.
+
 ## Important notes
 
-- **URL processing:** `web_fetch` relies on the Gemini API's ability to access
-  and process the given URLs.
-- **Output quality:** The quality of the output will depend on the clarity of
-  the instructions in the prompt.
+- **URL validation:** All URLs must be valid and complete, starting with
+  `http://` or `https://`, with a valid hostname (e.g., `example.com` or an IP
+  address).
+- **URL processing:** `web_fetch` primarily uses the Gemini API's `urlContext`
+  feature to access and process URLs.
+- **Output quality:** The quality of the output depends on the clarity of the
+  instructions in the prompt.
+- **Confirmation:** The tool asks for confirmation before fetching URLs. You can
+  choose to proceed always to skip future confirmations.

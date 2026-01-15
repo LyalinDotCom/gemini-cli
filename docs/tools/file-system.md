@@ -20,15 +20,21 @@ glob patterns.
 - **Display name:** ReadFolder
 - **File:** `ls.ts`
 - **Parameters:**
-  - `path` (string, required): The absolute path to the directory to list.
+  - `dir_path` (string, required): The path to the directory to list.
   - `ignore` (array of strings, optional): A list of glob patterns to exclude
     from the listing (e.g., `["*.log", ".git"]`).
-  - `respect_git_ignore` (boolean, optional): Whether to respect `.gitignore`
-    patterns when listing files. Defaults to `true`.
+  - `file_filtering_options` (object, optional): Options for respecting ignore
+    patterns.
+    - `respect_git_ignore` (boolean, optional): Whether to respect `.gitignore`
+      patterns when listing files. Only available in git repositories. Defaults
+      to `true`.
+    - `respect_gemini_ignore` (boolean, optional): Whether to respect
+      `.geminiignore` patterns when listing files. Defaults to `true`.
 - **Behavior:**
   - Returns a list of file and directory names.
   - Indicates whether each entry is a directory.
   - Sorts entries with directories first, then alphabetically.
+  - Shows count of ignored files if any were filtered.
 - **Output (`llmContent`):** A string like:
   `Directory listing for /path/to/your/folder:\n[DIR] subfolder1\nfile1.txt\nfile2.png`
 - **Confirmation:** No.
@@ -101,16 +107,21 @@ directories) will be created.
 - **Parameters:**
   - `pattern` (string, required): The glob pattern to match against (e.g.,
     `"*.py"`, `"src/**/*.js"`).
-  - `path` (string, optional): The absolute path to the directory to search
-    within. If omitted, searches the tool's root directory.
+  - `dir_path` (string, optional): The absolute path to the directory to search
+    within. If omitted, searches across all workspace directories.
   - `case_sensitive` (boolean, optional): Whether the search should be
     case-sensitive. Defaults to `false`.
-  - `respect_git_ignore` (boolean, optional): Whether to respect .gitignore
-    patterns when finding files. Defaults to `true`.
+  - `respect_git_ignore` (boolean, optional): Whether to respect `.gitignore`
+    patterns when finding files. Only available in git repositories. Defaults to
+    `true`.
+  - `respect_gemini_ignore` (boolean, optional): Whether to respect
+    `.geminiignore` patterns when finding files. Defaults to `true`.
 - **Behavior:**
-  - Searches for files matching the glob pattern within the specified directory.
+  - Searches for files matching the glob pattern within the specified directory
+    or across all workspace directories if none specified.
   - Returns a list of absolute paths, sorted with the most recently modified
-    files first.
+    files first (within the last 24 hours), followed by older files sorted
+    alphabetically.
   - Ignores common nuisance directories like `node_modules` and `.git` by
     default.
 - **Output (`llmContent`):** A message like:
@@ -129,17 +140,18 @@ numbers.
 - **File:** `grep.ts`
 - **Parameters:**
   - `pattern` (string, required): The regular expression (regex) to search for
-    (e.g., `"function\s+myFunction"`).
-  - `path` (string, optional): The absolute path to the directory to search
-    within. Defaults to the current working directory.
+    (e.g., `"function\\s+myFunction"`).
+  - `dir_path` (string, optional): The absolute path to the directory to search
+    within. If omitted, searches across all workspace directories.
   - `include` (string, optional): A glob pattern to filter which files are
-    searched (e.g., `"*.js"`, `"src/**/*.{ts,tsx}"`). If omitted, searches most
-    files (respecting common ignores).
+    searched (e.g., `"*.js"`, `"*.{ts,tsx}"`). If omitted, searches all files
+    (respecting common ignores).
 - **Behavior:**
   - Uses `git grep` if available in a Git repository for speed; otherwise, falls
     back to system `grep` or a JavaScript-based search.
   - Returns a list of matching lines, each prefixed with its file path (relative
     to the search directory) and line number.
+  - Searches are case-insensitive by default.
 - **Output (`llmContent`):** A formatted string of matches, e.g.:
   ```
   Found 3 matches for pattern "myFunction" in path "." (filter: "*.ts"):
@@ -165,7 +177,12 @@ context around the `old_string` to ensure it modifies the correct location.
 - **Display name:** Edit
 - **File:** `edit.ts`
 - **Parameters:**
-  - `file_path` (string, required): The absolute path to the file to modify.
+  - `file_path` (string, required): The path to the file to modify.
+  - `instruction` (string, required): A clear, semantic instruction for the code
+    change, acting as a high-quality prompt for an expert LLM assistant. It must
+    be self-contained and explain the goal of the change. A good instruction
+    should concisely answer: WHY is the change needed, WHERE should it happen,
+    WHAT is the high-level change, and WHAT is the desired outcome.
   - `old_string` (string, required): The exact literal text to replace.
 
     **CRITICAL:** This string must uniquely identify the single instance to
@@ -177,7 +194,7 @@ context around the `old_string` to ensure it modifies the correct location.
   - `new_string` (string, required): The exact literal text to replace
     `old_string` with.
   - `expected_replacements` (number, optional): The number of occurrences to
-    replace. Defaults to `1`.
+    replace. Defaults to `1`. Use when you want to replace multiple occurrences.
 
 - **Behavior:**
   - If `old_string` is empty and `file_path` does not exist, creates a new file
@@ -185,19 +202,22 @@ context around the `old_string` to ensure it modifies the correct location.
   - If `old_string` is provided, it reads the `file_path` and attempts to find
     exactly one occurrence of `old_string`.
   - If one occurrence is found, it replaces it with `new_string`.
-  - **Enhanced reliability (multi-stage edit correction):** To significantly
-    improve the success rate of edits, especially when the model-provided
-    `old_string` might not be perfectly precise, the tool incorporates a
-    multi-stage edit correction mechanism.
-    - If the initial `old_string` isn't found or matches multiple locations, the
-      tool can leverage the Gemini model to iteratively refine `old_string` (and
-      potentially `new_string`).
-    - This self-correction process attempts to identify the unique segment the
-      model intended to modify, making the `replace` operation more robust even
-      with slightly imperfect initial context.
+  - **Multi-strategy matching:** The tool uses multiple strategies to find the
+    target text:
+    1. **Exact match:** Attempts a literal string match first.
+    2. **Flexible match:** If exact match fails, tries whitespace-insensitive
+       matching while preserving indentation.
+    3. **Regex match:** Falls back to a regex-based approach for structural
+       matching.
+  - **Enhanced reliability (self-correction):** If the initial match fails, the
+    tool can leverage an LLM to iteratively refine `old_string` and
+    `new_string`, making the operation more robust even with slightly imperfect
+    initial context.
+  - **User modification support:** Users can modify the `new_string` content
+    during confirmation. If modified, this is reported in the response.
 - **Failure conditions:** Despite the correction mechanism, the tool will fail
   if:
-  - `file_path` is not absolute or is outside the root directory.
+  - `file_path` is outside the workspace directories.
   - `old_string` is not empty, but the `file_path` does not exist.
   - `old_string` is empty, but the `file_path` already exists.
   - `old_string` is not found in the file after attempts to correct it.
@@ -213,7 +233,7 @@ context around the `old_string` to ensure it modifies the correct location.
 - **Confirmation:** Yes. Shows a diff of the proposed changes and asks for user
   approval before writing to the file.
 
-## 7. `read_many_files` (ReadFiles)
+## 7. `read_many_files` (ReadManyFiles)
 
 `read_many_files` reads content from multiple files matching glob patterns and
 concatenates them into a single response. This tool is designed for getting an
@@ -221,29 +241,33 @@ overview of multiple files simultaneously, such as reviewing codebases or
 analyzing collections of files.
 
 - **Tool name:** `read_many_files`
-- **Display name:** ReadFiles
+- **Display name:** ReadManyFiles
 - **File:** `read-many-files.ts`
 - **Parameters:**
-  - `include` (array of strings, required): Glob patterns for files to include
-    (e.g., `["src/**/*.ts", "*.md"]`).
+  - `include` (array of strings, required): Glob patterns or paths for files to
+    include (e.g., `["src/**/*.ts", "*.md"]`, `["README.md", "docs/"]`).
   - `exclude` (array of strings, optional): Glob patterns for files to exclude
-    (e.g., `["**/*.test.ts", "node_modules/**"]`).
-  - `recursive` (boolean, optional): Whether to search recursively. Defaults to
-    `true`.
+    (e.g., `["**/*.log", "temp/"]`). Added to default excludes if
+    `useDefaultExcludes` is true.
+  - `recursive` (boolean, optional): Whether to search recursively. Primarily
+    controlled by `**` in glob patterns. Defaults to `true`.
   - `useDefaultExcludes` (boolean, optional): Whether to apply default exclusion
-    patterns (like `node_modules`, `.git`). Defaults to `true`.
+    patterns (like `node_modules`, `.git`, binary files). Defaults to `true`.
   - `file_filtering_options` (object, optional):
     - `respect_git_ignore` (boolean, optional): Whether to respect `.gitignore`.
-      Defaults to `true`.
+      Only available in git repositories. Defaults to `true`.
     - `respect_gemini_ignore` (boolean, optional): Whether to respect
       `.geminiignore`. Defaults to `true`.
 - **Behavior:**
-  - Finds all files matching the include patterns.
+  - Finds all files matching the include patterns across all workspace
+    directories.
   - Excludes files matching exclude patterns.
   - Reads and concatenates content from matching files.
-  - Handles text files, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files
-    (MP3, WAV, etc.), and PDFs when explicitly named.
-  - Respects file size and count limits to prevent overwhelming responses.
+  - For text files, uses UTF-8 encoding and separates file contents with
+    `--- {filePath} ---` headers, ending with `--- End of content ---`.
+  - Handles images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV,
+    etc.), and PDFs only when explicitly requested by name or extension.
+  - Shows warning if file content was truncated.
 - **Output (`llmContent`):** Concatenated content from all matching files, with
   file path headers separating each file's content.
 - **Confirmation:** No.
@@ -252,6 +276,7 @@ analyzing collections of files.
   - Finding where specific functionality is implemented across files.
   - Reviewing multiple documentation files at once.
   - Gathering context from multiple configuration files.
+  - Processing batch reads of code files (e.g., all TypeScript files in `src`).
 
 **Example patterns:**
 

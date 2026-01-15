@@ -2,6 +2,10 @@
 
 This document describes the `save_memory` tool for the Gemini CLI.
 
+- **Tool name:** `save_memory`
+- **Display name:** SaveMemory
+- **File:** `memoryTool.ts`
+
 ## Description
 
 Use `save_memory` to save and recall information across your Gemini CLI
@@ -46,9 +50,36 @@ Store a project-specific detail:
 save_memory(fact="The project I'm currently working on is called 'gemini-cli'.")
 ```
 
+## When to use this tool
+
+The model uses this tool:
+
+- When you explicitly ask it to remember something (e.g., "Remember that I like
+  Python", "Please save this: my project uses TypeScript").
+- When you state a clear, concise fact about yourself, your preferences, or your
+  environment that seems important to retain for future interactions.
+
+The model should NOT use this tool:
+
+- To remember conversational context that is only relevant for the current
+  session.
+- To save long, complex, or rambling pieces of text. The fact should be
+  relatively short and to the point.
+- If unsure whether the information is worth remembering long-term.
+
+## Confirmation
+
+The tool asks for confirmation before saving, showing a diff of the proposed
+changes. You can choose to proceed always to skip future confirmations for the
+memory file.
+
 ## Important notes
 
 - **General usage:** This tool should be used for concise, important facts. It
   is not intended for storing large amounts of data or conversational history.
 - **Memory file:** The memory file is a plain text Markdown file, so you can
   view and edit it manually if needed.
+- **Memory section:** Facts are stored under the `## Gemini Added Memories`
+  section header. Each fact is formatted as a bullet point.
+- **Editable:** You can modify the proposed memory entry during the confirmation
+  step using an external editor.

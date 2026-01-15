@@ -18,12 +18,15 @@ they are executed with `bash -c`.
 
 `run_shell_command` takes the following arguments:
 
-- `command` (string, required): The exact shell command to execute.
+- `command` (string, required): The exact shell command to execute. On Windows,
+  this is executed as `powershell.exe -NoProfile -Command <command>`. On other
+  platforms, it is executed as `bash -c <command>`.
 - `description` (string, optional): A brief description of the command's
-  purpose, which will be shown to the user.
-- `directory` (string, optional): The directory (relative to the project root)
-  in which to execute the command. If not provided, the command runs in the
-  project root.
+  purpose, which will be shown to the user. Should be specific and concise,
+  ideally a single sentence (up to 3 sentences for clarity).
+- `dir_path` (string, optional): The path of the directory to run the command
+  in. Must be a directory within the workspace and must already exist. If not
+  provided, the command runs in the project root directory.
 
 ## How to use `run_shell_command` with the Gemini CLI
 
@@ -32,18 +35,24 @@ When using `run_shell_command`, the command is executed as a subprocess.
 detailed information about the execution, including:
 
 - `Command`: The command that was executed.
-- `Directory`: The directory where the command was run.
-- `Stdout`: Output from the standard output stream.
-- `Stderr`: Output from the standard error stream.
-- `Error`: Any error message reported by the subprocess.
-- `Exit Code`: The exit code of the command.
-- `Signal`: The signal number if the command was terminated by a signal.
-- `Background PIDs`: A list of PIDs for any background processes started.
+- `Directory`: The directory where the command was run, or `(root)`.
+- `Output`: Combined output from stdout and stderr streams. Can be `(empty)` or
+  partial on error and for any unwaited background processes.
+- `Error`: Any error message reported by the subprocess, or `(none)`.
+- `Exit Code`: The exit code of the command, or `(none)` if terminated by
+  signal.
+- `Signal`: The signal number if the command was terminated by a signal, or
+  `(none)`.
+- `Background PIDs`: A list of PIDs for any background processes started, or
+  `(none)`.
+- `Process Group PGID`: The process group ID, or `(none)`. The command process
+  group can be terminated with `kill -- -PGID` or signaled with
+  `kill -s SIGNAL -- -PGID`.
 
 Usage:
 
 ```
-run_shell_command(command="Your commands.", description="Your description of the command.", directory="Your execution directory.")
+run_shell_command(command="Your commands.", description="Your description of the command.", dir_path="Your execution directory.")
 ```
 
 ## `run_shell_command` examples
@@ -57,7 +66,7 @@ run_shell_command(command="ls -la")
 Run a script in a specific directory:
 
 ```
-run_shell_command(command="./my_script.sh", directory="scripts", description="Run my custom script")
+run_shell_command(command="./my_script.sh", dir_path="scripts", description="Run my custom script")
 ```
 
 Start a background server:
