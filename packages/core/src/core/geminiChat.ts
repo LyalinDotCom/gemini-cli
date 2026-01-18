@@ -55,6 +55,7 @@ import {
   fireBeforeToolSelectionHook,
 } from './geminiChatHookTriggers.js';
 import { coreEvents } from '../utils/events.js';
+import { diagnostics } from 'gemini-cli-insights-lib';
 
 export enum StreamEventType {
   /** A regular content chunk from the API. */
@@ -955,6 +956,19 @@ export class GeminiChat {
     });
 
     this.chatRecordingService.recordToolCalls(model, toolCallRecords);
+
+    // Diagnostics: trace completed tool calls
+    for (const record of toolCallRecords) {
+      diagnostics.trace('tool', 'complete', {
+        model,
+        toolId: record.id,
+        toolName: record.name,
+        args: record.args,
+        result: record.result,
+        status: record.status,
+        resultDisplay: record.resultDisplay,
+      });
+    }
   }
 
   /**
@@ -978,6 +992,13 @@ export class GeminiChat {
       this.chatRecordingService.recordThought({
         subject,
         description,
+      });
+
+      // Diagnostics: trace thought/reasoning
+      diagnostics.trace('thought', 'reasoning', {
+        subject,
+        description,
+        rawText,
       });
     }
   }

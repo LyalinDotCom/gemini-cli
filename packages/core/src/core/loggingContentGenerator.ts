@@ -33,6 +33,7 @@ import { CodeAssistServer } from '../code_assist/server.js';
 import { toContents } from '../code_assist/converter.js';
 import { isStructuredError } from '../utils/quotaErrorDetection.js';
 import { runInDevTraceSpan, type SpanMetadata } from '../telemetry/trace.js';
+import { diagnostics } from 'gemini-cli-insights-lib';
 
 interface StructuredError {
   status: number;
@@ -196,6 +197,15 @@ export class LoggingContentGenerator implements ContentGenerator {
           serverDetails,
         );
 
+        // Diagnostics: trace API request
+        const diagSpan = diagnostics.startSpan('api', 'request', {
+          model: req.model,
+          promptId: userPromptId,
+          contents,
+          config: req.config,
+          serverDetails,
+        });
+
         try {
           const response = await this.wrapped.generateContent(
             req,
@@ -224,6 +234,17 @@ export class LoggingContentGenerator implements ContentGenerator {
             req.config,
             serverDetails,
           );
+
+          // Diagnostics: trace API response
+          diagSpan.end({
+            responseId: response.responseId,
+            modelVersion: response.modelVersion,
+            candidates: response.candidates,
+            usageMetadata: response.usageMetadata,
+            promptFeedback: response.promptFeedback,
+            durationMs,
+          });
+
           return response;
         } catch (error) {
           const durationMs = Date.now() - startTime;
@@ -236,6 +257,10 @@ export class LoggingContentGenerator implements ContentGenerator {
             req.config,
             serverDetails,
           );
+
+          // Diagnostics: trace API error
+          diagSpan.error(error);
+
           throw error;
         }
       },
@@ -273,6 +298,16 @@ export class LoggingContentGenerator implements ContentGenerator {
           serverDetails,
         );
 
+        // Diagnostics: trace streaming API request
+        const diagSpan = diagnostics.startSpan('api', 'request', {
+          model: req.model,
+          promptId: userPromptId,
+          contents: toContents(req.contents),
+          config: req.config,
+          serverDetails,
+          streaming: true,
+        });
+
         let stream: AsyncGenerator<GenerateContentResponse>;
         try {
           stream = await this.wrapped.generateContentStream(req, userPromptId);
@@ -287,6 +322,7 @@ export class LoggingContentGenerator implements ContentGenerator {
             req.config,
             serverDetails,
           );
+          diagSpan.error(error);
           throw error;
         }
 
@@ -297,6 +333,7 @@ export class LoggingContentGenerator implements ContentGenerator {
           userPromptId,
           spanMetadata,
           endSpan,
+          diagSpan,
         );
       },
     );
@@ -309,6 +346,7 @@ export class LoggingContentGenerator implements ContentGenerator {
     userPromptId: string,
     spanMetadata: SpanMetadata,
     endSpan: () => void,
+    diagSpan: ReturnType<typeof diagnostics.startSpan>,
   ): AsyncGenerator<GenerateContentResponse> {
     const responses: GenerateContentResponse[] = [];
 
@@ -352,6 +390,16 @@ export class LoggingContentGenerator implements ContentGenerator {
         usageMetadata: lastUsageMetadata,
         durationMs,
       };
+
+      // Diagnostics: trace streaming API response
+      diagSpan.end({
+        responseId: responses[0]?.responseId,
+        modelVersion: responses[0]?.modelVersion,
+        candidates: responses.flatMap((r) => r.candidates || []),
+        usageMetadata: lastUsageMetadata,
+        durationMs,
+        chunkCount: responses.length,
+      });
     } catch (error) {
       spanMetadata.error = error;
       const durationMs = Date.now() - startTime;
@@ -364,6 +412,10 @@ export class LoggingContentGenerator implements ContentGenerator {
         req.config,
         serverDetails,
       );
+
+      // Diagnostics: trace streaming API error
+      diagSpan.error(error);
+
       throw error;
     } finally {
       endSpan();
