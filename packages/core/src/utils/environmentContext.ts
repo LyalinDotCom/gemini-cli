@@ -25,6 +25,7 @@ export async function getDirectoryContextString(
     workspaceDirectories.map((dir) =>
       getFolderStructure(dir, {
         fileService: config.getFileService(),
+        maxItems: 50, // Show limited structure; model should use tools to explore deeper
       }),
     ),
   );
@@ -33,14 +34,15 @@ export async function getDirectoryContextString(
 
   let workingDirPreamble: string;
   if (workspaceDirectories.length === 1) {
-    workingDirPreamble = `I'm currently working in the directory: ${workspaceDirectories[0]}`;
+    workingDirPreamble = `Current working directory: ${workspaceDirectories[0]}`;
   } else {
     const dirList = workspaceDirectories.map((dir) => `  - ${dir}`).join('\n');
-    workingDirPreamble = `I'm currently working in the following directories:\n${dirList}`;
+    workingDirPreamble = `Current working directories:\n${dirList}`;
   }
 
   return `${workingDirPreamble}
-Here is the folder structure of the current working directories:
+
+Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):
 
 ${folderStructure}`;
 }
@@ -65,14 +67,14 @@ export async function getEnvironmentContext(config: Config): Promise<Part[]> {
   const environmentMemory = config.getEnvironmentMemory();
 
   const context = `
-This is the Gemini CLI. We are setting up the context for our chat.
-Today's date is ${today} (formatted according to the user's locale).
-My operating system is: ${platform}
-The project's temporary directory is: ${tempDir}
-${directoryContext}
+# Environment Context
 
-${environmentMemory}
-        `.trim();
+- **Date**: ${today}
+- **OS**: ${platform}
+- **Temp directory**: ${tempDir}
+
+${directoryContext}
+${environmentMemory ? `\n${environmentMemory}` : ''}`.trim();
 
   const initialParts: Part[] = [{ text: context }];
 
@@ -86,18 +88,10 @@ export async function getInitialChatHistory(
   const envParts = await getEnvironmentContext(config);
   const envContextString = envParts.map((part) => part.text || '').join('\n\n');
 
-  const allSetupText = `
-${envContextString}
-
-Reminder: Do not return an empty response when a tool call is required.
-
-My setup is complete. I will provide my first command in the next turn.
-    `.trim();
-
   return [
     {
       role: 'user',
-      parts: [{ text: allSetupText }],
+      parts: [{ text: envContextString }],
     },
     ...(extraHistory ?? []),
   ];

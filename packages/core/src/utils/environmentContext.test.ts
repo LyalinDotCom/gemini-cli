@@ -49,12 +49,11 @@ describe('getDirectoryContextString', () => {
 
   it('should return context string for a single directory', async () => {
     const contextString = await getDirectoryContextString(mockConfig as Config);
+    expect(contextString).toContain('Current working directory: /test/dir');
     expect(contextString).toContain(
-      "I'm currently working in the directory: /test/dir",
+      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
     );
-    expect(contextString).toContain(
-      'Here is the folder structure of the current working directories:\n\nMock Folder Structure',
-    );
+    expect(contextString).toContain('Mock Folder Structure');
   });
 
   it('should return context string for multiple directories', async () => {
@@ -67,11 +66,13 @@ describe('getDirectoryContextString', () => {
 
     const contextString = await getDirectoryContextString(mockConfig as Config);
     expect(contextString).toContain(
-      "I'm currently working in the following directories:\n  - /test/dir1\n  - /test/dir2",
+      'Current working directories:\n  - /test/dir1\n  - /test/dir2',
     );
     expect(contextString).toContain(
-      'Here is the folder structure of the current working directories:\n\nStructure 1\nStructure 2',
+      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
     );
+    expect(contextString).toContain('Structure 1');
+    expect(contextString).toContain('Structure 2');
   });
 });
 
@@ -114,18 +115,17 @@ describe('getEnvironmentContext', () => {
     expect(parts.length).toBe(1);
     const context = parts[0].text;
 
-    expect(context).toContain("Today's date is");
-    expect(context).toContain("(formatted according to the user's locale)");
-    expect(context).toContain(`My operating system is: ${process.platform}`);
+    expect(context).toContain('**Date**:');
+    expect(context).toContain(`**OS**: ${process.platform}`);
+    expect(context).toContain('Current working directory: /test/dir');
     expect(context).toContain(
-      "I'm currently working in the directory: /test/dir",
+      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
     );
-    expect(context).toContain(
-      'Here is the folder structure of the current working directories:\n\nMock Folder Structure',
-    );
+    expect(context).toContain('Mock Folder Structure');
     expect(context).toContain('Mock Environment Memory');
     expect(getFolderStructure).toHaveBeenCalledWith('/test/dir', {
       fileService: undefined,
+      maxItems: 50,
     });
   });
 
@@ -143,11 +143,13 @@ describe('getEnvironmentContext', () => {
     const context = parts[0].text;
 
     expect(context).toContain(
-      "I'm currently working in the following directories:\n  - /test/dir1\n  - /test/dir2",
+      'Current working directories:\n  - /test/dir1\n  - /test/dir2',
     );
     expect(context).toContain(
-      'Here is the folder structure of the current working directories:\n\nStructure 1\nStructure 2',
+      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
     );
+    expect(context).toContain('Structure 1');
+    expect(context).toContain('Structure 2');
     expect(getFolderStructure).toHaveBeenCalledTimes(2);
   });
 
