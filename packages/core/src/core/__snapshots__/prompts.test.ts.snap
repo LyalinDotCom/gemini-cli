@@ -15,7 +15,12 @@ exports[`Core System Prompt (prompts.ts) > should append userMemory with separat
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -183,7 +188,12 @@ exports[`Core System Prompt (prompts.ts) > should handle CodebaseInvestigator wi
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -338,7 +348,12 @@ exports[`Core System Prompt (prompts.ts) > should handle CodebaseInvestigator wi
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -493,7 +508,12 @@ exports[`Core System Prompt (prompts.ts) > should handle git instructions when i
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -656,7 +676,12 @@ exports[`Core System Prompt (prompts.ts) > should handle git instructions when i
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -834,7 +859,12 @@ exports[`Core System Prompt (prompts.ts) > should include available_skills when 
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1010,7 +1040,12 @@ exports[`Core System Prompt (prompts.ts) > should include correct sandbox instru
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1173,7 +1208,12 @@ exports[`Core System Prompt (prompts.ts) > should include correct sandbox instru
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1336,7 +1376,12 @@ exports[`Core System Prompt (prompts.ts) > should include correct sandbox instru
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1499,7 +1544,12 @@ exports[`Core System Prompt (prompts.ts) > should return the base prompt when us
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1662,7 +1712,12 @@ exports[`Core System Prompt (prompts.ts) > should return the base prompt when us
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1825,7 +1880,12 @@ exports[`Core System Prompt (prompts.ts) > should return the interactive avoidan
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -1980,7 +2040,12 @@ exports[`Core System Prompt (prompts.ts) > should use chatty system prompt for p
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
@@ -2144,7 +2209,12 @@ exports[`Core System Prompt (prompts.ts) > should use chatty system prompt for p
 2. **ANALYSIS** (Verbs: "inspect", "investigate", "audit", "check", "find", "search", "debug", "review", "examine", "look at", "any bugs?", "any issues?", "what's wrong", "is there a bug"):
    - **Goal**: Gather information to answer a question or find a root cause.
    - **Allowed Tools**: 'read_file', 'search_file_content', 'glob', 'list_directory' (Read-Only).
-   - **CRITICAL CONSTRAINT**: You MUST NOT call modification tools ('replace', 'write_file'). If you find a bug or issue, **REPORT IT** and propose a fix plan, but **STOP** and ask for permission to implement it.
+   - **FORBIDDEN**: Calling 'replace' or 'write_file' during ANALYSIS is a VIOLATION. Never say "I'm going to fix this" - that is a modification action.
+   - **REQUIRED OUTPUT FORMAT** when you find an issue:
+     1. State: "I found the issue: [description]"
+     2. Explain the root cause
+     3. End with EXACTLY: "Would you like me to fix this?"
+   - **DO NOT** include any tool calls after finding the issue. Your response must END with the question above.
 
 3. **MODIFICATION** (Verbs: "fix", "change", "update", "add", "create", "delete", "refactor", "implement", "make it", "build"):
    - **Goal**: Change the state of the codebase.
