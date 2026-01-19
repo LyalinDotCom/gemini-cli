@@ -95,6 +95,7 @@ import { isAlternateBufferEnabled } from './ui/hooks/useAlternateBuffer.js';
 
 import { setupTerminalAndTheme } from './utils/terminalTheme.js';
 import { profiler } from './ui/components/DebugProfiler.js';
+import { diagnostics } from 'gemini-cli-insights-lib';
 
 const SLOW_RENDER_MS = 200;
 
@@ -161,10 +162,33 @@ ${reason.stack}`
         : ''
     }`;
     debugLogger.error(errorMessage);
+
+    // Diagnostics: trace unhandled rejection
+    diagnostics.trace('system', 'exception', {
+      type: 'unhandledRejection',
+      reason: String(reason),
+      name: reason instanceof Error ? reason.name : 'UnhandledRejection',
+      message: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error ? reason.stack : undefined,
+    });
+
     if (!unhandledRejectionOccurred) {
       unhandledRejectionOccurred = true;
       appEvents.emit(AppEvent.OpenDebugConsole);
     }
+  });
+
+  process.on('uncaughtException', (error) => {
+    // Diagnostics: trace uncaught exception
+    diagnostics.trace('system', 'exception', {
+      type: 'uncaughtException',
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    debugLogger.error(`Uncaught Exception: ${error.message}\n${error.stack}`);
+    appEvents.emit(AppEvent.OpenDebugConsole);
   });
 }
 
@@ -283,6 +307,25 @@ export async function startInteractiveUI(
 }
 
 export async function main() {
+  // Diagnostics: trace session start immediately to trigger viewer switch
+  diagnostics.trace('system', 'init', {
+    sessionId,
+    version: getVersion(),
+    platform: process.platform,
+    nodeVersion: process.version,
+    cwd: process.cwd(),
+  });
+
+  // Print diagnostic mode info if enabled
+  if (diagnostics.isEnabled()) {
+    writeToStderr(
+      `\x1b[36m[Diagnostics Mode]\x1b[0m Session ID: \x1b[33m${diagnostics.getSessionId()}\x1b[0m\n`,
+    );
+    writeToStderr(
+      `\x1b[36m[Diagnostics Mode]\x1b[0m Output dir: \x1b[90m${diagnostics.getSessionDir()}\x1b[0m\n\n`,
+    );
+  }
+
   const cliStartupHandle = startupProfiler.start('cli_startup');
   const cleanupStdio = patchStdio();
   registerSyncCleanup(() => {
@@ -314,6 +357,26 @@ export async function main() {
   const parseArgsHandle = startupProfiler.start('parse_arguments');
   const argv = await parseArguments(settings.merged);
   parseArgsHandle?.end();
+
+  // Diagnostics: trace all loaded config and CLI args
+  diagnostics.trace('system', 'config', {
+    settings: settings.merged,
+    argv: {
+      prompt: argv.prompt,
+      promptInteractive: argv.promptInteractive,
+      resume: argv.resume,
+      model: argv.model,
+      sandbox: argv.sandbox,
+      yolo: argv.yolo,
+      approvalMode: argv.approvalMode,
+      allowedTools: argv.allowedTools,
+      allowedMcpServerNames: argv.allowedMcpServerNames,
+      debug: argv.debug,
+      screenReader: argv.screenReader,
+      includeDirectories: argv.includeDirectories,
+    },
+    settingsErrors: settings.errors.map((e) => e.message),
+  });
 
   // Check for invalid input combinations early to prevent crashes
   if (argv.promptInteractive && !process.stdin.isTTY) {

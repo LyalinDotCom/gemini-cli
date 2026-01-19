@@ -959,15 +959,27 @@ export class GeminiChat {
 
     // Diagnostics: trace completed tool calls
     for (const record of toolCallRecords) {
-      diagnostics.trace('tool', 'complete', {
-        model,
-        toolId: record.id,
-        toolName: record.name,
-        args: record.args,
-        result: record.result,
-        status: record.status,
-        resultDisplay: record.resultDisplay,
-      });
+      if (record.status === 'error') {
+        // Trace tool errors separately for easier filtering
+        diagnostics.trace('tool', 'error', {
+          model,
+          toolId: record.id,
+          toolName: record.name,
+          args: record.args,
+          result: record.result,
+          resultDisplay: record.resultDisplay,
+        });
+      } else {
+        diagnostics.trace('tool', 'complete', {
+          model,
+          toolId: record.id,
+          toolName: record.name,
+          args: record.args,
+          result: record.result,
+          status: record.status,
+          resultDisplay: record.resultDisplay,
+        });
+      }
     }
   }
 

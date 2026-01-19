@@ -197,13 +197,19 @@ export class LoggingContentGenerator implements ContentGenerator {
           serverDetails,
         );
 
-        // Diagnostics: trace API request
-        const diagSpan = diagnostics.startSpan('api', 'request', {
+        // Diagnostics: trace API request start (immediate)
+        diagnostics.trace('api', 'request', {
           model: req.model,
           promptId: userPromptId,
           contents,
           config: req.config,
           serverDetails,
+        });
+
+        // Diagnostics: span for API response timing
+        const diagSpan = diagnostics.startSpan('api', 'response', {
+          model: req.model,
+          promptId: userPromptId,
         });
 
         try {
@@ -298,13 +304,20 @@ export class LoggingContentGenerator implements ContentGenerator {
           serverDetails,
         );
 
-        // Diagnostics: trace streaming API request
-        const diagSpan = diagnostics.startSpan('api', 'request', {
+        // Diagnostics: trace streaming API request start (immediate)
+        diagnostics.trace('api', 'request', {
           model: req.model,
           promptId: userPromptId,
           contents: toContents(req.contents),
           config: req.config,
           serverDetails,
+          streaming: true,
+        });
+
+        // Diagnostics: span for streaming API response timing
+        const diagSpan = diagnostics.startSpan('api', 'response', {
+          model: req.model,
+          promptId: userPromptId,
           streaming: true,
         });
 
