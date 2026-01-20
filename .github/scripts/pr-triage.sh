@@ -68,7 +68,7 @@ process_pr_optimized() {
             fi
         else
             echo "   ⚠️  No linked issue found for PR #${PR_NUMBER}"
-            if [[ ",${CURRENT_LABELS}," != ",status/need-issue,"* ]]; then
+            if [[ ",${CURRENT_LABELS}," != *",status/need-issue,"* ]]; then
                 echo "      ➕ Adding status/need-issue label"
                 LABELS_TO_ADD="status/need-issue"
             fi
@@ -82,7 +82,7 @@ process_pr_optimized() {
     else
         echo "   🔗 Found linked issue #${ISSUE_NUMBER}"
 
-        if [[ ",${CURRENT_LABELS}," == ",status/need-issue,"* ]]; then
+        if [[ ",${CURRENT_LABELS}," == *",status/need-issue,"* ]]; then
             echo "      ➖ Removing status/need-issue label"
             LABELS_TO_REMOVE="status/need-issue"
         fi
@@ -142,7 +142,7 @@ JQ_EXTRACT_FIELDS='{
     labels: [.labels[].name] | join(",")
 }'
 
-JQ_TSV_FORMAT='"\((.number | tostring))\t\(.isDraft)\t\((.issue // \"null\") | tostring)\t\(.labels)"' # Corrected escaping for quotes within the string literal
+JQ_TSV_FORMAT='"\((.number | tostring))\t\(.isDraft)\t\((.issue // null) | tostring)\t\(.labels)"'
 
 if [[ -n "${PR_NUMBER:-}" ]]; then
     echo "🔄 Processing single PR #${PR_NUMBER}"
