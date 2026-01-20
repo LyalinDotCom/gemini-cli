@@ -19,12 +19,8 @@ import {
 } from './environmentContext.js';
 import type { Config } from '../config/config.js';
 import type { Storage } from '../config/storage.js';
-import { getFolderStructure } from './getFolderStructure.js';
 
 vi.mock('../config/config.js');
-vi.mock('./getFolderStructure.js', () => ({
-  getFolderStructure: vi.fn(),
-}));
 vi.mock('../tools/read-many-files.js');
 
 describe('getDirectoryContextString', () => {
@@ -40,7 +36,6 @@ describe('getDirectoryContextString', () => {
         getProjectTempDir: vi.fn().mockReturnValue('/tmp/project-temp'),
       } as unknown as Storage,
     };
-    vi.mocked(getFolderStructure).mockResolvedValue('Mock Folder Structure');
   });
 
   afterEach(() => {
@@ -51,28 +46,22 @@ describe('getDirectoryContextString', () => {
     const contextString = await getDirectoryContextString(mockConfig as Config);
     expect(contextString).toContain('Current working directory: /test/dir');
     expect(contextString).toContain(
-      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
+      "Use 'glob', 'grep', and 'list_directory' tools to explore the codebase structure.",
     );
-    expect(contextString).toContain('Mock Folder Structure');
   });
 
   it('should return context string for multiple directories', async () => {
     (
       vi.mocked(mockConfig.getWorkspaceContext!)().getDirectories as Mock
     ).mockReturnValue(['/test/dir1', '/test/dir2']);
-    vi.mocked(getFolderStructure)
-      .mockResolvedValueOnce('Structure 1')
-      .mockResolvedValueOnce('Structure 2');
 
     const contextString = await getDirectoryContextString(mockConfig as Config);
     expect(contextString).toContain(
       'Current working directories:\n  - /test/dir1\n  - /test/dir2',
     );
     expect(contextString).toContain(
-      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
+      "Use 'glob', 'grep', and 'list_directory' tools to explore the codebase structure.",
     );
-    expect(contextString).toContain('Structure 1');
-    expect(contextString).toContain('Structure 2');
   });
 });
 
@@ -100,8 +89,6 @@ describe('getEnvironmentContext', () => {
         getProjectTempDir: vi.fn().mockReturnValue('/tmp/project-temp'),
       } as unknown as Storage,
     };
-
-    vi.mocked(getFolderStructure).mockResolvedValue('Mock Folder Structure');
   });
 
   afterEach(() => {
@@ -119,23 +106,15 @@ describe('getEnvironmentContext', () => {
     expect(context).toContain(`**OS**: ${process.platform}`);
     expect(context).toContain('Current working directory: /test/dir');
     expect(context).toContain(
-      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
+      "Use 'glob', 'grep', and 'list_directory' tools to explore the codebase structure.",
     );
-    expect(context).toContain('Mock Folder Structure');
     expect(context).toContain('Mock Environment Memory');
-    expect(getFolderStructure).toHaveBeenCalledWith('/test/dir', {
-      fileService: undefined,
-      maxItems: 50,
-    });
   });
 
   it('should return basic environment context for multiple directories', async () => {
     (
       vi.mocked(mockConfig.getWorkspaceContext!)().getDirectories as Mock
     ).mockReturnValue(['/test/dir1', '/test/dir2']);
-    vi.mocked(getFolderStructure)
-      .mockResolvedValueOnce('Structure 1')
-      .mockResolvedValueOnce('Structure 2');
 
     const parts = await getEnvironmentContext(mockConfig as Config);
 
@@ -146,11 +125,8 @@ describe('getEnvironmentContext', () => {
       'Current working directories:\n  - /test/dir1\n  - /test/dir2',
     );
     expect(context).toContain(
-      "Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):",
+      "Use 'glob', 'grep', and 'list_directory' tools to explore the codebase structure.",
     );
-    expect(context).toContain('Structure 1');
-    expect(context).toContain('Structure 2');
-    expect(getFolderStructure).toHaveBeenCalledTimes(2);
   });
 
   it('should handle read_many_files returning no content', async () => {

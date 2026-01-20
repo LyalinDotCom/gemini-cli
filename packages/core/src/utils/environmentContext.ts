@@ -6,7 +6,6 @@
 
 import type { Part, Content } from '@google/genai';
 import type { Config } from '../config/config.js';
-import { getFolderStructure } from './getFolderStructure.js';
 
 export const INITIAL_HISTORY_LENGTH = 1;
 
@@ -21,17 +20,6 @@ export async function getDirectoryContextString(
   const workspaceContext = config.getWorkspaceContext();
   const workspaceDirectories = workspaceContext.getDirectories();
 
-  const folderStructures = await Promise.all(
-    workspaceDirectories.map((dir) =>
-      getFolderStructure(dir, {
-        fileService: config.getFileService(),
-        maxItems: 50, // Show limited structure; model should use tools to explore deeper
-      }),
-    ),
-  );
-
-  const folderStructure = folderStructures.join('\n');
-
   let workingDirPreamble: string;
   if (workspaceDirectories.length === 1) {
     workingDirPreamble = `Current working directory: ${workspaceDirectories[0]}`;
@@ -42,9 +30,7 @@ export async function getDirectoryContextString(
 
   return `${workingDirPreamble}
 
-Top-level folder structure (use 'glob' or 'list_directory' tools to explore deeper):
-
-${folderStructure}`;
+Use 'glob', 'grep', and 'list_directory' tools to explore the codebase structure.`;
 }
 
 /**
