@@ -164,10 +164,37 @@ ${reason.stack}`
         : ''
     }`;
     debugLogger.error(errorMessage);
+
+    // Trace to diagnostics so errors appear in the viewer
+    diagnostics.trace('system', 'exception', {
+      type: 'unhandledRejection',
+      message: reason instanceof Error ? reason.message : String(reason),
+      error: {
+        name: reason instanceof Error ? reason.name : 'UnhandledRejection',
+        message: reason instanceof Error ? reason.message : String(reason),
+        stack: reason instanceof Error ? reason.stack : undefined,
+      },
+    });
+
     if (!unhandledRejectionOccurred) {
       unhandledRejectionOccurred = true;
       appEvents.emit(AppEvent.OpenDebugConsole);
     }
+  });
+
+  // Also capture uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    debugLogger.error(`CRITICAL: Uncaught Exception!\n${error.stack || error}`);
+
+    diagnostics.trace('system', 'exception', {
+      type: 'uncaughtException',
+      message: error.message,
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      },
+    });
   });
 }
 
