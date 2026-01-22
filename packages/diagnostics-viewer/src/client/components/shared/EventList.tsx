@@ -138,7 +138,10 @@ function buildAgentTrees(events: DiagnosticEvent[]): Map<string, AgentTree> {
       const tree = trees.get(agentId);
       if (tree) {
         tree.endEvent = event;
-        tree.status = event.data.status === 'goal' ? 'completed' : 'error';
+        // GOAL and MAX_TURNS are successful completions, everything else is an error
+        const status = event.data.status as string;
+        tree.status =
+          status === 'GOAL' || status === 'MAX_TURNS' ? 'completed' : 'error';
       }
       continue;
     }
