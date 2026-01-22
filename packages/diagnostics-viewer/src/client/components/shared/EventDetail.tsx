@@ -286,37 +286,43 @@ interface ContextMetrics {
 
 function parseSystemInstructionSources(text: string): ContextSource[] {
   const sources: ContextSource[] = [];
+  const seenPaths = new Set<string>();
 
-  // Pattern 1: Look for file paths with GEMINI.md (various formats)
-  // Matches: "../../../.gemini/GEMINI.md", "nanobanana/GEMINI.md", etc.
+  // Pattern 1: Extract content between "--- Context from: PATH ---" and "--- End of Context from: PATH ---"
+  // This is the primary format used by Gemini CLI
+  const contextBlockPattern =
+    /---\s*Context from:\s*([^\n-]+)\s*---\n([\s\S]*?)---\s*End of Context from:\s*[^\n-]+\s*---/gi;
+  let match;
+  while ((match = contextBlockPattern.exec(text)) !== null) {
+    const path = match[1]?.trim();
+    const content = match[2]?.trim() || '';
+    if (path && !seenPaths.has(path)) {
+      seenPaths.add(path);
+      sources.push({
+        name: path,
+        type: path.toLowerCase().includes('gemini.md') ? 'gemini-md' : 'other',
+        chars: content.length,
+        content, // Store full content, not truncated
+      });
+    }
+  }
+
+  // Pattern 2: Fallback for paths without the block format
   const filePathPatterns = [
-    // Path followed by content section
-    /(?:^|\n)(?:#{1,4}\s*)?(?:From\s+|File:\s*|Source:\s*)?([^\n]*?(?:\/[^\n/]+)?\/(?:GEMINI|gemini)\.md)(?:\s*\n)([\s\S]*?)(?=(?:\n#{1,4}\s+(?:From|File|Source)|The following are instructions|$))/gi,
-    // Just path references
+    // Just path references for GEMINI.md
     /(?:^|\n)([^\s\n]*\/(?:GEMINI|gemini)\.md)/gi,
-    // Extension .md files
-    /(?:^|\n)(?:#{1,4}\s*)?(?:From\s+)?([^\n]*?\/[^\n/]+\.md)(?:\s*\n)([\s\S]*?)(?=(?:\n#{1,4}\s+|The following are instructions|$))/gi,
   ];
 
-  // Extract GEMINI.md and other .md files
-  const seenPaths = new Set<string>();
   for (const pattern of filePathPatterns) {
-    let match;
     pattern.lastIndex = 0;
     while ((match = pattern.exec(text)) !== null) {
       const path = match[1]?.trim();
-      const content = match[2]?.trim() || '';
       if (path && !seenPaths.has(path)) {
         seenPaths.add(path);
-        // Estimate content size if we captured it, otherwise estimate from position
-        const charCount = content.length > 0 ? content.length : 500; // fallback estimate
         sources.push({
           name: path,
-          type: path.toLowerCase().includes('gemini.md')
-            ? 'gemini-md'
-            : 'other',
-          chars: charCount,
-          content: content.slice(0, 500) + (content.length > 500 ? '...' : ''),
+          type: 'gemini-md',
+          chars: 0, // Unknown size
         });
       }
     }
@@ -1310,9 +1316,13 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                               <span
                                 style={{ fontSize: '11px', color: '#8b949e' }}
                               >
-                                Content Preview:
+                                Full Content (
+                                {source.content.length.toLocaleString()} chars):
                               </span>
-                              <CopyButton text={source.content} label="Copy" />
+                              <CopyButton
+                                text={source.content}
+                                label="Copy Content"
+                              />
                             </div>
                             <pre
                               style={{
@@ -1320,13 +1330,14 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                                 padding: '12px',
                                 background: '#161b22',
                                 borderRadius: '4px',
-                                fontSize: '11px',
+                                fontSize: '12px',
                                 fontFamily: 'monospace',
                                 color: '#c9d1d9',
                                 whiteSpace: 'pre-wrap',
                                 wordBreak: 'break-word',
-                                maxHeight: '200px',
+                                maxHeight: '400px',
                                 overflow: 'auto',
+                                lineHeight: 1.5,
                               }}
                             >
                               {source.content}

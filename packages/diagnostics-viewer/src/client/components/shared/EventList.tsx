@@ -89,6 +89,32 @@ function getEventSummary(event: DiagnosticEvent): string {
   return eventType;
 }
 
+function getApiContextInfo(
+  event: DiagnosticEvent,
+): { tokens?: number; chars?: number } | null {
+  if (event.meta.category !== 'api') return null;
+
+  const usage = event.data.usageMetadata as
+    | { promptTokenCount?: number; totalTokenCount?: number }
+    | undefined;
+  if (usage?.promptTokenCount) {
+    return { tokens: usage.promptTokenCount };
+  }
+
+  // Fallback to char count estimate
+  let chars = 0;
+  if (event.data.systemInstruction) {
+    chars += JSON.stringify(event.data.systemInstruction).length;
+  }
+  if (event.data.contents) {
+    chars += JSON.stringify(event.data.contents).length;
+  }
+  if (chars > 0) {
+    return { chars };
+  }
+  return null;
+}
+
 function getLastStepSummary(events: DiagnosticEvent[]): string {
   // Find the last meaningful event (not agent start/end)
   for (let i = events.length - 1; i >= 0; i--) {
@@ -343,6 +369,31 @@ function AgentTreeNode({
                 >
                   {getEventSummary(event)}
                 </span>
+                {(() => {
+                  const ctxInfo = getApiContextInfo(event);
+                  if (!ctxInfo) return null;
+                  return (
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontFamily: 'monospace',
+                        color: '#58a6ff',
+                        background: '#58a6ff15',
+                        padding: '1px 4px',
+                        borderRadius: '3px',
+                      }}
+                      title={
+                        ctxInfo.tokens
+                          ? `${ctxInfo.tokens.toLocaleString()} prompt tokens`
+                          : `${ctxInfo.chars?.toLocaleString()} chars`
+                      }
+                    >
+                      {ctxInfo.tokens
+                        ? `${(ctxInfo.tokens / 1000).toFixed(1)}k`
+                        : `${((ctxInfo.chars || 0) / 1000).toFixed(0)}k`}
+                    </span>
+                  );
+                })()}
                 {event.timing?.durationMs !== undefined && (
                   <span
                     style={{
@@ -539,6 +590,31 @@ export function EventList({
               >
                 {getEventSummary(event)}
               </span>
+              {(() => {
+                const ctxInfo = getApiContextInfo(event);
+                if (!ctxInfo) return null;
+                return (
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      color: '#58a6ff',
+                      background: '#58a6ff15',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                    }}
+                    title={
+                      ctxInfo.tokens
+                        ? `${ctxInfo.tokens.toLocaleString()} prompt tokens`
+                        : `${ctxInfo.chars?.toLocaleString()} chars in context`
+                    }
+                  >
+                    {ctxInfo.tokens
+                      ? `${(ctxInfo.tokens / 1000).toFixed(1)}k tok`
+                      : `${((ctxInfo.chars || 0) / 1000).toFixed(1)}k chr`}
+                  </span>
+                );
+              })()}
               <span style={{ flex: 1 }} />
               {event.timing?.durationMs !== undefined && (
                 <span
