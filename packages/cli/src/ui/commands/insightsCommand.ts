@@ -18,8 +18,11 @@ import {
   DEFAULT_BASE_DIR,
 } from '@google/gemini-cli-diagnostics';
 
-let viewerServer: { start: () => Promise<void>; stop: () => void } | null =
-  null;
+let viewerServer: {
+  start: () => Promise<{ port: number; reused: boolean }>;
+  stop: () => void;
+  getPort: () => number;
+} | null = null;
 let currentPort: number | null = null;
 
 const DEFAULT_PORT = 3847;
@@ -103,7 +106,7 @@ const viewerCommand: SlashCommand = {
       );
     }
 
-    // If server already running, just open the browser
+    // If server already running in this process, just open the browser
     if (viewerServer && currentPort) {
       const url = `http://localhost:${currentPort}`;
       context.ui.addItem(
@@ -121,84 +124,66 @@ const viewerCommand: SlashCommand = {
       '@google/gemini-cli-diagnostics-viewer'
     );
 
-    // Try to start server, handling port conflicts
-    const startPort = requestedPort || DEFAULT_PORT;
-    let port = startPort;
-    let server = null;
-    let lastError: Error | null = null;
+    const port = requestedPort || DEFAULT_PORT;
+    const server = createInsightsServer({
+      port,
+      baseDir: DEFAULT_BASE_DIR,
+      sessionId: diagnostics.isEnabled()
+        ? diagnostics.getSessionId()
+        : undefined,
+    });
 
-    // Try up to 10 ports
-    const maxAttempts = requestedPort ? 1 : 10;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        server = createInsightsServer({
-          port,
-          baseDir: DEFAULT_BASE_DIR,
-          sessionId: diagnostics.isEnabled()
-            ? diagnostics.getSessionId()
-            : undefined,
-        });
+    try {
+      const result = await server.start();
 
-        await server.start();
-        break; // Success!
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        if (lastError.message.includes('EADDRINUSE')) {
-          if (requestedPort) {
-            // User requested specific port, don't try others
-            context.ui.addItem(
-              {
-                type: MessageType.ERROR,
-                text: `Port ${requestedPort} is already in use. Try a different port or omit to auto-select.`,
-              },
-              Date.now(),
-            );
-            return;
-          }
-          // Try next port
-          port++;
-          server = null;
-        } else {
-          // Different error, stop trying
-          break;
-        }
+      if (result.reused) {
+        // Viewer was already running from another process
+        const url = `http://localhost:${result.port}`;
+        context.ui.addItem(
+          {
+            type: MessageType.INFO,
+            text: `Viewer already running at ${url}`,
+          },
+          Date.now(),
+        );
+        await open(url);
+        return;
       }
-    }
 
-    if (!server) {
-      context.ui.addItem(
-        {
-          type: MessageType.ERROR,
-          text: `Failed to start viewer: ${lastError?.message || 'Unknown error'}`,
-        },
-        Date.now(),
-      );
-      return;
-    }
+      // New server started
+      viewerServer = server;
+      currentPort = result.port;
 
-    viewerServer = server;
-    currentPort = port;
+      if (result.port !== port) {
+        context.ui.addItem(
+          {
+            type: MessageType.INFO,
+            text: `Port ${port} in use, using ${result.port} instead.`,
+          },
+          Date.now(),
+        );
+      }
 
-    if (port !== startPort) {
+      const url = `http://localhost:${result.port}`;
+      await open(url);
+
       context.ui.addItem(
         {
           type: MessageType.INFO,
-          text: `Port ${startPort} in use, using ${port} instead.`,
+          text: `Diagnostics viewer opened at ${url}`,
+        },
+        Date.now(),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.ui.addItem(
+        {
+          type: MessageType.ERROR,
+          text: `Failed to start viewer: ${message}`,
         },
         Date.now(),
       );
     }
-
-    const url = `http://localhost:${port}`;
-    await open(url);
-
-    context.ui.addItem(
-      {
-        type: MessageType.INFO,
-        text: `Diagnostics viewer opened at ${url}`,
-      },
-      Date.now(),
-    );
   },
 };
 

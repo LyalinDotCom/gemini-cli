@@ -18,6 +18,7 @@ import type { ExtensionLoader } from './extensionLoader.js';
 import { debugLogger } from './debugLogger.js';
 import type { Config } from '../config/config.js';
 import { CoreEvent, coreEvents } from './events.js';
+import { diagnostics } from '@google/gemini-cli-diagnostics';
 
 // Simple console logger, similar to the one previously in CLI's config.ts
 // TODO: Integrate with a more robust server-side logger if available/appropriate.
@@ -267,6 +268,20 @@ async function readGeminiMdFiles(
             logger.debug(
               `Successfully read and processed imports: ${filePath} (Length: ${processedResult.content.length})`,
             );
+
+          // Trace each file loaded
+          diagnostics.trace('memory', 'file', {
+            filePath,
+            fileName: path.basename(filePath),
+            directory: path.dirname(filePath),
+            contentLength: processedResult.content.length,
+            content: processedResult.content,
+            source: filePath.includes('.gemini')
+              ? 'global'
+              : filePath.toLowerCase().includes('mcp')
+                ? 'mcp'
+                : 'project',
+          });
 
           return { filePath, content: processedResult.content };
         } catch (error: unknown) {
@@ -555,29 +570,50 @@ export async function loadServerHierarchicalMemory(
  * Returns the result of the call to `loadHierarchicalGeminiMemory`.
  */
 export async function refreshServerHierarchicalMemory(config: Config) {
-  const result = await loadServerHierarchicalMemory(
-    config.getWorkingDir(),
-    config.shouldLoadMemoryFromIncludeDirectories()
-      ? config.getWorkspaceContext().getDirectories()
-      : [],
-    config.getDebugMode(),
-    config.getFileService(),
-    config.getExtensionLoader(),
-    config.isTrustedFolder(),
-    config.getImportFormat(),
-    config.getFileFilteringOptions(),
-    config.getDiscoveryMaxDirs(),
-  );
-  const mcpInstructions =
-    config.getMcpClientManager()?.getMcpInstructions() || '';
-  const finalMemory = [result.memoryContent, mcpInstructions.trimStart()]
-    .filter(Boolean)
-    .join('\n\n');
-  config.setUserMemory(finalMemory);
-  config.setGeminiMdFileCount(result.fileCount);
-  config.setGeminiMdFilePaths(result.filePaths);
-  coreEvents.emit(CoreEvent.MemoryChanged, { fileCount: result.fileCount });
-  return result;
+  const span = diagnostics.startSpan('memory', 'refresh', {
+    workingDir: config.getWorkingDir(),
+    trustedFolder: config.isTrustedFolder(),
+  });
+
+  try {
+    const result = await loadServerHierarchicalMemory(
+      config.getWorkingDir(),
+      config.shouldLoadMemoryFromIncludeDirectories()
+        ? config.getWorkspaceContext().getDirectories()
+        : [],
+      config.getDebugMode(),
+      config.getFileService(),
+      config.getExtensionLoader(),
+      config.isTrustedFolder(),
+      config.getImportFormat(),
+      config.getFileFilteringOptions(),
+      config.getDiscoveryMaxDirs(),
+    );
+    const mcpInstructions =
+      config.getMcpClientManager()?.getMcpInstructions() || '';
+    const finalMemory = [result.memoryContent, mcpInstructions.trimStart()]
+      .filter(Boolean)
+      .join('\n\n');
+    config.setUserMemory(finalMemory);
+    config.setGeminiMdFileCount(result.fileCount);
+    config.setGeminiMdFilePaths(result.filePaths);
+    coreEvents.emit(CoreEvent.MemoryChanged, { fileCount: result.fileCount });
+
+    // Trace the summary of all loaded memory
+    span.end({
+      fileCount: result.fileCount,
+      filePaths: result.filePaths,
+      totalContentLength: result.memoryContent.length,
+      hasMcpInstructions: mcpInstructions.length > 0,
+      mcpInstructionsLength: mcpInstructions.length,
+      finalMemoryLength: finalMemory.length,
+    });
+
+    return result;
+  } catch (error) {
+    span.error(error);
+    throw error;
+  }
 }
 
 export async function loadJitSubdirectoryMemory(

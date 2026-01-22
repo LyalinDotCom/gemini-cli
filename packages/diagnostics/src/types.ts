@@ -5,7 +5,13 @@
  */
 
 /** Event categories for diagnostic tracing */
-export type DiagnosticCategory = 'api' | 'thought' | 'tool' | 'user' | 'system';
+export type DiagnosticCategory =
+  | 'api'
+  | 'thought'
+  | 'tool'
+  | 'user'
+  | 'system'
+  | 'memory';
 
 /** Event types per category */
 export type ApiEventType = 'request' | 'response' | 'error';
@@ -18,13 +24,15 @@ export type SystemEventType =
   | 'config'
   | 'exception'
   | 'checkpoint';
+export type MemoryEventType = 'load' | 'refresh' | 'file';
 
 export type DiagnosticEventType =
   | ApiEventType
   | ThoughtEventType
   | ToolEventType
   | UserEventType
-  | SystemEventType;
+  | SystemEventType
+  | MemoryEventType;
 
 /** Metadata for every diagnostic event */
 export interface DiagnosticMeta {

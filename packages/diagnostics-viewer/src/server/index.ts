@@ -5,16 +5,76 @@
  */
 
 import express from 'express';
-import { createServer } from 'node:http';
+import { createServer as createHttpServer } from 'node:http';
+import { createServer as createNetServer } from 'node:net';
 import { WebSocketServer, WebSocket } from 'ws';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { watch, type FSWatcher } from 'chokidar';
+import { createConnection } from 'node:net';
 import type { DiagnosticEvent } from '@google/gemini-cli-diagnostics';
 import { DiagnosticsFileWatcher } from './file-watcher.js';
 import { SessionScanner } from './session-scanner.js';
+
+/** Check if a port can be bound to (true test for availability) */
+async function canBindToPort(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const testServer = createNetServer();
+    testServer.once('error', () => {
+      resolve(false);
+    });
+    testServer.once('listening', () => {
+      testServer.close(() => resolve(true));
+    });
+    // Don't specify host - matches server.listen() behavior (binds to all interfaces)
+    testServer.listen(port);
+  });
+}
+
+/** Find an available port starting from the given port */
+async function findAvailablePort(startPort: number): Promise<number> {
+  let port = startPort;
+  while (port < startPort + 100) {
+    if (await canBindToPort(port)) {
+      return port;
+    }
+    port++;
+  }
+  throw new Error(
+    `Could not find available port in range ${startPort}-${startPort + 99}`,
+  );
+}
+
+/** Check if an existing viewer is running on the port */
+async function isViewerRunning(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = createConnection({ port, host: 'localhost' }, () => {
+      // Port is in use, try to check if it's our viewer by sending an HTTP request
+      socket.write('GET /api/config HTTP/1.1\r\nHost: localhost\r\n\r\n');
+      socket.on('data', (data) => {
+        const response = data.toString();
+        // Check if response contains our config endpoint signature
+        resolve(
+          response.includes('baseDir') && response.includes('currentSessionId'),
+        );
+        socket.end();
+      });
+      socket.on('error', () => {
+        resolve(false);
+      });
+      // Timeout after 500ms
+      setTimeout(() => {
+        socket.end();
+        resolve(false);
+      }, 500);
+    });
+    socket.on('error', () => {
+      resolve(false); // Port not in use
+    });
+  });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,7 +92,7 @@ export interface WebSocketMessage {
 
 export function createInsightsServer(config: ServerConfig) {
   const app = express();
-  const server = createServer(app);
+  const server = createHttpServer(app);
   const wss = new WebSocketServer({ server, path: '/ws' });
   const scanner = new SessionScanner(config.baseDir);
   let fileWatcher: DiagnosticsFileWatcher | null = null;
@@ -199,7 +259,28 @@ export function createInsightsServer(config: ServerConfig) {
     ws.on('close', () => clients.delete(ws));
   });
 
-  async function start(): Promise<void> {
+  async function start(): Promise<{ port: number; reused: boolean }> {
+    // Check if port can be bound (true availability test)
+    const portAvailable = await canBindToPort(config.port);
+
+    if (!portAvailable) {
+      // Check if it's already our viewer running
+      const viewerRunning = await isViewerRunning(config.port);
+      if (viewerRunning) {
+        // eslint-disable-next-line no-console -- Server logging
+        console.log(
+          `Viewer already running at http://localhost:${config.port}`,
+        );
+        return { port: config.port, reused: true };
+      }
+
+      // Port in use by something else, find a new port
+      const newPort = await findAvailablePort(config.port + 1);
+      // eslint-disable-next-line no-console -- Server logging
+      console.log(`Port ${config.port} in use, using port ${newPort} instead`);
+      config.port = newPort;
+    }
+
     return new Promise((resolve, reject) => {
       server.once('error', (err) => {
         reject(err);
@@ -223,7 +304,7 @@ export function createInsightsServer(config: ServerConfig) {
             // eslint-disable-next-line no-console -- Server logging
             console.log('No sessions found. Waiting for new sessions...');
           }
-          resolve();
+          resolve({ port: config.port, reused: false });
         })();
       });
     });
@@ -235,5 +316,9 @@ export function createInsightsServer(config: ServerConfig) {
     server.close();
   }
 
-  return { start, stop, app, server };
+  function getPort(): number {
+    return config.port;
+  }
+
+  return { start, stop, getPort, app, server };
 }

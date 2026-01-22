@@ -70,11 +70,29 @@ export function LiveStream({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showCheckpointInput, setShowCheckpointInput] = useState(false);
   const [checkpointName, setCheckpointName] = useState('');
+  const [autoScroll, setAutoScroll] = useState(true);
+  const prevEventsLengthRef = useRef(events.length);
 
+  // Only auto-scroll if enabled and new events were added
   useEffect(() => {
-    if (!isPaused && scrollRef.current)
+    if (
+      !isPaused &&
+      autoScroll &&
+      scrollRef.current &&
+      events.length > prevEventsLengthRef.current
+    ) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [events, isPaused]);
+    }
+    prevEventsLengthRef.current = events.length;
+  }, [events, isPaused, autoScroll]);
+
+  // Detect if user scrolled away from bottom
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    setAutoScroll(isAtBottom);
+  };
 
   const handleAddCheckpoint = () => {
     if (showCheckpointInput) {
@@ -233,16 +251,41 @@ export function LiveStream({
             </button>
           </>
         )}
-        {isPaused && (
-          <span
-            style={{ fontSize: '12px', color: '#f0883e', marginLeft: 'auto' }}
-          >
-            Paused - new events queued
-          </span>
-        )}
+        <div
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          {!autoScroll && (
+            <button
+              style={{
+                ...btn,
+                border: '1px solid #58a6ff',
+                background: '#58a6ff20',
+                color: '#58a6ff',
+              }}
+              onClick={() => {
+                setAutoScroll(true);
+                if (scrollRef.current)
+                  scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+              }}
+            >
+              ↓ Jump to latest
+            </button>
+          )}
+          {isPaused && (
+            <span style={{ fontSize: '12px', color: '#f0883e' }}>
+              Paused - new events queued
+            </span>
+          )}
+        </div>
       </div>
       <div
         ref={scrollRef}
+        onScroll={handleScroll}
         style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}
       >
         <EventList

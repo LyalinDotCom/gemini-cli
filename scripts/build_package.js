@@ -18,7 +18,7 @@
 // limitations under the License.
 
 import { execSync } from 'node:child_process';
-import { writeFileSync, existsSync, cpSync } from 'node:fs';
+import { writeFileSync, existsSync, cpSync, chmodSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 if (!process.cwd().includes('packages')) {
@@ -41,6 +41,14 @@ if (packageName === 'core') {
   if (existsSync(docsSource)) {
     cpSync(docsSource, docsTarget, { recursive: true, dereference: true });
     console.log('Copied documentation to dist/docs');
+  }
+}
+
+// Set executable permission for CLI entry point
+if (packageName === 'cli') {
+  const cliEntry = join(process.cwd(), 'dist', 'index.js');
+  if (existsSync(cliEntry)) {
+    chmodSync(cliEntry, 0o755);
   }
 }
 

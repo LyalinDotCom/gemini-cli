@@ -73,6 +73,94 @@ function getEventSummary(event: DiagnosticEvent): string {
   return eventType;
 }
 
+interface EventMetrics {
+  value: string;
+  color: string;
+  growth?: { value: string; positive: boolean };
+}
+
+function getContextSize(event: DiagnosticEvent): number {
+  if (event.meta.category !== 'api') return 0;
+
+  // Calculate total context size from contents
+  const contents = event.data.contents as unknown[] | undefined;
+  if (!Array.isArray(contents)) return 0;
+
+  return JSON.stringify(contents).length;
+}
+
+function getEventMetrics(
+  event: DiagnosticEvent,
+  prevApiEvent?: DiagnosticEvent,
+): EventMetrics | null {
+  const { category, eventType } = event.meta;
+
+  // For API events - show token count or context size
+  if (category === 'api') {
+    const usage = event.data.usageMetadata as
+      | { promptTokenCount?: number; totalTokenCount?: number }
+      | undefined;
+
+    // Calculate context size for this event
+    const currentSize = getContextSize(event);
+    const prevSize = prevApiEvent ? getContextSize(prevApiEvent) : 0;
+    const growth = prevSize > 0 ? currentSize - prevSize : 0;
+
+    if (usage?.totalTokenCount) {
+      const result: EventMetrics = {
+        value: `${(usage.totalTokenCount / 1000).toFixed(1)}k tok`,
+        color: '#58a6ff',
+      };
+      if (growth !== 0) {
+        result.growth = {
+          value:
+            growth > 0
+              ? `+${(growth / 1000).toFixed(1)}k`
+              : `${(growth / 1000).toFixed(1)}k`,
+          positive: growth > 0,
+        };
+      }
+      return result;
+    }
+
+    // For requests without usage, show context size
+    if (eventType === 'request' && currentSize > 0) {
+      const result: EventMetrics = {
+        value: `${(currentSize / 1000).toFixed(1)}k chars`,
+        color: '#3fb950',
+      };
+      if (growth !== 0) {
+        result.growth = {
+          value:
+            growth > 0
+              ? `+${(growth / 1000).toFixed(1)}k`
+              : `${(growth / 1000).toFixed(1)}k`,
+          positive: growth > 0,
+        };
+      }
+      return result;
+    }
+  }
+
+  // For tool events - show result size
+  if (category === 'tool' && eventType === 'complete') {
+    const result = event.data.result;
+    if (result) {
+      const resultStr =
+        typeof result === 'string' ? result : JSON.stringify(result);
+      const chars = resultStr.length;
+      if (chars > 100) {
+        return {
+          value: chars > 1000 ? `+${(chars / 1000).toFixed(1)}k` : `+${chars}`,
+          color: '#3fb950',
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 export function EventList({
   events,
   checkpoints = [],
@@ -107,9 +195,22 @@ export function EventList({
   const isSelected = (e: DiagnosticEvent) =>
     selectedEvents.some((s) => s.meta.sequence === e.meta.sequence);
 
+  // Build a map of previous API events for growth calculation
+  const prevApiEventMap = new Map<number, DiagnosticEvent>();
+  let lastApiEvent: DiagnosticEvent | undefined;
+  for (const event of events) {
+    if (event.meta.category === 'api') {
+      if (lastApiEvent) {
+        prevApiEventMap.set(event.meta.sequence, lastApiEvent);
+      }
+      lastApiEvent = event;
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {events.map((event, index) => {
+        const prevApiEvent = prevApiEventMap.get(event.meta.sequence);
         const isSel = selectedEvent?.meta.sequence === event.meta.sequence;
         const isMultiSel = multiSelectMode && isSelected(event);
         const color = categoryColors[event.meta.category] || '#8b949e';
@@ -186,16 +287,59 @@ export function EventList({
               </span>
               <span
                 style={{
-                  flex: 1,
                   fontSize: '13px',
                   color: '#c9d1d9',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  maxWidth: '300px',
                 }}
               >
                 {getEventSummary(event)}
               </span>
+              {(() => {
+                const metrics = getEventMetrics(event, prevApiEvent);
+                if (!metrics) return null;
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginLeft: '8px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        color: metrics.color,
+                        padding: '2px 6px',
+                        background: metrics.color + '15',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {metrics.value}
+                    </span>
+                    {metrics.growth && (
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '10px',
+                          color: metrics.growth.positive
+                            ? '#f85149'
+                            : '#3fb950',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {metrics.growth.value}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+              <span style={{ flex: 1 }} />
               {event.timing?.durationMs !== undefined && (
                 <span
                   style={{

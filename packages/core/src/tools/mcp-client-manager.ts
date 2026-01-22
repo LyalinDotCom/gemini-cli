@@ -19,6 +19,7 @@ import { getErrorMessage, isAuthenticationError } from '../utils/errors.js';
 import type { EventEmitter } from 'node:events';
 import { coreEvents } from '../utils/events.js';
 import { debugLogger } from '../utils/debugLogger.js';
+import { diagnostics } from '@google/gemini-cli-diagnostics';
 
 /**
  * Manages the lifecycle of multiple MCP clients, including local child processes.
@@ -359,6 +360,17 @@ export class McpClientManager {
     for (const [name, client] of this.clients) {
       const clientInstructions = client.getInstructions();
       if (clientInstructions) {
+        // Trace each MCP server's instructions
+        diagnostics.trace('memory', 'file', {
+          filePath: `mcp://${name}`,
+          fileName: name,
+          directory: 'mcp-server',
+          contentLength: clientInstructions.length,
+          content: clientInstructions,
+          source: 'mcp',
+          serverName: name,
+        });
+
         instructions.push(
           `The following are instructions provided by the tool server '${name}':\n---[start of server instructions]---\n${clientInstructions}\n---[end of server instructions]---`,
         );

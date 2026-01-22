@@ -52,6 +52,12 @@ export function App() {
   const wsRef = useRef<WebSocket | null>(null);
   const pausedEventsRef = useRef<DiagnosticEvent[]>([]);
 
+  // Use refs to access current state in WebSocket callbacks without recreating the connection
+  const isPausedRef = useRef(isPaused);
+  const activeTabRef = useRef(activeTab);
+  isPausedRef.current = isPaused;
+  activeTabRef.current = activeTab;
+
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -77,27 +83,29 @@ export function App() {
         );
       } else if (message.type === 'event') {
         const newEvent = message.payload.event as DiagnosticEvent;
-        if (isPaused) {
+        if (isPausedRef.current) {
           if (
             !pausedEventsRef.current.some(
               (e) => e.meta.sequence === newEvent.meta.sequence,
             )
           ) {
             pausedEventsRef.current.push(newEvent);
-            if (activeTab !== 'realtime') setNewEventCount((c) => c + 1);
+            if (activeTabRef.current !== 'realtime')
+              setNewEventCount((c) => c + 1);
           }
         } else {
           setEvents((prev) => {
             if (prev.some((e) => e.meta.sequence === newEvent.meta.sequence))
               return prev;
-            if (activeTab !== 'realtime') setNewEventCount((c) => c + 1);
+            if (activeTabRef.current !== 'realtime')
+              setNewEventCount((c) => c + 1);
             return [...prev, newEvent];
           });
         }
       }
     };
     return () => ws.close();
-  }, [isPaused, activeTab]);
+  }, []); // WebSocket connection is stable - no dependencies
 
   const subscribeToSession = useCallback((sessionId: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
