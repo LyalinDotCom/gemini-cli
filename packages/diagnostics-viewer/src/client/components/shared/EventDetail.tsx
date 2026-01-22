@@ -190,31 +190,39 @@ function findSystemInstruction(
   if (!text) return null;
 
   // Parse sources from the system instruction text
-  // Look for common markers like "From GEMINI.md:", file paths, or source annotations
   const sources: Array<{ name: string; type: string; content?: string }> = [];
+  const seenPaths = new Set<string>();
 
-  // Try to extract individual sources from common patterns
-  const sourcePatterns = [
-    // Look for GEMINI.md file markers
-    /(?:^|\n)(?:#+\s*)?(?:From\s+)?([^\n]*GEMINI\.md[^\n]*)/gi,
-    // Look for file paths
-    /(?:^|\n)(?:Source|File|From):\s*([^\n]+)/gi,
-    // Look for MCP server markers
-    /(?:^|\n)(?:MCP Server|MCP|Extension):\s*([^\n]+)/gi,
-  ];
+  // Primary pattern: Extract content between "--- Context from: PATH ---" and "--- End of Context from: PATH ---"
+  const contextBlockPattern =
+    /---\s*Context from:\s*([^\n-]+)\s*---\n([\s\S]*?)---\s*End of Context from:\s*[^\n-]+\s*---/gi;
+  let match;
+  while ((match = contextBlockPattern.exec(text)) !== null) {
+    const path = match[1]?.trim();
+    const content = match[2]?.trim() || '';
+    if (path && !seenPaths.has(path)) {
+      seenPaths.add(path);
+      sources.push({
+        name: path,
+        type: path.toLowerCase().includes('gemini.md') ? 'gemini.md' : 'file',
+        content, // Store full content
+      });
+    }
+  }
 
-  for (const pattern of sourcePatterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      const sourceName = match[1].trim();
-      if (sourceName && !sources.find((s) => s.name === sourceName)) {
-        const isGeminiMd = /gemini\.md/i.test(sourceName);
-        const isMcp = /mcp/i.test(sourceName);
-        sources.push({
-          name: sourceName,
-          type: isMcp ? 'mcp' : isGeminiMd ? 'gemini.md' : 'file',
-        });
-      }
+  // MCP server instruction blocks
+  const mcpServerPattern =
+    /The following are instructions provided by the tool server '([^']+)':\s*\n---\[start of server instructions\]---\n([\s\S]*?)\n---\[end of server instructions\]---/gi;
+  while ((match = mcpServerPattern.exec(text)) !== null) {
+    const serverName = match[1];
+    const content = match[2]?.trim() || '';
+    if (!seenPaths.has(serverName)) {
+      seenPaths.add(serverName);
+      sources.push({
+        name: `MCP: ${serverName}`,
+        type: 'mcp',
+        content,
+      });
     }
   }
 
@@ -1553,95 +1561,150 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
               >
-                {systemInfo.sources.map((source, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '12px 16px',
-                      background: '#0d1117',
-                      borderRadius: '6px',
-                      border: '1px solid #30363d',
-                    }}
-                  >
+                {systemInfo.sources.map((source, idx) => {
+                  const isExpanded = expandedSource === idx;
+                  const hasContent = !!source.content;
+                  const typeColor =
+                    source.type === 'mcp'
+                      ? '#a371f7'
+                      : source.type === 'gemini.md'
+                        ? '#3fb950'
+                        : '#58a6ff';
+
+                  return (
                     <div
+                      key={idx}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: source.content ? 'pointer' : 'default',
+                        padding: '12px 16px',
+                        background: '#0d1117',
+                        borderRadius: '6px',
+                        border: `1px solid ${isExpanded ? typeColor : '#30363d'}`,
                       }}
-                      onClick={() =>
-                        source.content &&
-                        setExpandedSource(expandedSource === idx ? null : idx)
-                      }
                     >
                       <div
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
+                          justifyContent: 'space-between',
+                          cursor: hasContent ? 'pointer' : 'default',
                         }}
+                        onClick={() =>
+                          hasContent &&
+                          setExpandedSource(isExpanded ? null : idx)
+                        }
                       >
-                        <span
+                        <div
                           style={{
-                            fontSize: '10px',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background:
-                              source.type === 'mcp'
-                                ? '#8957e520'
-                                : source.type === 'gemini.md'
-                                  ? '#58a6ff20'
-                                  : '#3fb95020',
-                            color:
-                              source.type === 'mcp'
-                                ? '#a371f7'
-                                : source.type === 'gemini.md'
-                                  ? '#58a6ff'
-                                  : '#3fb950',
-                            textTransform: 'uppercase',
-                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flex: 1,
+                            minWidth: 0,
                           }}
                         >
-                          {source.type}
-                        </span>
-                        <span
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              background: typeColor + '20',
+                              color: typeColor,
+                              textTransform: 'uppercase',
+                              fontWeight: 600,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {source.type}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              color: '#c9d1d9',
+                              fontFamily: 'monospace',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={source.name}
+                          >
+                            {source.name}
+                          </span>
+                        </div>
+                        <div
                           style={{
-                            fontSize: '13px',
-                            color: '#c9d1d9',
-                            fontFamily: 'monospace',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexShrink: 0,
                           }}
                         >
-                          {source.name}
-                        </span>
+                          {hasContent && (
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                color: '#8b949e',
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              {source.content!.length.toLocaleString()} chars
+                            </span>
+                          )}
+                          {hasContent ? (
+                            <span
+                              style={{
+                                fontSize: '12px',
+                                color: typeColor,
+                                fontWeight: 500,
+                              }}
+                            >
+                              {isExpanded ? '▼ Hide' : '▶ View'}
+                            </span>
+                          ) : (
+                            <span
+                              style={{ fontSize: '11px', color: '#6e7681' }}
+                            >
+                              (no content)
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      {source.content && (
-                        <span style={{ fontSize: '12px', color: '#8b949e' }}>
-                          {expandedSource === idx ? '▼' : '▶'}
-                        </span>
+                      {isExpanded && hasContent && (
+                        <div style={{ marginTop: '12px' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                              marginBottom: '8px',
+                            }}
+                          >
+                            <CopyButton
+                              text={source.content!}
+                              label="Copy Content"
+                            />
+                          </div>
+                          <pre
+                            style={{
+                              margin: 0,
+                              padding: '12px',
+                              background: '#161b22',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontFamily: 'monospace',
+                              color: '#c9d1d9',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              maxHeight: '400px',
+                              overflow: 'auto',
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {source.content}
+                          </pre>
+                        </div>
                       )}
                     </div>
-                    {expandedSource === idx && source.content && (
-                      <pre
-                        style={{
-                          margin: '12px 0 0 0',
-                          padding: '12px',
-                          background: '#161b22',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontFamily: 'monospace',
-                          color: '#c9d1d9',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                          maxHeight: '300px',
-                          overflow: 'auto',
-                        }}
-                      >
-                        {source.content}
-                      </pre>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
