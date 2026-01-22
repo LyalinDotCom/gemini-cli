@@ -12,6 +12,8 @@ import type {
   DiagnosticSpan,
   DiagnosticError,
   TracerConfig,
+  AgentContext,
+  TraceOptions,
 } from './types.js';
 import { DiagnosticsStorage, getDefaultBaseDir } from './storage.js';
 
@@ -26,6 +28,11 @@ export class DiagnosticsTracer {
   private readonly maxPayloadSize: number;
   private readonly version: number;
   private sequence = 0;
+
+  // Agent context stack - simple approach, works for sequential subagents
+  // Can upgrade to AsyncLocalStorage if parallel subagents cause issues
+  private agentContextStack: AgentContext[] = [];
+  private parallelGroupCounter = 0;
 
   constructor(config: TracerConfig = {}) {
     this.enabled = config.enabled ?? process.env[ENV_VAR] === '1';
@@ -58,15 +65,39 @@ export class DiagnosticsTracer {
     return this.storage.getSessionDir();
   }
 
+  /** Push agent context when starting a subagent */
+  pushAgentContext(agentId: string, parentAgentId?: string): void {
+    const depth = this.agentContextStack.length;
+    this.agentContextStack.push({ agentId, parentAgentId, depth });
+  }
+
+  /** Pop agent context when agent completes */
+  popAgentContext(): AgentContext | undefined {
+    return this.agentContextStack.pop();
+  }
+
+  /** Get current agent context */
+  getCurrentAgentContext(): AgentContext | undefined {
+    return this.agentContextStack[this.agentContextStack.length - 1];
+  }
+
+  /** Create parallel group ID for concurrent operations */
+  createParallelGroup(): string {
+    return `pg-${++this.parallelGroupCounter}`;
+  }
+
   trace(
     category: DiagnosticCategory,
     eventType: DiagnosticEventType,
     data: Record<string, unknown>,
+    options?: TraceOptions,
   ): void {
     if (!this.enabled) return;
     try {
       const timestamp = new Date().toISOString();
       const sequence = ++this.sequence;
+      const agentContext = this.getCurrentAgentContext();
+
       const event: DiagnosticEvent = {
         meta: {
           sessionId: this.sessionId,
@@ -75,6 +106,22 @@ export class DiagnosticsTracer {
           category,
           eventType,
           version: this.version,
+          // Include agent context if available
+          ...(agentContext && {
+            agentId: agentContext.agentId,
+            parentAgentId: agentContext.parentAgentId,
+            depth: agentContext.depth,
+          }),
+          // Include parallel execution context if provided
+          ...(options?.parallelGroupId && {
+            parallelGroupId: options.parallelGroupId,
+          }),
+          ...(options?.parallelIndex !== undefined && {
+            parallelIndex: options.parallelIndex,
+          }),
+          ...(options?.turnNumber !== undefined && {
+            turnNumber: options.turnNumber,
+          }),
         },
         data: this.truncatePayload(data),
       };
@@ -94,10 +141,13 @@ export class DiagnosticsTracer {
     category: DiagnosticCategory,
     eventType: DiagnosticEventType,
     initialData?: Record<string, unknown>,
+    options?: TraceOptions,
   ): DiagnosticSpan {
     const startedAt = new Date().toISOString();
     const startTime = Date.now();
     let ended = false;
+    // Capture agent context at span start
+    const agentContext = this.getCurrentAgentContext();
 
     const endSpan = (
       finalData?: Record<string, unknown>,
@@ -109,6 +159,12 @@ export class DiagnosticsTracer {
         const endedAt = new Date().toISOString();
         const durationMs = Date.now() - startTime;
         const sequence = ++this.sequence;
+
+        const mergedData = {
+          ...initialData,
+          ...finalData,
+        };
+
         const event: DiagnosticEvent = {
           meta: {
             sessionId: this.sessionId,
@@ -117,9 +173,25 @@ export class DiagnosticsTracer {
             category,
             eventType,
             version: this.version,
+            // Include agent context if available (captured at span start)
+            ...(agentContext && {
+              agentId: agentContext.agentId,
+              parentAgentId: agentContext.parentAgentId,
+              depth: agentContext.depth,
+            }),
+            // Include parallel execution context if provided
+            ...(options?.parallelGroupId && {
+              parallelGroupId: options.parallelGroupId,
+            }),
+            ...(options?.parallelIndex !== undefined && {
+              parallelIndex: options.parallelIndex,
+            }),
+            ...(options?.turnNumber !== undefined && {
+              turnNumber: options.turnNumber,
+            }),
           },
           timing: { startedAt, endedAt, durationMs },
-          data: this.truncatePayload({ ...initialData, ...finalData }),
+          data: this.truncatePayload(mergedData),
         };
         if (error) event.error = error;
         const filename = this.storage.generateFilename(
@@ -181,15 +253,21 @@ export interface IDiagnosticsTracer {
   disable(): void;
   getSessionId(): string;
   getSessionDir(): string;
+  pushAgentContext(agentId: string, parentAgentId?: string): void;
+  popAgentContext(): AgentContext | undefined;
+  getCurrentAgentContext(): AgentContext | undefined;
+  createParallelGroup(): string;
   trace(
     category: DiagnosticCategory,
     eventType: DiagnosticEventType,
     data: Record<string, unknown>,
+    options?: TraceOptions,
   ): void;
   startSpan(
     category: DiagnosticCategory,
     eventType: DiagnosticEventType,
     initialData?: Record<string, unknown>,
+    options?: TraceOptions,
   ): DiagnosticSpan;
   flush(): Promise<void>;
 }

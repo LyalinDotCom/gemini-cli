@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 
 interface DiagnosticEvent {
   meta: {
@@ -14,16 +14,31 @@ interface DiagnosticEvent {
     category: string;
     eventType: string;
     version: number;
+    agentId?: string;
+    parentAgentId?: string;
+    depth?: number;
+    turnNumber?: number;
   };
   timing?: { startedAt: string; endedAt?: string; durationMs?: number };
   data: Record<string, unknown>;
   error?: { name: string; message: string; stack?: string };
 }
+
 interface Checkpoint {
   id: string;
   name: string;
   timestamp: string;
   afterEventIndex: number;
+}
+
+interface AgentTree {
+  agentId: string;
+  agentName: string;
+  startEvent: DiagnosticEvent;
+  endEvent?: DiagnosticEvent;
+  events: DiagnosticEvent[];
+  status: 'running' | 'completed' | 'error';
+  lastStep?: string;
 }
 
 interface EventListProps {
@@ -43,6 +58,7 @@ const categoryColors: Record<string, string> = {
   tool: '#3fb950',
   user: '#f0883e',
   system: '#8b949e',
+  agent: '#f778ba',
 };
 
 function formatTime(timestamp: string): string {
@@ -73,92 +89,289 @@ function getEventSummary(event: DiagnosticEvent): string {
   return eventType;
 }
 
-interface EventMetrics {
-  value: string;
-  color: string;
-  growth?: { value: string; positive: boolean };
+function getLastStepSummary(events: DiagnosticEvent[]): string {
+  // Find the last meaningful event (not agent start/end)
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i];
+    if (event.meta.category === 'agent') continue;
+
+    if (event.meta.category === 'tool') {
+      const toolName = event.data.toolName as string;
+      return event.meta.eventType === 'complete'
+        ? `completed ${toolName}`
+        : `running ${toolName}...`;
+    }
+    if (event.meta.category === 'api') {
+      return event.meta.eventType === 'response'
+        ? 'got response'
+        : 'calling API...';
+    }
+    if (event.meta.category === 'thought') {
+      return 'thinking...';
+    }
+  }
+  return 'starting...';
 }
 
-function getContextSize(event: DiagnosticEvent): number {
-  if (event.meta.category !== 'api') return 0;
+// Build agent trees from events
+function buildAgentTrees(events: DiagnosticEvent[]): Map<string, AgentTree> {
+  const trees = new Map<string, AgentTree>();
 
-  // Calculate total context size from contents
-  const contents = event.data.contents as unknown[] | undefined;
-  if (!Array.isArray(contents)) return 0;
+  for (const event of events) {
+    const agentId = event.meta.agentId;
+    if (!agentId) continue;
 
-  return JSON.stringify(contents).length;
-}
-
-function getEventMetrics(
-  event: DiagnosticEvent,
-  prevApiEvent?: DiagnosticEvent,
-): EventMetrics | null {
-  const { category, eventType } = event.meta;
-
-  // For API events - show token count or context size
-  if (category === 'api') {
-    const usage = event.data.usageMetadata as
-      | { promptTokenCount?: number; totalTokenCount?: number }
-      | undefined;
-
-    // Calculate context size for this event
-    const currentSize = getContextSize(event);
-    const prevSize = prevApiEvent ? getContextSize(prevApiEvent) : 0;
-    const growth = prevSize > 0 ? currentSize - prevSize : 0;
-
-    if (usage?.totalTokenCount) {
-      const result: EventMetrics = {
-        value: `${(usage.totalTokenCount / 1000).toFixed(1)}k tok`,
-        color: '#58a6ff',
-      };
-      if (growth !== 0) {
-        result.growth = {
-          value:
-            growth > 0
-              ? `+${(growth / 1000).toFixed(1)}k`
-              : `${(growth / 1000).toFixed(1)}k`,
-          positive: growth > 0,
-        };
-      }
-      return result;
+    // Agent start event - create tree
+    if (event.meta.category === 'agent' && event.meta.eventType === 'start') {
+      trees.set(agentId, {
+        agentId,
+        agentName: (event.data.agentName as string) || 'Agent',
+        startEvent: event,
+        events: [],
+        status: 'running',
+      });
+      continue;
     }
 
-    // For requests without usage, show context size
-    if (eventType === 'request' && currentSize > 0) {
-      const result: EventMetrics = {
-        value: `${(currentSize / 1000).toFixed(1)}k chars`,
-        color: '#3fb950',
-      };
-      if (growth !== 0) {
-        result.growth = {
-          value:
-            growth > 0
-              ? `+${(growth / 1000).toFixed(1)}k`
-              : `${(growth / 1000).toFixed(1)}k`,
-          positive: growth > 0,
-        };
+    // Agent end event - mark complete
+    if (event.meta.category === 'agent' && event.meta.eventType === 'end') {
+      const tree = trees.get(agentId);
+      if (tree) {
+        tree.endEvent = event;
+        tree.status = event.data.status === 'goal' ? 'completed' : 'error';
       }
-      return result;
+      continue;
+    }
+
+    // Other events - add to tree
+    const tree = trees.get(agentId);
+    if (tree) {
+      tree.events.push(event);
+      tree.lastStep = getLastStepSummary(tree.events);
     }
   }
 
-  // For tool events - show result size
-  if (category === 'tool' && eventType === 'complete') {
-    const result = event.data.result;
-    if (result) {
-      const resultStr =
-        typeof result === 'string' ? result : JSON.stringify(result);
-      const chars = resultStr.length;
-      if (chars > 100) {
-        return {
-          value: chars > 1000 ? `+${(chars / 1000).toFixed(1)}k` : `+${chars}`,
-          color: '#3fb950',
-        };
-      }
-    }
-  }
+  return trees;
+}
 
-  return null;
+interface AgentTreeNodeProps {
+  tree: AgentTree;
+  onSelectEvent: (event: DiagnosticEvent) => void;
+  selectedEvent: DiagnosticEvent | null;
+}
+
+function AgentTreeNode({
+  tree,
+  onSelectEvent,
+  selectedEvent,
+}: AgentTreeNodeProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const statusColor =
+    tree.status === 'completed'
+      ? '#3fb950'
+      : tree.status === 'error'
+        ? '#f85149'
+        : '#f0883e';
+
+  const durationMs = tree.endEvent?.data.durationMs as number | undefined;
+  const totalTurns = tree.endEvent?.data.totalTurns as number | undefined;
+
+  return (
+    <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+      {/* Tree header - collapsible */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '12px 24px',
+          cursor: 'pointer',
+          background: '#f778ba12',
+          borderLeft: '4px solid #f778ba',
+          borderRadius: '0 8px 8px 0',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '12px',
+            color: '#8b949e',
+            width: '16px',
+          }}
+        >
+          {expanded ? '▼' : '▶'}
+        </span>
+        <span
+          style={{
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            color: '#8b949e',
+            width: '90px',
+            flexShrink: 0,
+          }}
+        >
+          {formatTime(tree.startEvent.meta.timestamp)}
+        </span>
+        <span
+          style={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: '#f778ba',
+          }}
+        >
+          {tree.agentName}
+        </span>
+        <span
+          style={{
+            fontSize: '11px',
+            fontWeight: 500,
+            color: statusColor,
+            textTransform: 'uppercase',
+          }}
+        >
+          {tree.status}
+        </span>
+        {tree.status === 'running' && tree.lastStep && (
+          <span
+            style={{
+              fontSize: '12px',
+              color: '#8b949e',
+              fontStyle: 'italic',
+            }}
+          >
+            {tree.lastStep}
+          </span>
+        )}
+        {tree.status !== 'running' && (
+          <>
+            {totalTurns !== undefined && (
+              <span style={{ fontSize: '11px', color: '#8b949e' }}>
+                {totalTurns} turns
+              </span>
+            )}
+            {durationMs !== undefined && (
+              <span
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '11px',
+                  color: '#3fb950',
+                }}
+              >
+                {(durationMs / 1000).toFixed(1)}s
+              </span>
+            )}
+          </>
+        )}
+        <span
+          style={{
+            marginLeft: 'auto',
+            fontSize: '11px',
+            color: '#8b949e',
+          }}
+        >
+          {tree.events.length} events
+        </span>
+      </div>
+
+      {/* Expanded content - agent's events */}
+      {expanded && (
+        <div
+          style={{
+            borderLeft: '2px solid #f778ba40',
+            marginLeft: '12px',
+            background: '#f778ba08',
+          }}
+        >
+          {tree.events.map((event) => {
+            const isSel = selectedEvent?.meta.sequence === event.meta.sequence;
+            const color = categoryColors[event.meta.category] || '#8b949e';
+
+            return (
+              <div
+                key={`${event.meta.sessionId}-${event.meta.sequence}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectEvent(event);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '6px 24px',
+                  paddingLeft: '36px',
+                  cursor: 'pointer',
+                  background: isSel ? '#21262d' : 'transparent',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    color: '#8b949e',
+                    width: '90px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {formatTime(event.meta.timestamp)}
+                </span>
+                <span
+                  style={{
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    background: color + '20',
+                    color,
+                  }}
+                >
+                  {event.meta.category}
+                </span>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    color: '#c9d1d9',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    flex: 1,
+                  }}
+                >
+                  {getEventSummary(event)}
+                </span>
+                {event.timing?.durationMs !== undefined && (
+                  <span
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '11px',
+                      color: '#8b949e',
+                    }}
+                  >
+                    {event.timing.durationMs}ms
+                  </span>
+                )}
+                {event.error && (
+                  <span
+                    style={{
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      background: '#da363320',
+                      color: '#da3633',
+                    }}
+                  >
+                    ERROR
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function EventList({
@@ -171,7 +384,10 @@ export function EventList({
   onToggleEventSelection,
   onSelectEventsAfterCheckpoint,
 }: EventListProps) {
-  if (events.length === 0)
+  // Build agent trees - must be before any early returns (React hooks rule)
+  const agentTrees = useMemo(() => buildAgentTrees(events), [events]);
+
+  if (events.length === 0) {
     return (
       <div
         style={{
@@ -185,36 +401,59 @@ export function EventList({
           textAlign: 'center',
         }}
       >
-        No events yet. Start using Gemini CLI with GEMINI_DIAGNOSTICS=1 to see
-        events.
+        No events yet. Run /diagnostics in Gemini CLI to enable diagnostics.
       </div>
     );
+  }
+
+  // Track which agents we've already rendered
+  const renderedAgents = new Set<string>();
 
   const checkpointMap = new Map<number, Checkpoint>();
   for (const cp of checkpoints) checkpointMap.set(cp.afterEventIndex, cp);
+
   const isSelected = (e: DiagnosticEvent) =>
     selectedEvents.some((s) => s.meta.sequence === e.meta.sequence);
-
-  // Build a map of previous API events for growth calculation
-  const prevApiEventMap = new Map<number, DiagnosticEvent>();
-  let lastApiEvent: DiagnosticEvent | undefined;
-  for (const event of events) {
-    if (event.meta.category === 'api') {
-      if (lastApiEvent) {
-        prevApiEventMap.set(event.meta.sequence, lastApiEvent);
-      }
-      lastApiEvent = event;
-    }
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {events.map((event, index) => {
-        const prevApiEvent = prevApiEventMap.get(event.meta.sequence);
+        const checkpoint = checkpointMap.get(index);
+        const agentId = event.meta.agentId;
+
+        // If this event belongs to an agent, check if we should render the tree
+        if (agentId) {
+          // Agent start - render the whole tree here
+          if (
+            event.meta.category === 'agent' &&
+            event.meta.eventType === 'start'
+          ) {
+            const tree = agentTrees.get(agentId);
+            if (tree && !renderedAgents.has(agentId)) {
+              renderedAgents.add(agentId);
+              return (
+                <React.Fragment
+                  key={`${event.meta.sessionId}-${event.meta.sequence}`}
+                >
+                  <AgentTreeNode
+                    tree={tree}
+                    onSelectEvent={onSelectEvent}
+                    selectedEvent={selectedEvent}
+                  />
+                  {checkpoint &&
+                    renderCheckpoint(checkpoint, onSelectEventsAfterCheckpoint)}
+                </React.Fragment>
+              );
+            }
+          }
+          // Skip all other agent events - they're rendered in the tree
+          return null;
+        }
+
+        // Regular event (no agent) - render normally
         const isSel = selectedEvent?.meta.sequence === event.meta.sequence;
         const isMultiSel = multiSelectMode && isSelected(event);
         const color = categoryColors[event.meta.category] || '#8b949e';
-        const checkpoint = checkpointMap.get(index);
 
         return (
           <React.Fragment
@@ -297,48 +536,6 @@ export function EventList({
               >
                 {getEventSummary(event)}
               </span>
-              {(() => {
-                const metrics = getEventMetrics(event, prevApiEvent);
-                if (!metrics) return null;
-                return (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      marginLeft: '8px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'monospace',
-                        fontSize: '11px',
-                        color: metrics.color,
-                        padding: '2px 6px',
-                        background: metrics.color + '15',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {metrics.value}
-                    </span>
-                    {metrics.growth && (
-                      <span
-                        style={{
-                          fontFamily: 'monospace',
-                          fontSize: '10px',
-                          color: metrics.growth.positive
-                            ? '#f85149'
-                            : '#3fb950',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {metrics.growth.value}
-                      </span>
-                    )}
-                  </div>
-                );
-              })()}
               <span style={{ flex: 1 }} />
               {event.timing?.durationMs !== undefined && (
                 <span
@@ -366,77 +563,85 @@ export function EventList({
                 </span>
               )}
             </div>
-            {checkpoint && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 24px',
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    height: '1px',
-                    background:
-                      'linear-gradient(90deg, transparent, #a371f7, transparent)',
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#a371f7',
-                    padding: '4px 12px',
-                    background: '#a371f720',
-                    borderRadius: '12px',
-                  }}
-                >
-                  {checkpoint.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    color: '#8b949e',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {formatTime(checkpoint.timestamp)}
-                </span>
-                {onSelectEventsAfterCheckpoint && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectEventsAfterCheckpoint(checkpoint);
-                    }}
-                    style={{
-                      padding: '2px 8px',
-                      border: '1px solid #a371f7',
-                      borderRadius: '4px',
-                      background: '#a371f720',
-                      color: '#a371f7',
-                      fontSize: '10px',
-                      cursor: 'pointer',
-                      fontWeight: 500,
-                    }}
-                  >
-                    Select Below
-                  </button>
-                )}
-                <div
-                  style={{
-                    flex: 1,
-                    height: '1px',
-                    background:
-                      'linear-gradient(90deg, transparent, #a371f7, transparent)',
-                  }}
-                />
-              </div>
-            )}
+            {checkpoint &&
+              renderCheckpoint(checkpoint, onSelectEventsAfterCheckpoint)}
           </React.Fragment>
         );
       })}
+    </div>
+  );
+}
+
+function renderCheckpoint(
+  checkpoint: Checkpoint,
+  onSelectEventsAfterCheckpoint?: (checkpoint: Checkpoint) => void,
+) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px 24px',
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          height: '1px',
+          background:
+            'linear-gradient(90deg, transparent, #a371f7, transparent)',
+        }}
+      />
+      <span
+        style={{
+          fontSize: '12px',
+          fontWeight: 600,
+          color: '#a371f7',
+          padding: '4px 12px',
+          background: '#a371f720',
+          borderRadius: '12px',
+        }}
+      >
+        {checkpoint.name}
+      </span>
+      <span
+        style={{
+          fontSize: '11px',
+          color: '#8b949e',
+          fontFamily: 'monospace',
+        }}
+      >
+        {formatTime(checkpoint.timestamp)}
+      </span>
+      {onSelectEventsAfterCheckpoint && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectEventsAfterCheckpoint(checkpoint);
+          }}
+          style={{
+            padding: '2px 8px',
+            border: '1px solid #a371f7',
+            borderRadius: '4px',
+            background: '#a371f720',
+            color: '#a371f7',
+            fontSize: '10px',
+            cursor: 'pointer',
+            fontWeight: 500,
+          }}
+        >
+          Select Below
+        </button>
+      )}
+      <div
+        style={{
+          flex: 1,
+          height: '1px',
+          background:
+            'linear-gradient(90deg, transparent, #a371f7, transparent)',
+        }}
+      />
     </div>
   );
 }

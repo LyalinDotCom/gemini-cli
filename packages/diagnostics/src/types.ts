@@ -11,7 +11,8 @@ export type DiagnosticCategory =
   | 'tool'
   | 'user'
   | 'system'
-  | 'memory';
+  | 'memory'
+  | 'agent';
 
 /** Event types per category */
 export type ApiEventType = 'request' | 'response' | 'error';
@@ -25,6 +26,7 @@ export type SystemEventType =
   | 'exception'
   | 'checkpoint';
 export type MemoryEventType = 'load' | 'refresh' | 'file';
+export type AgentEventType = 'start' | 'turn-start' | 'turn-end' | 'end';
 
 export type DiagnosticEventType =
   | ApiEventType
@@ -32,7 +34,8 @@ export type DiagnosticEventType =
   | ToolEventType
   | UserEventType
   | SystemEventType
-  | MemoryEventType;
+  | MemoryEventType
+  | AgentEventType;
 
 /** Metadata for every diagnostic event */
 export interface DiagnosticMeta {
@@ -42,6 +45,30 @@ export interface DiagnosticMeta {
   category: DiagnosticCategory;
   eventType: DiagnosticEventType;
   version: number;
+
+  // Agent hierarchy fields
+  agentId?: string; // e.g., "generalist-abc123"
+  parentAgentId?: string; // e.g., undefined for top-level
+  depth?: number; // 0 = main agent, 1+ = subagent depth
+  turnNumber?: number; // Which turn within the agent
+
+  // Parallel execution fields
+  parallelGroupId?: string; // Groups concurrent operations
+  parallelIndex?: number; // Position within the parallel group
+}
+
+/** Agent context for tracking hierarchical agent execution */
+export interface AgentContext {
+  agentId: string;
+  parentAgentId?: string;
+  depth: number;
+}
+
+/** Options for trace calls with additional context */
+export interface TraceOptions {
+  parallelGroupId?: string;
+  parallelIndex?: number;
+  turnNumber?: number;
 }
 
 /** Timing information for spans */

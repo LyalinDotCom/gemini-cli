@@ -11,6 +11,7 @@ export type {
   ToolEventType,
   UserEventType,
   SystemEventType,
+  AgentEventType,
   DiagnosticEventType,
   DiagnosticMeta,
   DiagnosticTiming,
@@ -18,6 +19,8 @@ export type {
   DiagnosticEvent,
   DiagnosticSpan,
   TracerConfig,
+  AgentContext,
+  TraceOptions,
 } from './types.js';
 
 export {
@@ -45,15 +48,22 @@ export const diagnostics = {
   disable: () => getDiagnostics().disable(),
   getSessionId: () => getDiagnostics().getSessionId(),
   getSessionDir: () => getDiagnostics().getSessionDir(),
+  pushAgentContext: (agentId: string, parentAgentId?: string) =>
+    getDiagnostics().pushAgentContext(agentId, parentAgentId),
+  popAgentContext: () => getDiagnostics().popAgentContext(),
+  getCurrentAgentContext: () => getDiagnostics().getCurrentAgentContext(),
+  createParallelGroup: () => getDiagnostics().createParallelGroup(),
   trace: (
     category: Parameters<ReturnType<typeof getDiagnostics>['trace']>[0],
     eventType: Parameters<ReturnType<typeof getDiagnostics>['trace']>[1],
     data: Parameters<ReturnType<typeof getDiagnostics>['trace']>[2],
-  ) => getDiagnostics().trace(category, eventType, data),
+    options?: Parameters<ReturnType<typeof getDiagnostics>['trace']>[3],
+  ) => getDiagnostics().trace(category, eventType, data, options),
   startSpan: (
     category: Parameters<ReturnType<typeof getDiagnostics>['startSpan']>[0],
     eventType: Parameters<ReturnType<typeof getDiagnostics>['startSpan']>[1],
     initialData?: Parameters<ReturnType<typeof getDiagnostics>['startSpan']>[2],
-  ) => getDiagnostics().startSpan(category, eventType, initialData),
+    options?: Parameters<ReturnType<typeof getDiagnostics>['startSpan']>[3],
+  ) => getDiagnostics().startSpan(category, eventType, initialData, options),
   flush: () => getDiagnostics().flush(),
 };

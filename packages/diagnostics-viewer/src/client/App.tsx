@@ -5,10 +5,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { TabContainer } from './components/TabContainer';
 import { LiveStream, type Checkpoint } from './components/realtime/LiveStream';
 import { LiveStats } from './components/realtime/LiveStats';
-import { SessionBrowser } from './components/analysis/SessionBrowser';
 import { EventDetail } from './components/shared/EventDetail';
 
 interface DiagnosticEvent {
@@ -19,6 +17,14 @@ interface DiagnosticEvent {
     category: string;
     eventType: string;
     version: number;
+    // Agent hierarchy fields
+    agentId?: string;
+    parentAgentId?: string;
+    depth?: number;
+    turnNumber?: number;
+    // Parallel execution fields
+    parallelGroupId?: string;
+    parallelIndex?: number;
   };
   timing?: { startedAt: string; endedAt?: string; durationMs?: number };
   data: Record<string, unknown>;
@@ -34,9 +40,6 @@ interface SessionInfo {
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'realtime' | 'analysis'>(
-    'realtime',
-  );
   const [events, setEvents] = useState<DiagnosticEvent[]>([]);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -45,7 +48,6 @@ export function App() {
   );
   const [isPaused, setIsPaused] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [newEventCount, setNewEventCount] = useState(0);
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState<DiagnosticEvent[]>([]);
@@ -54,9 +56,6 @@ export function App() {
 
   // Use refs to access current state in WebSocket callbacks without recreating the connection
   const isPausedRef = useRef(isPaused);
-  const activeTabRef = useRef(activeTab);
-  isPausedRef.current = isPaused;
-  activeTabRef.current = activeTab;
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -90,15 +89,11 @@ export function App() {
             )
           ) {
             pausedEventsRef.current.push(newEvent);
-            if (activeTabRef.current !== 'realtime')
-              setNewEventCount((c) => c + 1);
           }
         } else {
           setEvents((prev) => {
             if (prev.some((e) => e.meta.sequence === newEvent.meta.sequence))
               return prev;
-            if (activeTabRef.current !== 'realtime')
-              setNewEventCount((c) => c + 1);
             return [...prev, newEvent];
           });
         }
@@ -116,7 +111,6 @@ export function App() {
       setSelectedEvent(null);
       setSelectedEvents([]);
       setCheckpoints([]);
-      setNewEventCount(0);
     }
   }, []);
 
@@ -124,10 +118,6 @@ export function App() {
     setIsPaused(false);
     setEvents((prev) => [...prev, ...pausedEventsRef.current]);
     pausedEventsRef.current = [];
-  }, []);
-  const handleTabChange = useCallback((tab: 'realtime' | 'analysis') => {
-    setActiveTab(tab);
-    if (tab === 'realtime') setNewEventCount(0);
   }, []);
   const handleClear = useCallback(() => {
     setEvents([]);
@@ -321,12 +311,6 @@ export function App() {
         </div>
       </header>
 
-      <TabContainer
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        newEventCount={newEventCount}
-      />
-
       <main
         style={{
           flex: 1,
@@ -335,42 +319,24 @@ export function App() {
           position: 'relative',
         }}
       >
-        {activeTab === 'realtime' ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <LiveStats events={events} />
-            <LiveStream
-              events={events}
-              checkpoints={checkpoints}
-              isPaused={isPaused}
-              onPause={() => setIsPaused(true)}
-              onResume={handleResume}
-              onSelectEvent={setSelectedEvent}
-              onClear={handleClear}
-              onAddCheckpoint={handleAddCheckpoint}
-              selectedEvent={selectedEvent}
-              selectedEvents={selectedEvents}
-              multiSelectMode={multiSelectMode}
-              onToggleMultiSelect={handleToggleMultiSelect}
-              onToggleEventSelection={handleToggleEventSelection}
-              onCopySelected={handleCopySelected}
-              onExportSelected={handleExportSelected}
-              onSelectEventsAfterCheckpoint={handleSelectEventsAfterCheckpoint}
-            />
-          </div>
-        ) : (
-          <SessionBrowser
-            sessions={sessions}
-            currentSessionId={currentSessionId}
-            onSelectSession={subscribeToSession}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <LiveStats events={events} />
+          <LiveStream
             events={events}
+            checkpoints={checkpoints}
+            isPaused={isPaused}
+            onPause={() => setIsPaused(true)}
+            onResume={handleResume}
             onSelectEvent={setSelectedEvent}
+            onClear={handleClear}
+            onAddCheckpoint={handleAddCheckpoint}
             selectedEvent={selectedEvent}
             selectedEvents={selectedEvents}
             multiSelectMode={multiSelectMode}
@@ -378,8 +344,9 @@ export function App() {
             onToggleEventSelection={handleToggleEventSelection}
             onCopySelected={handleCopySelected}
             onExportSelected={handleExportSelected}
+            onSelectEventsAfterCheckpoint={handleSelectEventsAfterCheckpoint}
           />
-        )}
+        </div>
         {selectedEvent && !multiSelectMode && (
           <EventDetail
             event={selectedEvent}

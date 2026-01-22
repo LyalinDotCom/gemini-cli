@@ -49,6 +49,7 @@ import { debugLogger } from '../utils/debugLogger.js';
 import { getModelConfigAlias } from './registry.js';
 import { getVersion } from '../utils/version.js';
 import { ApprovalMode } from '../policy/types.js';
+import { diagnostics } from '@google/gemini-cli-diagnostics';
 
 /** A callback function to report on agent activity. */
 export type ActivityCallback = (activity: SubagentActivityEvent) => void;
@@ -375,6 +376,27 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
     // Combine the external signal with the internal timeout signal.
     const combinedSignal = AbortSignal.any([signal, timeoutController.signal]);
 
+    // Extract parent agent ID from the agentId (if this is a subagent)
+    const parentAgentId = this.agentId.includes('-')
+      ? this.agentId.substring(
+          0,
+          this.agentId.lastIndexOf(`-${this.definition.name}`),
+        )
+      : undefined;
+
+    // Push agent context for diagnostics tracking
+    diagnostics.pushAgentContext(this.agentId, parentAgentId || undefined);
+
+    // Trace agent start
+    diagnostics.trace('agent', 'start', {
+      agentName: this.definition.name,
+      agentId: this.agentId,
+      parentAgentId: parentAgentId || null,
+      maxTurns: this.definition.runConfig.maxTurns,
+      maxTimeMinutes: this.definition.runConfig.maxTimeMinutes,
+      tools: this.toolRegistry.getAllToolNames(),
+    });
+
     logAgentStart(
       this.runtimeContext,
       new AgentStartEvent(this.agentId, this.definition.name),
@@ -543,6 +565,19 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
       throw error; // Re-throw other errors or external aborts.
     } finally {
       clearTimeout(timeoutId);
+
+      // Trace agent end
+      diagnostics.trace('agent', 'end', {
+        agentName: this.definition.name,
+        agentId: this.agentId,
+        totalTurns: turnCounter,
+        durationMs: Date.now() - startTime,
+        status: terminateReason,
+      });
+
+      // Pop agent context
+      diagnostics.popAgentContext();
+
       logAgentFinish(
         this.runtimeContext,
         new AgentFinishEvent(
@@ -742,6 +777,10 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
     let submittedOutput: string | null = null;
     let taskCompleted = false;
 
+    // Create parallel group ID for concurrent tool executions
+    const parallelGroupId =
+      functionCalls.length > 1 ? diagnostics.createParallelGroup() : undefined;
+
     // We'll collect promises for the tool executions
     const toolExecutionPromises: Array<Promise<Part[] | void>> = [];
     // And we'll need a place to store the synchronous results (like complete_task or blocked calls)
@@ -750,6 +789,21 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
     for (const [index, functionCall] of functionCalls.entries()) {
       const callId = functionCall.id ?? `${promptId}-${index}`;
       const args = functionCall.args ?? {};
+
+      // Trace tool request with parallel execution context
+      diagnostics.trace(
+        'tool',
+        'request',
+        {
+          toolName: functionCall.name,
+          args,
+          callId,
+        },
+        {
+          parallelGroupId,
+          parallelIndex: parallelGroupId ? index : undefined,
+        },
+      );
 
       this.emitActivity('TOOL_CALL_START', {
         name: functionCall.name,
@@ -918,6 +972,8 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
       };
 
       // Create a promise for the tool execution
+      // Capture index for closure
+      const capturedIndex = index;
       const executionPromise = (async () => {
         const agentContext = Object.create(this.runtimeContext);
         agentContext.getToolRegistry = () => this.toolRegistry;
@@ -930,12 +986,42 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
         );
 
         if (toolResponse.error) {
+          // Trace tool error with parallel execution context
+          diagnostics.trace(
+            'tool',
+            'error',
+            {
+              toolName: functionCall.name,
+              callId,
+              error: toolResponse.error.message,
+            },
+            {
+              parallelGroupId,
+              parallelIndex: parallelGroupId ? capturedIndex : undefined,
+            },
+          );
+
           this.emitActivity('ERROR', {
             context: 'tool_call',
             name: functionCall.name,
             error: toolResponse.error.message,
           });
         } else {
+          // Trace tool complete with parallel execution context
+          diagnostics.trace(
+            'tool',
+            'complete',
+            {
+              toolName: functionCall.name,
+              callId,
+              resultDisplay: toolResponse.resultDisplay,
+            },
+            {
+              parallelGroupId,
+              parallelIndex: parallelGroupId ? capturedIndex : undefined,
+            },
+          );
+
           this.emitActivity('TOOL_CALL_END', {
             name: functionCall.name,
             output: toolResponse.resultDisplay,
