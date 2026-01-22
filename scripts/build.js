@@ -32,6 +32,16 @@ if (!existsSync(join(root, 'node_modules'))) {
 
 // build all workspaces/packages
 execSync('npm run generate', { stdio: 'inherit', cwd: root });
+// Build diagnostics packages first (dependencies for core and cli)
+execSync('npm run build --workspace=@google/gemini-cli-diagnostics', {
+  stdio: 'inherit',
+  cwd: root,
+});
+execSync('npm run build --workspace=@google/gemini-cli-diagnostics-viewer', {
+  stdio: 'inherit',
+  cwd: root,
+});
+// Build remaining workspaces
 execSync('npm run build --workspaces', { stdio: 'inherit', cwd: root });
 
 // also build container image if sandboxing is enabled

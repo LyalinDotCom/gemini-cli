@@ -10,6 +10,7 @@ import { AppContainer } from './ui/AppContainer.js';
 import { loadCliConfig, parseArguments } from './config/config.js';
 import * as cliConfig from './config/config.js';
 import { readStdin } from './utils/readStdin.js';
+import { diagnostics } from '@google/gemini-cli-diagnostics';
 import { basename } from 'node:path';
 import v8 from 'node:v8';
 import os from 'node:os';
@@ -285,6 +286,18 @@ export async function startInteractiveUI(
 
 export async function main() {
   const cliStartupHandle = startupProfiler.start('cli_startup');
+
+  // Initialize diagnostics tracing if enabled
+  if (diagnostics.isEnabled()) {
+    diagnostics.trace('system', 'init', {
+      sessionId,
+      version: await getVersion(),
+      platform: process.platform,
+      nodeVersion: process.version,
+    });
+    debugLogger.log(`[Diagnostics] Session: ${diagnostics.getSessionId()}`);
+    debugLogger.log(`[Diagnostics] Output: ${diagnostics.getSessionDir()}`);
+  }
 
   // Listen for admin controls from parent process (IPC) in non-sandbox mode. In
   // sandbox mode, we re-fetch the admin controls from the server once we enter

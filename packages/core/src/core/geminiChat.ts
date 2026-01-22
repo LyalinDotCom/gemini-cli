@@ -16,6 +16,7 @@ import type {
   GenerateContentConfig,
   GenerateContentParameters,
 } from '@google/genai';
+import { diagnostics } from '@google/gemini-cli-diagnostics';
 import { toParts } from '../code_assist/converter.js';
 import { createUserContent, FinishReason } from '@google/genai';
 import { retryWithBackoff, isRetryableError } from '../utils/retry.js';
@@ -949,6 +950,17 @@ export class GeminiChat {
     });
 
     this.chatRecordingService.recordToolCalls(model, toolCallRecords);
+
+    // Diagnostics tracing for each tool call
+    for (const call of toolCalls) {
+      const eventType = call.status === 'error' ? 'error' : 'complete';
+      diagnostics.trace('tool', eventType, {
+        toolName: call.request.name,
+        args: call.request.args,
+        result: call.response?.responseParts,
+        status: call.status,
+      });
+    }
   }
 
   /**
@@ -972,6 +984,13 @@ export class GeminiChat {
       this.chatRecordingService.recordThought({
         subject,
         description,
+      });
+
+      // Diagnostics tracing
+      diagnostics.trace('thought', 'reasoning', {
+        subject,
+        description,
+        rawText,
       });
     }
   }

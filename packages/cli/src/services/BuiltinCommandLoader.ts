@@ -30,6 +30,7 @@ import { helpCommand } from '../ui/commands/helpCommand.js';
 import { hooksCommand } from '../ui/commands/hooksCommand.js';
 import { ideCommand } from '../ui/commands/ideCommand.js';
 import { initCommand } from '../ui/commands/initCommand.js';
+import { diagnosticsCommand } from '../ui/commands/insightsCommand.js';
 import { mcpCommand } from '../ui/commands/mcpCommand.js';
 import { memoryCommand } from '../ui/commands/memoryCommand.js';
 import { modelCommand } from '../ui/commands/modelCommand.js';
@@ -108,6 +109,7 @@ export class BuiltinCommandLoader implements ICommandLoader {
       ...(this.config?.getEnableHooksUI() ? [hooksCommand] : []),
       await ideCommand(),
       initCommand,
+      diagnosticsCommand,
       ...(this.config?.getMcpEnabled() === false
         ? [
             {

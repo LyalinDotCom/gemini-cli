@@ -1,0 +1,30 @@
+{
+  "name": "@google/gemini-cli-diagnostics",
+  "version": "0.1.0",
+  "description": "Flight recorder instrumentation library for Gemini CLI",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "node ../../scripts/build_package.js"
+  },
+  "keywords": [
+    "gemini",
+    "cli",
+    "diagnostics",
+    "instrumentation"
+  ],
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

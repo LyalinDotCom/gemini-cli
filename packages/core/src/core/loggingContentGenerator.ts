@@ -16,6 +16,7 @@ import type {
   GenerateContentResponseUsageMetadata,
   GenerateContentResponse,
 } from '@google/genai';
+import { diagnostics } from '@google/gemini-cli-diagnostics';
 import type { ServerDetails } from '../telemetry/types.js';
 import {
   ApiRequestEvent,
@@ -72,6 +73,15 @@ export class LoggingContentGenerator implements ContentGenerator {
         requestText,
       ),
     );
+
+    // Diagnostics tracing
+    diagnostics.trace('api', 'request', {
+      model,
+      promptId,
+      contents,
+      config: generationConfig,
+      systemInstruction: generationConfig?.systemInstruction,
+    });
   }
 
   private _getEndpointUrl(
@@ -139,6 +149,16 @@ export class LoggingContentGenerator implements ContentGenerator {
         responseText,
       ),
     );
+
+    // Diagnostics tracing
+    diagnostics.trace('api', 'response', {
+      model,
+      modelVersion: model,
+      promptId: prompt_id,
+      candidates: responseCandidates,
+      usageMetadata,
+      durationMs,
+    });
   }
 
   private _logApiError(
@@ -172,6 +192,18 @@ export class LoggingContentGenerator implements ContentGenerator {
           : undefined,
       ),
     );
+
+    // Diagnostics tracing
+    diagnostics.trace('api', 'error', {
+      model,
+      promptId: prompt_id,
+      durationMs,
+      error: {
+        name: errorType,
+        message: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    });
   }
 
   async generateContent(
