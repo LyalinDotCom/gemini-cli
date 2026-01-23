@@ -73,4 +73,24 @@ if (existsSync(builtinSkillsSrc)) {
   console.log('Copied built-in skills to bundle/builtin/');
 }
 
+// 5. Copy Insights Viewer Client (packages/diagnostics-viewer/dist/client)
+const insightsClientSrc = join(root, 'packages/diagnostics-viewer/dist/client');
+const insightsClientDest = join(bundleDir, 'insights', 'client');
+if (existsSync(insightsClientSrc)) {
+  // Create insights directory if it doesn't exist
+  const insightsDir = join(bundleDir, 'insights');
+  if (!existsSync(insightsDir)) {
+    mkdirSync(insightsDir, { recursive: true });
+  }
+  cpSync(insightsClientSrc, insightsClientDest, {
+    recursive: true,
+    dereference: true,
+  });
+  console.log('Copied insights viewer client to bundle/insights/client/');
+} else {
+  console.warn(
+    'Insights viewer client not found - run npm run build in diagnostics-viewer first',
+  );
+}
+
 console.log('Assets copied to bundle/');

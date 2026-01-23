@@ -9,6 +9,49 @@ import { initializeOutputListenersAndFlush } from '../gemini.js';
 import { writeToStdout, writeToStderr } from '@google/gemini-cli-core';
 import { DEFAULT_BASE_DIR } from '@google/gemini-cli-diagnostics';
 import open from 'open';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { existsSync } from 'node:fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Try to import the bundled server, fall back to package import
+async function loadInsightsServer(): Promise<{
+  createInsightsServer: (config: {
+    port: number;
+    baseDir: string;
+    sessionId?: string;
+    clientDir?: string;
+  }) => {
+    start: () => Promise<{ port: number; reused: boolean }>;
+    stop: () => void;
+    getPort: () => number;
+  };
+  bundledClientDir?: string;
+}> {
+  // First, try to find the bundled server relative to the CLI entry point
+  // In bundle mode: bundle/gemini.js -> bundle/insights/server.js
+  const bundleDir = join(__dirname, '..'); // Go up from dist or wherever we are
+  const bundledServerPath = join(bundleDir, 'insights', 'server.js');
+  const bundledClientDir = join(bundleDir, 'insights', 'client');
+
+  if (existsSync(bundledServerPath) && existsSync(bundledClientDir)) {
+    try {
+      const server = await import(bundledServerPath);
+      return {
+        createInsightsServer: server.createInsightsServer,
+        bundledClientDir,
+      };
+    } catch {
+      // Fall through to package import
+    }
+  }
+
+  // Fall back to package import (for dev mode or if bundle not found)
+  const pkg = await import('@google/gemini-cli-diagnostics-viewer');
+  return { createInsightsServer: pkg.createInsightsServer };
+}
 
 export const insightsCommand: CommandModule = {
   command: 'insights',
@@ -43,9 +86,8 @@ export const insightsCommand: CommandModule = {
       .version(false),
   handler: async (argv) => {
     try {
-      const { createInsightsServer } = await import(
-        '@google/gemini-cli-diagnostics-viewer'
-      );
+      const { createInsightsServer, bundledClientDir } =
+        await loadInsightsServer();
 
       const port = argv['port'] as number;
       const session = argv['session'] as string | undefined;
@@ -56,6 +98,7 @@ export const insightsCommand: CommandModule = {
         port,
         baseDir,
         sessionId: session,
+        clientDir: bundledClientDir,
       });
 
       await server.start();

@@ -106,6 +106,24 @@ const a2aServerConfig = {
   plugins: createWasmPlugins(),
 };
 
+// Bundle diagnostics-viewer server (separate bundle for the insights viewer)
+const insightsServerConfig = {
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  external: ['@lydell/node-pty', 'node-pty', 'keytar'],
+  loader: { '.node': 'file' },
+  write: true,
+  banner: {
+    js: `import { createRequire } from 'module'; const require = createRequire(import.meta.url); globalThis.__filename = require('url').fileURLToPath(import.meta.url); globalThis.__dirname = require('path').dirname(globalThis.__filename);`,
+  },
+  entryPoints: ['packages/diagnostics-viewer/src/server/index.ts'],
+  outfile: 'bundle/insights/server.js',
+  define: {
+    'process.env.CLI_VERSION': JSON.stringify(pkg.version),
+  },
+};
+
 Promise.allSettled([
   esbuild.build(cliConfig).then(({ metafile }) => {
     if (process.env.DEV === 'true') {
@@ -113,8 +131,9 @@ Promise.allSettled([
     }
   }),
   esbuild.build(a2aServerConfig),
+  esbuild.build(insightsServerConfig),
 ]).then((results) => {
-  const [cliResult, a2aResult] = results;
+  const [cliResult, a2aResult, insightsResult] = results;
   if (cliResult.status === 'rejected') {
     console.error('gemini.js build failed:', cliResult.reason);
     process.exit(1);
@@ -122,5 +141,9 @@ Promise.allSettled([
   // error in a2a-server bundling will not stop gemini.js bundling process
   if (a2aResult.status === 'rejected') {
     console.warn('a2a-server build failed:', a2aResult.reason);
+  }
+  // error in insights-server bundling will not stop other builds
+  if (insightsResult.status === 'rejected') {
+    console.warn('insights-server build failed:', insightsResult.reason);
   }
 });

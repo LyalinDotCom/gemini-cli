@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { watch, type FSWatcher } from 'chokidar';
 import { createConnection } from 'node:net';
 import type { DiagnosticEvent } from '@google/gemini-cli-diagnostics';
@@ -79,10 +80,34 @@ async function isViewerRunning(port: number): Promise<boolean> {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Find client directory - works both in dev (../client) and bundle (./client)
+function findClientDir(): string {
+  const bundleClientDir = join(__dirname, 'client');
+  const devClientDir = join(__dirname, '..', 'client');
+
+  // Prefer bundle location (when running from bundle/insights/server.js)
+  if (
+    existsSync(bundleClientDir) &&
+    existsSync(join(bundleClientDir, 'index.html'))
+  ) {
+    return bundleClientDir;
+  }
+  // Fall back to dev location (when running from packages/diagnostics-viewer/dist/server/)
+  if (
+    existsSync(devClientDir) &&
+    existsSync(join(devClientDir, 'index.html'))
+  ) {
+    return devClientDir;
+  }
+  // Default to bundle location (will fail gracefully if not found)
+  return bundleClientDir;
+}
+
 export interface ServerConfig {
   port: number;
   baseDir: string;
   sessionId?: string;
+  clientDir?: string; // Optional override for client directory
 }
 
 export interface WebSocketMessage {
@@ -102,7 +127,7 @@ export function createInsightsServer(config: ServerConfig) {
   const clients = new Set<WebSocket>();
   const checkpointSequences = new Map<string, number>();
 
-  const clientDir = join(__dirname, '..', 'client');
+  const clientDir = config.clientDir ?? findClientDir();
   app.use(express.static(clientDir));
 
   app.get('/api/sessions', async (_req, res) => {
