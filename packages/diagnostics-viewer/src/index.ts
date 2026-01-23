@@ -7,7 +7,7 @@
 
 import { Command } from 'commander';
 import open from 'open';
-import { DEFAULT_BASE_DIR } from '@google/gemini-cli-diagnostics';
+import { getDefaultBaseDir } from '@google/gemini-cli-diagnostics';
 import { createInsightsServer } from './server/index.js';
 
 const program = new Command();
@@ -20,7 +20,7 @@ program
   .option(
     '-d, --dir <path>',
     'Base directory for diagnostics',
-    DEFAULT_BASE_DIR,
+    getDefaultBaseDir(),
   )
   .option('-s, --session <id>', 'Specific session ID to watch')
   .option('--no-open', 'Do not automatically open browser')

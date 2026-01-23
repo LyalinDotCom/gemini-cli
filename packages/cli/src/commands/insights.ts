@@ -7,7 +7,7 @@
 import type { CommandModule, Argv } from 'yargs';
 import { initializeOutputListenersAndFlush } from '../gemini.js';
 import { writeToStdout, writeToStderr } from '@google/gemini-cli-core';
-import { DEFAULT_BASE_DIR } from '@google/gemini-cli-diagnostics';
+import { getDefaultBaseDir } from '@google/gemini-cli-diagnostics';
 import open from 'open';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -75,7 +75,7 @@ export const insightsCommand: CommandModule = {
       .option('dir', {
         alias: 'd',
         type: 'string',
-        default: DEFAULT_BASE_DIR,
+        default: getDefaultBaseDir(),
         description: 'Base directory for diagnostics',
       })
       .option('no-open', {
