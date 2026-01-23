@@ -24,85 +24,130 @@ interface EventDetailProps {
   onClose: () => void;
 }
 
-function CopyButton({ text, label }: { text: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
+function IconButton({
+  onClick,
+  tooltip,
+  active,
+  activeColor = '#3fb950',
+  children,
+}: {
+  onClick: () => void;
+  tooltip: string;
+  active?: boolean;
+  activeColor?: string;
+  children: React.ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <button
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } catch {
-          /* Clipboard API may fail silently */
-        }
-      }}
-      style={{
-        padding: '6px 12px',
-        border: `1px solid ${copied ? '#3fb950' : '#58a6ff'}`,
-        borderRadius: '6px',
-        background: copied ? '#3fb95020' : '#58a6ff20',
-        color: copied ? '#3fb950' : '#58a6ff',
-        fontSize: '12px',
-        cursor: 'pointer',
-      }}
-    >
-      {copied ? 'Copied!' : label || 'Copy'}
-    </button>
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '32px',
+          height: '32px',
+          border: `1px solid ${active ? activeColor : hovered ? '#8b949e' : '#30363d'}`,
+          borderRadius: '6px',
+          background: active
+            ? `${activeColor}20`
+            : hovered
+              ? '#30363d'
+              : '#21262d',
+          color: active ? activeColor : hovered ? '#f0f6fc' : '#8b949e',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+        }}
+      >
+        {children}
+      </button>
+      {hovered && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            marginBottom: '6px',
+            padding: '4px 8px',
+            background: '#1c2128',
+            border: '1px solid #30363d',
+            borderRadius: '6px',
+            fontSize: '12px',
+            color: '#f0f6fc',
+            whiteSpace: 'nowrap',
+            zIndex: 1000,
+            pointerEvents: 'none',
+          }}
+        >
+          {tooltip}
+        </div>
+      )}
+    </div>
   );
 }
 
-function ToggleSwitch({
+function CopyButton({ text, tooltip }: { text: string; tooltip?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* Clipboard API may fail silently */
+    }
+  };
+
+  return (
+    <IconButton
+      onClick={handleCopy}
+      tooltip={copied ? 'Copied!' : tooltip || 'Copy'}
+      active={copied}
+      activeColor="#3fb950"
+    >
+      {copied ? (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" />
+          <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" />
+        </svg>
+      )}
+    </IconButton>
+  );
+}
+
+function FormatToggle({
   enabled,
   onToggle,
-  label,
 }: {
   enabled: boolean;
   onToggle: () => void;
-  label: string;
 }) {
   return (
-    <button
+    <IconButton
       onClick={onToggle}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '4px 10px',
-        border: `1px solid ${enabled ? '#3fb950' : '#30363d'}`,
-        borderRadius: '6px',
-        background: enabled ? '#3fb95015' : 'transparent',
-        color: enabled ? '#3fb950' : '#8b949e',
-        fontSize: '12px',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
+      tooltip={enabled ? 'Show raw' : 'Show formatted'}
+      active={enabled}
+      activeColor="#a371f7"
     >
-      <span
-        style={{
-          width: '28px',
-          height: '16px',
-          borderRadius: '8px',
-          background: enabled ? '#3fb950' : '#30363d',
-          position: 'relative',
-          transition: 'background 0.15s',
-        }}
-      >
-        <span
-          style={{
-            position: 'absolute',
-            top: '2px',
-            left: enabled ? '14px' : '2px',
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: '#fff',
-            transition: 'left 0.15s',
-          }}
-        />
-      </span>
-      {label}
-    </button>
+      {enabled ? (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M14.85 3H1.15C.52 3 0 3.52 0 4.15v7.69C0 12.48.52 13 1.15 13h13.69c.64 0 1.15-.52 1.15-1.15V4.15C16 3.52 15.48 3 14.85 3zM9 11H2V9h7v2zm5-4H2V5h12v2z" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4.72 3.22a.75.75 0 011.06 1.06L2.06 8l3.72 3.72a.75.75 0 11-1.06 1.06L.47 8.53a.75.75 0 010-1.06l4.25-4.25zm6.56 0a.75.75 0 10-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 101.06 1.06l4.25-4.25a.75.75 0 000-1.06l-4.25-4.25z" />
+        </svg>
+      )}
+    </IconButton>
   );
 }
 
@@ -1594,7 +1639,7 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                               </span>
                               <CopyButton
                                 text={source.content}
-                                label="Copy Content"
+                                tooltip="Copy content"
                               />
                             </div>
                             <pre
@@ -1753,15 +1798,14 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                       alignItems: 'center',
                     }}
                   >
-                    <ToggleSwitch
+                    <FormatToggle
                       enabled={isFormatted}
                       onToggle={() => setIsFormatted(!isFormatted)}
-                      label="Format"
                     />
-                    <CopyButton text={systemInfo.text} label="Copy Text" />
+                    <CopyButton text={systemInfo.text} tooltip="Copy text" />
                     <CopyButton
                       text={JSON.stringify(systemInfo.raw, null, 2)}
-                      label="Copy JSON"
+                      tooltip="Copy JSON"
                     />
                   </div>
                 </div>
@@ -1807,7 +1851,7 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                 </span>
                 <CopyButton
                   text={JSON.stringify(systemInfo.sources, null, 2)}
-                  label="Copy All"
+                  tooltip="Copy all"
                 />
               </div>
               <div
@@ -1931,7 +1975,7 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                           >
                             <CopyButton
                               text={source.content!}
-                              label="Copy Content"
+                              tooltip="Copy content"
                             />
                           </div>
                           <pre
@@ -1978,15 +2022,14 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               <div
                 style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
               >
-                <ToggleSwitch
+                <FormatToggle
                   enabled={isFormatted}
                   onToggle={() => setIsFormatted(!isFormatted)}
-                  label="Format"
                 />
-                <CopyButton text={promptText} label="Copy Text" />
+                <CopyButton text={promptText} tooltip="Copy text" />
                 <CopyButton
                   text={JSON.stringify(data.contents, null, 2)}
-                  label="Copy JSON"
+                  tooltip="Copy JSON"
                 />
               </div>
             </div>
@@ -2018,17 +2061,16 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               <div
                 style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
               >
-                <ToggleSwitch
+                <FormatToggle
                   enabled={isFormatted}
                   onToggle={() => setIsFormatted(!isFormatted)}
-                  label="Format"
                 />
                 {responseText && (
-                  <CopyButton text={responseText} label="Copy Text" />
+                  <CopyButton text={responseText} tooltip="Copy text" />
                 )}
                 <CopyButton
                   text={JSON.stringify(candidates, null, 2)}
-                  label="Copy JSON"
+                  tooltip="Copy JSON"
                 />
               </div>
             </div>
@@ -2060,10 +2102,9 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               <div
                 style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
               >
-                <ToggleSwitch
+                <FormatToggle
                   enabled={isFormatted}
                   onToggle={() => setIsFormatted(!isFormatted)}
-                  label="Format"
                 />
                 <CopyButton text={JSON.stringify(data, null, 2)} />
               </div>
@@ -2089,14 +2130,13 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               <div
                 style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
               >
-                <ToggleSwitch
+                <FormatToggle
                   enabled={isFormatted}
                   onToggle={() => setIsFormatted(!isFormatted)}
-                  label="Format"
                 />
                 <CopyButton
                   text={JSON.stringify(event, null, 2)}
-                  label="Copy All"
+                  tooltip="Copy all"
                 />
               </div>
             </div>
@@ -2177,7 +2217,7 @@ function MemoryEventView({ event }: { event: DiagnosticEvent }) {
             marginBottom: '12px',
           }}
         >
-          <CopyButton text={content} label="Copy Content" />
+          <CopyButton text={content} tooltip="Copy content" />
         </div>
         <pre
           style={{
