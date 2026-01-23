@@ -5,6 +5,7 @@
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { StorageOptions, WriteQueueItem } from './types.js';
 
@@ -14,9 +15,7 @@ let _defaultBaseDir: string | null = null;
 export function getDefaultBaseDir(): string {
   if (_defaultBaseDir) return _defaultBaseDir;
   try {
-    // Dynamic require to avoid issues with test mocks that don't provide homedir
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-syntax -- lazy load for test compatibility
-    const home = require('node:os').homedir?.() as string | undefined;
+    const home = homedir();
     if (home) {
       _defaultBaseDir = join(home, '.gemini', 'diagnostics');
       return _defaultBaseDir;
@@ -28,8 +27,10 @@ export function getDefaultBaseDir(): string {
   return _defaultBaseDir;
 }
 
-/** Default base directory for diagnostics (for backward compatibility) */
-export const DEFAULT_BASE_DIR = '/tmp/.gemini/diagnostics';
+/** Default base directory for diagnostics
+ * @deprecated Use getDefaultBaseDir() instead - this constant doesn't account for home directory
+ */
+export const DEFAULT_BASE_DIR = getDefaultBaseDir();
 
 /** Handles file storage for diagnostic events with async write queue */
 export class DiagnosticsStorage {

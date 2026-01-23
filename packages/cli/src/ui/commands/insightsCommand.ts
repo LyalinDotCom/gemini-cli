@@ -18,7 +18,7 @@ import {
   diagnostics,
   enableDiagnostics,
   disableDiagnostics,
-  DEFAULT_BASE_DIR,
+  getDefaultBaseDir,
 } from '@google/gemini-cli-diagnostics';
 
 // Find the bundle directory (works both in dev and bundled mode)
@@ -187,7 +187,7 @@ const viewerCommand: SlashCommand = {
     const port = requestedPort || DEFAULT_PORT;
     const server = createInsightsServer({
       port,
-      baseDir: DEFAULT_BASE_DIR,
+      baseDir: getDefaultBaseDir(),
       sessionId: diagnostics.isEnabled()
         ? diagnostics.getSessionId()
         : undefined,

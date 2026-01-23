@@ -194,12 +194,14 @@ export default tseslint.config(
     },
   },
   {
-    // Allow os.homedir() in tests and paths.ts where it is used to implement the helper
+    // Allow os.homedir() in tests, paths.ts where it is used to implement the helper,
+    // and diagnostics package which is a lower-level package that can't depend on core
     files: [
       '**/*.test.ts',
       '**/*.test.tsx',
       'packages/core/src/utils/paths.ts',
       'packages/test-utils/src/**/*.ts',
+      'packages/diagnostics/src/**/*.ts',
       'scripts/**/*.js',
     ],
     rules: {
