@@ -63,7 +63,9 @@ const external = [
   '@lydell/node-pty-win32-arm64',
   '@lydell/node-pty-win32-x64',
   'keytar',
-  '@google/gemini-cli-diagnostics',
+  // Note: @google/gemini-cli-diagnostics is bundled into the CLI (not external)
+  // The viewer is external because it's loaded dynamically from bundle/insights/ in production
+  // and falls back to package import only in development
   '@google/gemini-cli-diagnostics-viewer',
 ];
 
