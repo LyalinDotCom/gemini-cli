@@ -52,6 +52,255 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   );
 }
 
+function ToggleSwitch({
+  enabled,
+  onToggle,
+  label,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '4px 10px',
+        border: `1px solid ${enabled ? '#3fb950' : '#30363d'}`,
+        borderRadius: '6px',
+        background: enabled ? '#3fb95015' : 'transparent',
+        color: enabled ? '#3fb950' : '#8b949e',
+        fontSize: '12px',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      <span
+        style={{
+          width: '28px',
+          height: '16px',
+          borderRadius: '8px',
+          background: enabled ? '#3fb950' : '#30363d',
+          position: 'relative',
+          transition: 'background 0.15s',
+        }}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: '2px',
+            left: enabled ? '14px' : '2px',
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#fff',
+            transition: 'left 0.15s',
+          }}
+        />
+      </span>
+      {label}
+    </button>
+  );
+}
+
+// Simple markdown renderer - converts markdown to styled HTML
+function renderMarkdown(text: string): string {
+  const html = text
+    // Escape HTML
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Code blocks (``` ... ```)
+    .replace(
+      /```(\w*)\n([\s\S]*?)```/g,
+      '<pre style="background:#0d1117;padding:12px;border-radius:6px;overflow-x:auto;border:1px solid #30363d"><code>$2</code></pre>',
+    )
+    // Inline code
+    .replace(
+      /`([^`]+)`/g,
+      '<code style="background:#21262d;padding:2px 6px;border-radius:4px;font-size:0.9em">$1</code>',
+    )
+    // Headers
+    .replace(
+      /^### (.+)$/gm,
+      '<h3 style="font-size:16px;font-weight:600;color:#f0f6fc;margin:16px 0 8px 0;border-bottom:1px solid #21262d;padding-bottom:4px">$1</h3>',
+    )
+    .replace(
+      /^## (.+)$/gm,
+      '<h2 style="font-size:18px;font-weight:600;color:#f0f6fc;margin:20px 0 10px 0;border-bottom:1px solid #30363d;padding-bottom:6px">$1</h2>',
+    )
+    .replace(
+      /^# (.+)$/gm,
+      '<h1 style="font-size:22px;font-weight:700;color:#f0f6fc;margin:24px 0 12px 0;border-bottom:1px solid #30363d;padding-bottom:8px">$1</h1>',
+    )
+    // Bold
+    .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#f0f6fc">$1</strong>')
+    // Italic
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    // Unordered lists
+    .replace(/^- (.+)$/gm, '<li style="margin:4px 0;margin-left:20px">$1</li>')
+    .replace(
+      /^ {2}- (.+)$/gm,
+      '<li style="margin:4px 0;margin-left:40px">$1</li>',
+    )
+    // Ordered lists
+    .replace(
+      /^\d+\. (.+)$/gm,
+      '<li style="margin:4px 0;margin-left:20px;list-style-type:decimal">$1</li>',
+    )
+    // Blockquotes
+    .replace(
+      /^> (.+)$/gm,
+      '<blockquote style="border-left:3px solid #58a6ff;padding-left:12px;margin:8px 0;color:#8b949e">$1</blockquote>',
+    )
+    // Horizontal rules
+    .replace(
+      /^---$/gm,
+      '<hr style="border:none;border-top:1px solid #30363d;margin:16px 0">',
+    )
+    // Links
+    .replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" style="color:#58a6ff;text-decoration:none" target="_blank">$1</a>',
+    )
+    // Line breaks - convert double newlines to paragraph breaks
+    .replace(/\n\n/g, '</p><p style="margin:12px 0">')
+    // Single newlines to <br> (but not after block elements)
+    .replace(/\n(?!<)/g, '<br>');
+
+  return `<div style="line-height:1.6"><p style="margin:12px 0">${html}</p></div>`;
+}
+
+// JSON syntax highlighter
+function highlightJson(json: string): string {
+  return (
+    json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Strings (property values)
+      .replace(
+        /("(?:[^"\\]|\\.)*")\s*:/g,
+        '<span style="color:#79c0ff">$1</span>:',
+      )
+      // String values
+      .replace(
+        /:\s*("(?:[^"\\]|\\.)*")/g,
+        ': <span style="color:#a5d6ff">$1</span>',
+      )
+      // Numbers
+      .replace(/:\s*(-?\d+\.?\d*)/g, ': <span style="color:#f0883e">$1</span>')
+      // Booleans and null
+      .replace(
+        /:\s*(true|false|null)/g,
+        ': <span style="color:#ff7b72">$1</span>',
+      )
+      // Standalone strings in arrays
+      .replace(
+        /\[\s*("(?:[^"\\]|\\.)*")/g,
+        '[ <span style="color:#a5d6ff">$1</span>',
+      )
+      .replace(
+        /,\s*("(?:[^"\\]|\\.)*")\s*([,\]])/g,
+        ', <span style="color:#a5d6ff">$1</span>$2',
+      )
+  );
+}
+
+function FormattedTextView({
+  text,
+  isFormatted,
+}: {
+  text: string;
+  isFormatted: boolean;
+}) {
+  if (!isFormatted) {
+    return (
+      <pre
+        style={{
+          margin: 0,
+          padding: '16px',
+          background: '#0d1117',
+          borderRadius: '6px',
+          fontSize: '13px',
+          fontFamily: 'monospace',
+          color: '#c9d1d9',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          lineHeight: 1.6,
+          overflow: 'auto',
+        }}
+      >
+        {text}
+      </pre>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        padding: '16px',
+        background: '#0d1117',
+        borderRadius: '6px',
+        fontSize: '14px',
+        color: '#c9d1d9',
+        overflow: 'auto',
+      }}
+      dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+    />
+  );
+}
+
+function FormattedJsonView({
+  data,
+  isFormatted,
+}: {
+  data: unknown;
+  isFormatted: boolean;
+}) {
+  const jsonStr = JSON.stringify(data, null, 2);
+
+  if (!isFormatted) {
+    return (
+      <pre
+        style={{
+          margin: 0,
+          padding: '12px',
+          background: '#0d1117',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          color: '#c9d1d9',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+        }}
+      >
+        {jsonStr}
+      </pre>
+    );
+  }
+
+  return (
+    <pre
+      style={{
+        margin: 0,
+        padding: '12px',
+        background: '#0d1117',
+        borderRadius: '6px',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+        lineHeight: 1.5,
+      }}
+      dangerouslySetInnerHTML={{ __html: highlightJson(jsonStr) }}
+    />
+  );
+}
+
 function extractPromptText(contents: unknown): string {
   if (!Array.isArray(contents)) return '';
   return contents
@@ -474,10 +723,11 @@ function calculateContextMetrics(
 
 function ApiEventView({ event }: { event: DiagnosticEvent }) {
   const [section, setSection] = useState<
-    'context' | 'system' | 'sources' | 'prompt' | 'response' | 'full' | 'raw'
-  >('context');
+    'overview' | 'system' | 'sources' | 'messages' | 'response' | 'full' | 'raw'
+  >('overview');
   const [expandedSource, setExpandedSource] = useState<number | null>(null);
   const [showAllTools, setShowAllTools] = useState(false);
+  const [isFormatted, setIsFormatted] = useState(true);
   const { data } = event;
   const systemInfo = findSystemInstruction(data);
   const promptText = extractPromptText(data.contents);
@@ -498,19 +748,31 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
       }
     | undefined;
   const isResponse = event.meta.eventType === 'response' || !!candidates;
+  const hasMessages = !!promptText || !!data.contents;
+  const hasResponse = isResponse && (!!responseText || !!candidates);
 
-  const Tab = ({ id, label }: { id: typeof section; label: string }) => (
+  const Tab = ({
+    id,
+    label,
+    disabled,
+  }: {
+    id: typeof section;
+    label: string;
+    disabled?: boolean;
+  }) => (
     <button
-      onClick={() => setSection(id)}
+      onClick={() => !disabled && setSection(id)}
+      disabled={disabled}
       style={{
         padding: '8px 16px',
         border: 'none',
         borderRadius: '6px',
         background: section === id ? '#21262d' : 'transparent',
-        color: section === id ? '#f0f6fc' : '#8b949e',
+        color: disabled ? '#484f58' : section === id ? '#f0f6fc' : '#8b949e',
         fontSize: '13px',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         fontWeight: 500,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {label}
@@ -596,20 +858,23 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
           gap: '4px',
           padding: '8px 16px',
           borderBottom: '1px solid #30363d',
+          flexWrap: 'wrap',
         }}
       >
-        <Tab id="context" label="Context" />
-        <Tab id="system" label={systemInfo ? 'System' : 'System (none)'} />
-        {systemInfo && systemInfo.sources.length > 0 && (
-          <Tab id="sources" label={`Sources (${systemInfo.sources.length})`} />
-        )}
-        <Tab id="prompt" label="Prompt" />
-        {isResponse && <Tab id="response" label="Response" />}
+        <Tab id="overview" label="Overview" />
+        <Tab id="system" label="System" disabled={!systemInfo} />
+        <Tab
+          id="sources"
+          label={`Sources${systemInfo?.sources.length ? ` (${systemInfo.sources.length})` : ''}`}
+          disabled={!systemInfo?.sources.length}
+        />
+        <Tab id="messages" label="Messages" disabled={!hasMessages} />
+        <Tab id="response" label="Response" disabled={!hasResponse} />
         <Tab id="full" label="Full Data" />
         <Tab id="raw" label="Raw JSON" />
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-        {section === 'context' && (
+        {section === 'overview' && (
           <>
             <div style={{ marginBottom: '16px' }}>
               <span
@@ -1481,7 +1746,18 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                       {systemInfo.text.length.toLocaleString()} chars
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <ToggleSwitch
+                      enabled={isFormatted}
+                      onToggle={() => setIsFormatted(!isFormatted)}
+                      label="Format"
+                    />
                     <CopyButton text={systemInfo.text} label="Copy Text" />
                     <CopyButton
                       text={JSON.stringify(systemInfo.raw, null, 2)}
@@ -1489,23 +1765,10 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                     />
                   </div>
                 </div>
-                <pre
-                  style={{
-                    margin: 0,
-                    padding: '16px',
-                    background: '#0d1117',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontFamily: 'monospace',
-                    color: '#c9d1d9',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    lineHeight: 1.6,
-                    overflow: 'auto',
-                  }}
-                >
-                  {systemInfo.text}
-                </pre>
+                <FormattedTextView
+                  text={systemInfo.text}
+                  isFormatted={isFormatted}
+                />
               </>
             ) : (
               <div
@@ -1517,17 +1780,6 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
                 }}
               >
                 No system instruction found in this event.
-                <br />
-                <span
-                  style={{
-                    fontSize: '12px',
-                    marginTop: '8px',
-                    display: 'block',
-                  }}
-                >
-                  Check the &quot;Full Data&quot; or &quot;Raw JSON&quot; tabs
-                  to inspect all event data.
-                </span>
               </div>
             )}
           </>
@@ -1708,7 +1960,7 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               </div>
             </>
           )}
-        {section === 'prompt' && (
+        {section === 'messages' && (
           <>
             <div
               style={{
@@ -1721,9 +1973,16 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               <span
                 style={{ fontSize: '14px', fontWeight: 600, color: '#f0f6fc' }}
               >
-                Prompt Contents
+                Conversation Messages
               </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div
+                style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+              >
+                <ToggleSwitch
+                  enabled={isFormatted}
+                  onToggle={() => setIsFormatted(!isFormatted)}
+                  label="Format"
+                />
                 <CopyButton text={promptText} label="Copy Text" />
                 <CopyButton
                   text={JSON.stringify(data.contents, null, 2)}
@@ -1732,40 +1991,12 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               </div>
             </div>
             {promptText ? (
-              <pre
-                style={{
-                  margin: 0,
-                  padding: '16px',
-                  background: '#0d1117',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontFamily: 'monospace',
-                  color: '#c9d1d9',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  lineHeight: 1.6,
-                  maxHeight: '400px',
-                  overflow: 'auto',
-                }}
-              >
-                {promptText}
-              </pre>
+              <FormattedTextView text={promptText} isFormatted={isFormatted} />
             ) : (
-              <pre
-                style={{
-                  margin: 0,
-                  padding: '12px',
-                  background: '#0d1117',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontFamily: 'monospace',
-                  color: '#c9d1d9',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {JSON.stringify(data.contents, null, 2)}
-              </pre>
+              <FormattedJsonView
+                data={data.contents}
+                isFormatted={isFormatted}
+              />
             )}
           </>
         )}
@@ -1784,7 +2015,14 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               >
                 Response
               </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div
+                style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+              >
+                <ToggleSwitch
+                  enabled={isFormatted}
+                  onToggle={() => setIsFormatted(!isFormatted)}
+                  label="Format"
+                />
                 {responseText && (
                   <CopyButton text={responseText} label="Copy Text" />
                 )}
@@ -1795,40 +2033,12 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               </div>
             </div>
             {responseText ? (
-              <pre
-                style={{
-                  margin: 0,
-                  padding: '16px',
-                  background: '#0d1117',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontFamily: 'monospace',
-                  color: '#c9d1d9',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  lineHeight: 1.6,
-                  maxHeight: '400px',
-                  overflow: 'auto',
-                }}
-              >
-                {responseText}
-              </pre>
+              <FormattedTextView
+                text={responseText}
+                isFormatted={isFormatted}
+              />
             ) : (
-              <pre
-                style={{
-                  margin: 0,
-                  padding: '12px',
-                  background: '#0d1117',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontFamily: 'monospace',
-                  color: '#c9d1d9',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {JSON.stringify(candidates, null, 2)}
-              </pre>
+              <FormattedJsonView data={candidates} isFormatted={isFormatted} />
             )}
           </>
         )}
@@ -1847,23 +2057,18 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               >
                 Full Event Data
               </span>
-              <CopyButton text={JSON.stringify(data, null, 2)} />
+              <div
+                style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+              >
+                <ToggleSwitch
+                  enabled={isFormatted}
+                  onToggle={() => setIsFormatted(!isFormatted)}
+                  label="Format"
+                />
+                <CopyButton text={JSON.stringify(data, null, 2)} />
+              </div>
             </div>
-            <pre
-              style={{
-                margin: 0,
-                padding: '12px',
-                background: '#0d1117',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontFamily: 'monospace',
-                color: '#c9d1d9',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {JSON.stringify(data, null, 2)}
-            </pre>
+            <FormattedJsonView data={data} isFormatted={isFormatted} />
           </>
         )}
         {section === 'raw' && (
@@ -1881,26 +2086,21 @@ function ApiEventView({ event }: { event: DiagnosticEvent }) {
               >
                 Raw Event
               </span>
-              <CopyButton
-                text={JSON.stringify(event, null, 2)}
-                label="Copy All"
-              />
+              <div
+                style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+              >
+                <ToggleSwitch
+                  enabled={isFormatted}
+                  onToggle={() => setIsFormatted(!isFormatted)}
+                  label="Format"
+                />
+                <CopyButton
+                  text={JSON.stringify(event, null, 2)}
+                  label="Copy All"
+                />
+              </div>
             </div>
-            <pre
-              style={{
-                margin: 0,
-                padding: '12px',
-                background: '#0d1117',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontFamily: 'monospace',
-                color: '#c9d1d9',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {JSON.stringify(event, null, 2)}
-            </pre>
+            <FormattedJsonView data={event} isFormatted={isFormatted} />
           </>
         )}
       </div>
