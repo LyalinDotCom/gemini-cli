@@ -49,7 +49,7 @@ const startCommand: SlashCommand = {
     context.ui.addItem(
       {
         type: MessageType.INFO,
-        text: `Diagnostics tracing started.\nSession: ${diagnostics.getSessionId()}\nOutput: ${diagnostics.getSessionDir()}\n\nUse /debug viewer to open the insights viewer.`,
+        text: `Diagnostics tracing started.\nSession: ${diagnostics.getSessionId()}\nOutput: ${diagnostics.getSessionDir()}\n\nUse /diagnostics viewer to open the insights viewer.`,
       },
       Date.now(),
     );

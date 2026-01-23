@@ -265,14 +265,20 @@ export function App() {
               {sessions.length === 0 ? (
                 <option value="">No sessions</option>
               ) : (
-                sessions.map((s) => (
-                  <option key={s.sessionId} value={s.sessionId}>
-                    {s.sessionId.slice(0, 8)}... ({s.eventCount} events)
-                    {s.lastEventAt
-                      ? ` - ${new Date(s.lastEventAt).toLocaleTimeString()}`
-                      : ''}
-                  </option>
-                ))
+                sessions.map((s) => {
+                  const isConnected = s.sessionId === currentSessionId;
+                  const time = s.lastEventAt
+                    ? new Date(s.lastEventAt).toLocaleTimeString()
+                    : 'new';
+                  return (
+                    <option key={s.sessionId} value={s.sessionId}>
+                      {isConnected ? '● ' : ''}
+                      {s.sessionId.slice(0, 8)}... ({s.eventCount} events) -{' '}
+                      {time}
+                      {isConnected ? ' (connected)' : ''}
+                    </option>
+                  );
+                })
               )}
             </select>
             <button

@@ -32,41 +32,51 @@ export class SessionScanner {
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
         const sessionPath = join(this.baseDir, entry.name);
-        const files = await readdir(sessionPath);
-        const jsonFiles = files.filter((f) => f.endsWith('.json'));
-        if (jsonFiles.length === 0) continue;
+        let jsonFiles: string[] = [];
+        try {
+          const files = await readdir(sessionPath);
+          jsonFiles = files.filter((f) => f.endsWith('.json'));
+          jsonFiles.sort();
+        } catch {
+          // Directory might be empty or inaccessible, still include it
+        }
 
-        jsonFiles.sort();
         let firstEventAt: string | null = null;
         let lastEventAt: string | null = null;
 
-        try {
-          const first = JSON.parse(
-            await readFile(join(sessionPath, jsonFiles[0]), 'utf-8'),
-          ) as DiagnosticEvent;
-          firstEventAt = first.meta.timestamp;
-        } catch {
-          /* ignore */
+        if (jsonFiles.length > 0) {
+          try {
+            const first = JSON.parse(
+              await readFile(join(sessionPath, jsonFiles[0]), 'utf-8'),
+            ) as DiagnosticEvent;
+            firstEventAt = first.meta.timestamp;
+          } catch {
+            /* ignore */
+          }
+
+          try {
+            const last = JSON.parse(
+              await readFile(
+                join(sessionPath, jsonFiles[jsonFiles.length - 1]),
+                'utf-8',
+              ),
+            ) as DiagnosticEvent;
+            lastEventAt = last.meta.timestamp;
+          } catch {
+            /* ignore */
+          }
         }
 
-        try {
-          const last = JSON.parse(
-            await readFile(
-              join(sessionPath, jsonFiles[jsonFiles.length - 1]),
-              'utf-8',
-            ),
-          ) as DiagnosticEvent;
-          lastEventAt = last.meta.timestamp;
-        } catch {
-          /* ignore */
-        }
+        // Use directory creation time as fallback for empty sessions
+        // This helps sort new sessions that don't have events yet
+        const createdAt = firstEventAt || new Date().toISOString();
 
         sessions.push({
           sessionId: entry.name,
           path: sessionPath,
           eventCount: jsonFiles.length,
-          firstEventAt,
-          lastEventAt,
+          firstEventAt: firstEventAt || createdAt,
+          lastEventAt: lastEventAt || createdAt,
         });
       }
 
