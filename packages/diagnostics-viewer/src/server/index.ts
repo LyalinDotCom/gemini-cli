@@ -264,7 +264,10 @@ export function createInsightsServer(config: ServerConfig) {
         else if (message.type === 'get-sessions')
           sendMessage(ws, {
             type: 'sessions',
-            payload: await scanner.listSessions(),
+            payload: {
+              sessions: await scanner.listSessions(),
+              currentSessionId,
+            },
           });
         else if (message.type === 'get-session-events')
           sendMessage(ws, {

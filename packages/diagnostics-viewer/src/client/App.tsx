@@ -70,9 +70,17 @@ export function App() {
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'sessions') {
-        if (Array.isArray(message.payload)) setSessions(message.payload);
-        else if (message.payload?.currentSessionId)
-          setCurrentSessionId(message.payload.currentSessionId);
+        // Handle both array format and object format
+        if (Array.isArray(message.payload)) {
+          setSessions(message.payload);
+        } else if (message.payload) {
+          if (message.payload.sessions) {
+            setSessions(message.payload.sessions);
+          }
+          if (message.payload.currentSessionId) {
+            setCurrentSessionId(message.payload.currentSessionId);
+          }
+        }
       } else if (message.type === 'session-events') {
         setCurrentSessionId(message.payload.sessionId);
         setEvents(
