@@ -49,8 +49,9 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
       )
     : undefined;
 
-  const combinedPaddingAndBorderWidth = 4;
-  const childWidth = terminalWidth - combinedPaddingAndBorderWidth;
+  // In the minimal design, we don't have border padding
+  // The parent component (MinimalToolResult) handles the indentation
+  const childWidth = terminalWidth;
 
   const truncatedResultDisplay = React.useMemo(() => {
     if (typeof resultDisplay === 'string') {

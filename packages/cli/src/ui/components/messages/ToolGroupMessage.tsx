@@ -14,7 +14,12 @@ import { ShellToolMessage } from './ShellToolMessage.js';
 import { ToolConfirmationMessage } from './ToolConfirmationMessage.js';
 import { theme } from '../../semantic-colors.js';
 import { useConfig } from '../../contexts/ConfigContext.js';
-import { isShellTool, isThisShellFocused } from './ToolShared.js';
+import {
+  isShellTool,
+  isThisShellFocused,
+  STATUS_INDICATOR_WIDTH,
+} from './ToolShared.js';
+import { MinimalToolResult } from './MinimalToolResult.js';
 
 interface ToolGroupMessageProps {
   groupId: number;
@@ -27,7 +32,7 @@ interface ToolGroupMessageProps {
   onShellInputSubmit?: (input: string) => void;
 }
 
-// Main component renders the border and maps the tools using ToolMessage
+// Main component renders tools without borders, using blank line separators
 export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   toolCalls,
   availableTerminalHeight,
@@ -82,7 +87,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   const borderDimColor =
     hasPending && (!isShellCommand || !isEmbeddedShellFocused);
 
-  const staticHeight = /* border */ 2 + /* marginBottom */ 1;
+  const staticHeight = /* blank line separators */ visibleToolCalls.length - 1;
 
   // Inline confirmations are ONLY used when the Global Queue is disabled.
   const toolAwaitingApproval = useMemo(
@@ -117,29 +122,29 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
       )
     : undefined;
 
+  // Left margin for visual separation from edge
+  const LEFT_MARGIN = 2;
+
   return (
-    // This box doesn't have a border even though it conceptually does because
-    // we need to allow the sticky headers to render the borders themselves so
-    // that the top border can be sticky.
     <Box
       flexDirection="column"
-      /*
-        This width constraint is highly important and protects us from an Ink rendering bug.
-        Since the ToolGroup can typically change rendering states frequently, it can cause
-        Ink to render the border of the box incorrectly and span multiple lines and even
-        cause tearing.
-      */
       width={terminalWidth}
+      marginTop={1}
+      marginBottom={1}
+      paddingLeft={LEFT_MARGIN}
     >
       {visibleToolCalls.map((tool, index) => {
         const isConfirming = toolAwaitingApproval?.callId === tool.callId;
         const isFirst = index === 0;
         const isShellToolCall = isShellTool(tool.name);
 
+        // Adjust width for left margin
+        const contentWidth = terminalWidth - LEFT_MARGIN;
+
         const commonProps = {
           ...tool,
           availableTerminalHeight: availableTerminalHeightPerToolMessage,
-          terminalWidth,
+          terminalWidth: contentWidth,
           emphasis: isConfirming
             ? ('high' as const)
             : toolAwaitingApproval
@@ -155,7 +160,8 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
             key={tool.callId}
             flexDirection="column"
             minHeight={1}
-            width={terminalWidth}
+            width={contentWidth}
+            marginTop={index > 0 ? 1 : 0}
           >
             {isShellToolCall ? (
               <ShellToolMessage
@@ -167,21 +173,11 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
             ) : (
               <ToolMessage {...commonProps} />
             )}
-            <Box
-              borderLeft={true}
-              borderRight={true}
-              borderTop={false}
-              borderBottom={false}
-              borderColor={borderColor}
-              borderDimColor={borderDimColor}
-              flexDirection="column"
-              borderStyle="round"
-              paddingLeft={1}
-              paddingRight={1}
-            >
-              {tool.status === ToolCallStatus.Confirming &&
-                isConfirming &&
-                tool.confirmationDetails && (
+            {/* Inline confirmation - indented under the tool */}
+            {tool.status === ToolCallStatus.Confirming &&
+              isConfirming &&
+              tool.confirmationDetails && (
+                <MinimalToolResult terminalWidth={contentWidth}>
                   <ToolConfirmationMessage
                     callId={tool.callId}
                     confirmationDetails={tool.confirmationDetails}
@@ -190,39 +186,21 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                     availableTerminalHeight={
                       availableTerminalHeightPerToolMessage
                     }
-                    terminalWidth={terminalWidth - 4}
+                    terminalWidth={contentWidth - STATUS_INDICATOR_WIDTH}
                   />
-                )}
-              {tool.outputFile && (
-                <Box>
-                  <Text color={theme.text.primary}>
-                    Output too long and was saved to: {tool.outputFile}
-                  </Text>
-                </Box>
+                </MinimalToolResult>
               )}
-            </Box>
+            {/* Output file notice - indented */}
+            {tool.outputFile && (
+              <MinimalToolResult terminalWidth={contentWidth}>
+                <Text color={theme.text.primary}>
+                  Output too long and was saved to: {tool.outputFile}
+                </Text>
+              </MinimalToolResult>
+            )}
           </Box>
         );
       })}
-      {
-        /*
-              We have to keep the bottom border separate so it doesn't get
-              drawn over by the sticky header directly inside it.
-             */
-        visibleToolCalls.length > 0 && (
-          <Box
-            height={0}
-            width={terminalWidth}
-            borderLeft={true}
-            borderRight={true}
-            borderTop={false}
-            borderBottom={true}
-            borderColor={borderColor}
-            borderDimColor={borderDimColor}
-            borderStyle="round"
-          />
-        )
-      }
     </Box>
   );
 };

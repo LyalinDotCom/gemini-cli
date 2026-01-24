@@ -42,53 +42,68 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   const { columns: terminalWidth } = useTerminalSize();
   const isNarrow = isNarrowWidth(terminalWidth);
 
-  if (streamingState === StreamingState.Idle) {
-    return null;
-  }
+  const isIdle = streamingState === StreamingState.Idle;
 
   const cancelAndTimerContent =
-    streamingState !== StreamingState.WaitingForConfirmation
-      ? `(esc to cancel, ${elapsedTime < 60 ? `${elapsedTime}s` : formatDuration(elapsedTime * 1000)})`
+    !isIdle && streamingState !== StreamingState.WaitingForConfirmation
+      ? `esc to cancel, ${elapsedTime < 60 ? `${elapsedTime}s` : formatDuration(elapsedTime * 1000)}`
       : null;
 
+  // Status text: "Ready" when idle, loading phrase when active
+  // Truncate to prevent line wrapping (leave room for spinner, spacing, and right content)
+  const MAX_STATUS_LENGTH = 40;
+  const rawStatusText = isIdle ? 'Ready' : currentLoadingPhrase;
+  const statusText =
+    rawStatusText && rawStatusText.length > MAX_STATUS_LENGTH
+      ? rawStatusText.slice(0, MAX_STATUS_LENGTH - 3) + '...'
+      : rawStatusText;
+
+  // Spinner takes about 2 chars + 1 margin = 3 chars
+  const SPINNER_WIDTH = 3;
+
   return (
-    <Box paddingLeft={0} flexDirection="column">
-      {/* Main loading line */}
-      <Box
-        width="100%"
-        flexDirection={isNarrow ? 'column' : 'row'}
-        alignItems={isNarrow ? 'flex-start' : 'center'}
-      >
-        <Box>
-          <Box marginRight={1}>
-            <GeminiRespondingSpinner
-              nonRespondingDisplay={
-                streamingState === StreamingState.WaitingForConfirmation
-                  ? '⠏'
-                  : ''
-              }
-            />
-          </Box>
-          {currentLoadingPhrase && (
-            <Text color={theme.text.accent} wrap="truncate-end">
-              {currentLoadingPhrase}
-            </Text>
-          )}
-          {!isNarrow && cancelAndTimerContent && (
-            <>
-              <Box flexShrink={0} width={1} />
-              <Text color={theme.text.secondary}>{cancelAndTimerContent}</Text>
-            </>
-          )}
-        </Box>
-        {!isNarrow && <Box flexGrow={1}>{/* Spacer */}</Box>}
-        {!isNarrow && rightContent && <Box>{rightContent}</Box>}
-      </Box>
-      {isNarrow && cancelAndTimerContent && (
-        <Box>
+    <Box
+      paddingLeft={0}
+      flexDirection="column"
+      width={terminalWidth}
+      marginTop={2}
+    >
+      {/* Countdown line - only shown when actively loading, aligned with status text */}
+      {cancelAndTimerContent && (
+        <Box paddingLeft={SPINNER_WIDTH}>
           <Text color={theme.text.secondary}>{cancelAndTimerContent}</Text>
         </Box>
       )}
+      {/* Main status line */}
+      <Box
+        width={terminalWidth}
+        flexDirection={isNarrow ? 'column' : 'row'}
+        alignItems={isNarrow ? 'flex-start' : 'center'}
+        justifyContent="space-between"
+      >
+        <Box flexShrink={0}>
+          <Box marginRight={1} flexShrink={0} minWidth={2}>
+            {isIdle ? (
+              // Empty space to match spinner width when idle
+              <Text> </Text>
+            ) : (
+              <GeminiRespondingSpinner
+                nonRespondingDisplay={
+                  streamingState === StreamingState.WaitingForConfirmation
+                    ? '⠏'
+                    : ''
+                }
+              />
+            )}
+          </Box>
+          {statusText && <Text color={theme.text.accent}>{statusText}</Text>}
+        </Box>
+        {!isNarrow && rightContent && (
+          <Box flexShrink={0} justifyContent="flex-end">
+            {rightContent}
+          </Box>
+        )}
+      </Box>
       {isNarrow && rightContent && <Box>{rightContent}</Box>}
     </Box>
   );

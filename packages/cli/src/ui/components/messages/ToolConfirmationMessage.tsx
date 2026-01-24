@@ -400,15 +400,7 @@ export const ToolConfirmationMessage: React.FC<
   if (confirmationDetails.type === 'edit') {
     if (confirmationDetails.isModifying) {
       return (
-        <Box
-          width={terminalWidth}
-          borderStyle="round"
-          borderColor={theme.border.default}
-          justifyContent="space-around"
-          paddingTop={1}
-          paddingBottom={1}
-          overflow="hidden"
-        >
+        <Box width={terminalWidth} overflow="hidden">
           <Text color={theme.text.primary}>Modify in progress: </Text>
           <Text color={theme.status.success}>
             Save and close external editor to continue

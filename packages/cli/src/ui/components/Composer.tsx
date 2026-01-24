@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Box, useIsScreenReaderEnabled } from 'ink';
 import { LoadingIndicator } from './LoadingIndicator.js';
 import { StatusDisplay } from './StatusDisplay.js';
+import { ContextSummaryDisplay } from './ContextSummaryDisplay.js';
 import { ApprovalModeIndicator } from './ApprovalModeIndicator.js';
 import { ShellModeIndicator } from './ShellModeIndicator.js';
 import { DetailedMessagesDisplay } from './DetailedMessagesDisplay.js';
@@ -46,6 +47,21 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
   const hideContextSummary =
     suggestionsVisible && suggestionsPosition === 'above';
 
+  // Context summary to show on the right side of status line
+  const contextSummaryContent =
+    !settings.merged.ui.hideContextSummary && !hideContextSummary ? (
+      <ContextSummaryDisplay
+        ideContext={uiState.ideContextState}
+        geminiMdFileCount={uiState.geminiMdFileCount}
+        contextFileNames={uiState.contextFileNames}
+        mcpServers={config.getMcpClientManager()?.getMcpServers() ?? {}}
+        blockedMcpServers={
+          config.getMcpClientManager()?.getBlockedMcpServers() ?? []
+        }
+        skillCount={config.getSkillManager().getDisplayableSkills().length}
+      />
+    ) : undefined;
+
   return (
     <Box
       flexDirection="column"
@@ -61,6 +77,7 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
               : uiState.currentLoadingPhrase
           }
           elapsedTime={uiState.elapsedTime}
+          rightContent={contextSummaryContent}
         />
       )}
 
@@ -72,26 +89,19 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
 
       <TodoTray />
 
+      {/* Status bar: warnings/status and mode indicators - no margin to keep compact */}
       <Box
-        marginTop={1}
-        justifyContent={
-          settings.merged.ui.hideContextSummary ? 'flex-start' : 'space-between'
-        }
-        width="100%"
+        width={uiState.mainAreaWidth}
         flexDirection={isNarrow ? 'column' : 'row'}
         alignItems={isNarrow ? 'flex-start' : 'center'}
       >
-        <Box marginRight={1}>
-          <StatusDisplay hideContextSummary={hideContextSummary} />
-        </Box>
-        <Box paddingTop={isNarrow ? 1 : 0}>
-          {showApprovalModeIndicator !== ApprovalMode.DEFAULT &&
-            !uiState.shellModeActive && (
-              <ApprovalModeIndicator approvalMode={showApprovalModeIndicator} />
-            )}
-          {uiState.shellModeActive && <ShellModeIndicator />}
-          {!uiState.renderMarkdown && <RawMarkdownIndicator />}
-        </Box>
+        <StatusDisplay hideContextSummary={true} />
+        {showApprovalModeIndicator !== ApprovalMode.DEFAULT &&
+          !uiState.shellModeActive && (
+            <ApprovalModeIndicator approvalMode={showApprovalModeIndicator} />
+          )}
+        {uiState.shellModeActive && <ShellModeIndicator />}
+        {!uiState.renderMarkdown && <RawMarkdownIndicator />}
       </Box>
 
       {uiState.showErrorDetails && (
