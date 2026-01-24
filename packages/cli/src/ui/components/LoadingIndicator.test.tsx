@@ -187,10 +187,9 @@ describe('<LoadingIndicator />', () => {
     unmount();
   });
 
-  it('should display fallback phrase if thought is empty', () => {
+  it('should display tool status message when provided', () => {
     const props = {
-      thought: null,
-      currentLoadingPhrase: 'Loading...',
+      currentLoadingPhrase: 'reading file.ts',
       elapsedTime: 5,
     };
     const { lastFrame, unmount } = renderWithContext(
@@ -198,47 +197,7 @@ describe('<LoadingIndicator />', () => {
       StreamingState.Responding,
     );
     const output = lastFrame();
-    expect(output).toContain('Loading...');
-    unmount();
-  });
-
-  it('should display the subject of a thought', () => {
-    const props = {
-      thought: {
-        subject: 'Thinking about something...',
-        description: 'and other stuff.',
-      },
-      elapsedTime: 5,
-    };
-    const { lastFrame, unmount } = renderWithContext(
-      <LoadingIndicator {...props} />,
-      StreamingState.Responding,
-    );
-    const output = lastFrame();
-    expect(output).toBeDefined();
-    if (output) {
-      expect(output).toContain('Thinking about something...');
-      expect(output).not.toContain('and other stuff.');
-    }
-    unmount();
-  });
-
-  it('should prioritize thought.subject over currentLoadingPhrase', () => {
-    const props = {
-      thought: {
-        subject: 'This should be displayed',
-        description: 'A description',
-      },
-      currentLoadingPhrase: 'This should not be displayed',
-      elapsedTime: 5,
-    };
-    const { lastFrame, unmount } = renderWithContext(
-      <LoadingIndicator {...props} />,
-      StreamingState.Responding,
-    );
-    const output = lastFrame();
-    expect(output).toContain('This should be displayed');
-    expect(output).not.toContain('This should not be displayed');
+    expect(output).toContain('reading file.ts');
     unmount();
   });
 

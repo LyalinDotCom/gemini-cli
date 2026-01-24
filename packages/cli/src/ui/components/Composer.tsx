@@ -25,7 +25,6 @@ import { useConfig } from '../contexts/ConfigContext.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 import { ApprovalMode } from '@google/gemini-cli-core';
-import { StreamingState } from '../types.js';
 import { ConfigInitDisplay } from '../components/ConfigInitDisplay.js';
 import { TodoTray } from './messages/Todo.js';
 
@@ -56,12 +55,6 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
     >
       {!uiState.embeddedShellFocused && (
         <LoadingIndicator
-          thought={
-            uiState.streamingState === StreamingState.WaitingForConfirmation ||
-            config.getAccessibility()?.enableLoadingPhrases === false
-              ? undefined
-              : uiState.thought
-          }
           currentLoadingPhrase={
             config.getAccessibility()?.enableLoadingPhrases === false
               ? undefined

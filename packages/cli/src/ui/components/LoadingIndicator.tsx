@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { ThoughtSummary } from '@google/gemini-cli-core';
 import type React from 'react';
 import { Box, Text } from 'ink';
 import { theme } from '../semantic-colors.js';
@@ -14,20 +13,30 @@ import { GeminiRespondingSpinner } from './GeminiRespondingSpinner.js';
 import { formatDuration } from '../utils/formatters.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { isNarrowWidth } from '../utils/isNarrowWidth.js';
-import { INTERACTIVE_SHELL_WAITING_PHRASE } from '../hooks/usePhraseCycler.js';
 
 interface LoadingIndicatorProps {
+  /** The status message to display (already prioritized by useLoadingIndicator) */
   currentLoadingPhrase?: string;
+  /** Elapsed time in seconds */
   elapsedTime: number;
+  /** Optional content to display on the right side */
   rightContent?: React.ReactNode;
-  thought?: ThoughtSummary | null;
 }
 
+/**
+ * Loading indicator component that displays status messages during model responses.
+ *
+ * The status message (currentLoadingPhrase) is computed by useLoadingIndicator
+ * which handles priority:
+ * - Interactive shell waiting
+ * - Tool status (executing, awaiting confirmation)
+ * - Thought summary
+ * - Generic "Thinking..." fallback
+ */
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   currentLoadingPhrase,
   elapsedTime,
   rightContent,
-  thought,
 }) => {
   const streamingState = useStreamingContext();
   const { columns: terminalWidth } = useTerminalSize();
@@ -36,13 +45,6 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   if (streamingState === StreamingState.Idle) {
     return null;
   }
-
-  // Prioritize the interactive shell waiting phrase over the thought subject
-  // because it conveys an actionable state for the user (waiting for input).
-  const primaryText =
-    currentLoadingPhrase === INTERACTIVE_SHELL_WAITING_PHRASE
-      ? currentLoadingPhrase
-      : thought?.subject || currentLoadingPhrase;
 
   const cancelAndTimerContent =
     streamingState !== StreamingState.WaitingForConfirmation
@@ -67,9 +69,9 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
               }
             />
           </Box>
-          {primaryText && (
+          {currentLoadingPhrase && (
             <Text color={theme.text.accent} wrap="truncate-end">
-              {primaryText}
+              {currentLoadingPhrase}
             </Text>
           )}
           {!isNarrow && cancelAndTimerContent && (

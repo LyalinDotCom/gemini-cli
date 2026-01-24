@@ -1316,6 +1316,9 @@ Logging in with Google... Restarting Gemini CLI to continue.
     streamingState,
     shouldShowFocusHint,
     retryStatus,
+    pendingToolCalls,
+    thought,
+    config: props.config,
   });
 
   const handleGlobalKeypress = useCallback(

@@ -85,6 +85,7 @@ export * from './utils/ignorePatterns.js';
 export * from './utils/partUtils.js';
 export * from './utils/promptIdContext.js';
 export * from './utils/thoughtUtils.js';
+export * from './utils/thoughtSummarizer.js';
 export * from './utils/debugLogger.js';
 export * from './utils/events.js';
 export * from './utils/extensionLoader.js';
