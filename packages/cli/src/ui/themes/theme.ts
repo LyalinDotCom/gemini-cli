@@ -175,6 +175,11 @@ export class Theme {
       },
       background: {
         primary: this.colors.Background,
+        inputBar: interpolateColor(
+          this.colors.Background,
+          this.colors.Gray,
+          0.15,
+        ),
         diff: {
           added: this.colors.DiffAdded,
           removed: this.colors.DiffRemoved,
@@ -440,6 +445,11 @@ export function createCustomTheme(customTheme: CustomTheme): Theme {
     },
     background: {
       primary: customTheme.background?.primary ?? colors.Background,
+      inputBar: interpolateColor(
+        customTheme.background?.primary ?? colors.Background,
+        customTheme.text?.secondary ?? colors.Gray,
+        0.15,
+      ),
       diff: {
         added: customTheme.background?.diff?.added ?? colors.DiffAdded,
         removed: customTheme.background?.diff?.removed ?? colors.DiffRemoved,

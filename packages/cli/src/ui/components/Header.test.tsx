@@ -128,6 +128,7 @@ describe('<Header />', () => {
       },
       background: {
         primary: '',
+        inputBar: '',
         diff: { added: '', removed: '' },
       },
       border: {

@@ -7,14 +7,8 @@
 import type React from 'react';
 import { Box, Text } from 'ink';
 import { theme } from '../semantic-colors.js';
-import {
-  shortenPath,
-  tildeifyPath,
-  getDisplayString,
-} from '@google/gemini-cli-core';
+import { getDisplayString, ApprovalMode } from '@google/gemini-cli-core';
 import { ConsoleSummaryDisplay } from './ConsoleSummaryDisplay.js';
-import process from 'node:process';
-import { ThemedGradient } from './ThemedGradient.js';
 import { MemoryUsageDisplay } from './MemoryUsageDisplay.js';
 import { ContextUsageDisplay } from './ContextUsageDisplay.js';
 import { DebugProfiler } from './DebugProfiler.js';
@@ -23,6 +17,9 @@ import { useUIState } from '../contexts/UIStateContext.js';
 import { useConfig } from '../contexts/ConfigContext.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 import { useVimMode } from '../contexts/VimModeContext.js';
+import { ShellModeIndicator } from './ShellModeIndicator.js';
+import { ApprovalModeIndicator } from './ApprovalModeIndicator.js';
+import { RawMarkdownIndicator } from './RawMarkdownIndicator.js';
 
 export const Footer: React.FC = () => {
   const uiState = useUIState();
@@ -32,118 +29,72 @@ export const Footer: React.FC = () => {
 
   const {
     model,
-    targetDir,
     debugMode,
-    branchName,
     debugMessage,
     corgiMode,
     errorCount,
     showErrorDetails,
     promptTokenCount,
-    nightly,
-    isTrustedFolder,
     mainAreaWidth,
+    shellModeActive,
+    showApprovalModeIndicator,
+    renderMarkdown,
   } = {
     model: uiState.currentModel,
-    targetDir: config.getTargetDir(),
     debugMode: config.getDebugMode(),
-    branchName: uiState.branchName,
     debugMessage: uiState.debugMessage,
     corgiMode: uiState.corgiMode,
     errorCount: uiState.errorCount,
     showErrorDetails: uiState.showErrorDetails,
     promptTokenCount: uiState.sessionStats.lastPromptTokenCount,
-    nightly: uiState.nightly,
-    isTrustedFolder: uiState.isTrustedFolder,
     mainAreaWidth: uiState.mainAreaWidth,
+    shellModeActive: uiState.shellModeActive,
+    showApprovalModeIndicator: uiState.showApprovalModeIndicator,
+    renderMarkdown: uiState.renderMarkdown,
   };
 
   const showMemoryUsage =
     config.getDebugMode() || settings.merged.ui.showMemoryUsage;
-  const hideCWD = settings.merged.ui.footer.hideCWD;
-  const hideSandboxStatus = settings.merged.ui.footer.hideSandboxStatus;
   const hideModelInfo = settings.merged.ui.footer.hideModelInfo;
   const hideContextPercentage = settings.merged.ui.footer.hideContextPercentage;
 
-  const pathLength = Math.max(20, Math.floor(mainAreaWidth * 0.25));
-  const displayPath = shortenPath(tildeifyPath(targetDir), pathLength);
-
-  const justifyContent = hideCWD && hideModelInfo ? 'center' : 'space-between';
   const displayVimMode = vimEnabled ? vimMode : undefined;
 
   const showDebugProfiler = debugMode || isDevelopment;
 
+  // Determine if any mode indicator is shown
+  const hasApprovalModeIndicator =
+    showApprovalModeIndicator !== ApprovalMode.DEFAULT && !shellModeActive;
+  const hasRawMarkdownIndicator = !renderMarkdown;
+
   return (
     <Box
-      justifyContent={justifyContent}
+      justifyContent="space-between"
       width={mainAreaWidth}
       flexDirection="row"
       alignItems="center"
       paddingX={1}
       marginBottom={1}
     >
-      {(showDebugProfiler || displayVimMode || !hideCWD) && (
-        <Box>
-          {showDebugProfiler && <DebugProfiler />}
-          {displayVimMode && (
-            <Text color={theme.text.secondary}>[{displayVimMode}] </Text>
-          )}
-          {!hideCWD &&
-            (nightly ? (
-              <ThemedGradient>
-                {displayPath}
-                {branchName && <Text> ({branchName}*)</Text>}
-              </ThemedGradient>
-            ) : (
-              <Text color={theme.text.link}>
-                {displayPath}
-                {branchName && (
-                  <Text color={theme.text.secondary}> ({branchName}*)</Text>
-                )}
-              </Text>
-            ))}
-          {debugMode && (
-            <Text color={theme.status.error}>
-              {' ' + (debugMessage || '--debug')}
-            </Text>
-          )}
-        </Box>
-      )}
+      {/* Left Section: Mode indicators, Debug profiler and Vim mode */}
+      <Box>
+        {shellModeActive && <ShellModeIndicator />}
+        {hasApprovalModeIndicator && (
+          <ApprovalModeIndicator approvalMode={showApprovalModeIndicator} />
+        )}
+        {hasRawMarkdownIndicator && <RawMarkdownIndicator />}
+        {showDebugProfiler && <DebugProfiler />}
+        {displayVimMode && (
+          <Text color={theme.text.secondary}>[{displayVimMode}] </Text>
+        )}
+        {debugMode && (
+          <Text color={theme.status.error}>
+            {' ' + (debugMessage || '--debug')}
+          </Text>
+        )}
+      </Box>
 
-      {/* Middle Section: Centered Trust/Sandbox Info */}
-      {!hideSandboxStatus && (
-        <Box
-          flexGrow={1}
-          alignItems="center"
-          justifyContent="center"
-          display="flex"
-        >
-          {isTrustedFolder === false ? (
-            <Text color={theme.status.warning}>untrusted</Text>
-          ) : process.env['SANDBOX'] &&
-            process.env['SANDBOX'] !== 'sandbox-exec' ? (
-            <Text color="green">
-              {process.env['SANDBOX'].replace(/^gemini-(?:cli-)?/, '')}
-            </Text>
-          ) : process.env['SANDBOX'] === 'sandbox-exec' ? (
-            <Text color={theme.status.warning}>
-              macOS Seatbelt{' '}
-              <Text color={theme.text.secondary}>
-                ({process.env['SEATBELT_PROFILE']})
-              </Text>
-            </Text>
-          ) : (
-            <Text color={theme.status.error}>
-              no sandbox
-              {mainAreaWidth >= 100 && (
-                <Text color={theme.text.secondary}> (see /docs)</Text>
-              )}
-            </Text>
-          )}
-        </Box>
-      )}
-
-      {/* Right Section: Gemini Label and Console Summary */}
+      {/* Right Section: Model info and Console Summary */}
       {!hideModelInfo && (
         <Box alignItems="center" justifyContent="flex-end">
           <Box alignItems="center">

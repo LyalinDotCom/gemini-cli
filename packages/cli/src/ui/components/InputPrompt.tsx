@@ -97,10 +97,10 @@ export interface InputPromptProps {
 
 // The input content, input container, and input suggestions list may have different widths
 export const calculatePromptWidths = (mainContentWidth: number) => {
-  const FRAME_PADDING_AND_BORDER = 4; // Border (2) + padding (2)
   const PROMPT_PREFIX_WIDTH = 2; // '> ' or '! '
+  const PADDING = 2; // paddingX={1} = 1 left + 1 right
 
-  const FRAME_OVERHEAD = FRAME_PADDING_AND_BORDER + PROMPT_PREFIX_WIDTH;
+  const FRAME_OVERHEAD = PADDING + PROMPT_PREFIX_WIDTH;
   const suggestionsWidth = Math.max(20, mainContentWidth);
 
   return {
@@ -1089,17 +1089,11 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
     <>
       {suggestionsPosition === 'above' && suggestionsNode}
       <Box
-        borderStyle="round"
-        borderColor={
-          isShellFocused && !isEmbeddedShellFocused
-            ? (statusColor ?? theme.border.focused)
-            : theme.border.default
-        }
+        backgroundColor={theme.background.inputBar}
         paddingX={1}
         width={mainAreaWidth}
         flexDirection="row"
         alignItems="flex-start"
-        minHeight={3}
       >
         <Text
           color={statusColor ?? theme.text.accent}
@@ -1121,7 +1115,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           ) : showYoloStyling ? (
             '*'
           ) : (
-            '>'
+            '›'
           )}{' '}
         </Text>
         <Box flexGrow={1} flexDirection="column" ref={innerBoxRef}>
