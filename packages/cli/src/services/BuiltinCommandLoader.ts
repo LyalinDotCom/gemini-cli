@@ -17,7 +17,11 @@ import { aboutCommand } from '../ui/commands/aboutCommand.js';
 import { agentsCommand } from '../ui/commands/agentsCommand.js';
 import { authCommand } from '../ui/commands/authCommand.js';
 import { bugCommand } from '../ui/commands/bugCommand.js';
-import { chatCommand, debugCommand } from '../ui/commands/chatCommand.js';
+import {
+  chatCommand,
+  debugCommand as chatDebugCommand,
+} from '../ui/commands/chatCommand.js';
+import { debugSystemPromptCommand } from '../ui/commands/debugSystemPromptCommand.js';
 import { clearCommand } from '../ui/commands/clearCommand.js';
 import { compressCommand } from '../ui/commands/compressCommand.js';
 import { copyCommand } from '../ui/commands/copyCommand.js';
@@ -77,9 +81,10 @@ export class BuiltinCommandLoader implements ICommandLoader {
       {
         ...chatCommand,
         subCommands: isNightlyBuild
-          ? [...(chatCommand.subCommands || []), debugCommand]
+          ? [...(chatCommand.subCommands || []), chatDebugCommand]
           : chatCommand.subCommands,
       },
+      ...(isNightlyBuild ? [debugSystemPromptCommand] : []),
       clearCommand,
       compressCommand,
       copyCommand,

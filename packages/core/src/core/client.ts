@@ -330,6 +330,17 @@ export class GeminiClient {
         ? this.config.getGlobalMemory()
         : this.config.getUserMemory();
       const systemInstruction = getCoreSystemPrompt(this.config, systemMemory);
+
+      // Log warning in headless mode when system prompt override is active
+      if (
+        !this.config.isInteractive() &&
+        this.config.isSystemPromptOverrideActive()
+      ) {
+        debugLogger.warn(
+          'System prompt override active: .gemini/system-prompt.md',
+        );
+      }
+
       return new GeminiChat(
         this.config,
         systemInstruction,

@@ -556,6 +556,7 @@ export class Config {
   private remoteAdminSettings: FetchAdminControlsResponse | undefined;
   private latestApiRequest: GenerateContentParameters | undefined;
   private lastModeSwitchTime: number = Date.now();
+  private systemPromptOverrideActive: boolean = false;
 
   constructor(params: ConfigParameters) {
     this.sessionId = params.sessionId;
@@ -1010,6 +1011,20 @@ export class Config {
 
   setLatestApiRequest(req: GenerateContentParameters): void {
     this.latestApiRequest = req;
+  }
+
+  /**
+   * Returns true if a local system prompt override file is active.
+   */
+  isSystemPromptOverrideActive(): boolean {
+    return this.systemPromptOverrideActive;
+  }
+
+  /**
+   * Sets whether a system prompt override is active.
+   */
+  setSystemPromptOverrideActive(active: boolean): void {
+    this.systemPromptOverrideActive = active;
   }
 
   getRemoteAdminSettings(): FetchAdminControlsResponse | undefined {

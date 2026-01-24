@@ -39,6 +39,7 @@ export const AppHeader = ({ version }: AppHeaderProps) => {
             targetDir={config.getTargetDir()}
             isTrustedFolder={isTrustedFolder}
             mainAreaWidth={mainAreaWidth}
+            isSystemPromptOverrideActive={config.isSystemPromptOverrideActive()}
           />
           {bannerVisible && bannerText && (
             <Banner

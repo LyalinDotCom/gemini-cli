@@ -264,6 +264,7 @@ describe('Gemini Client (client.ts)', () => {
         },
       },
       isInteractive: vi.fn().mockReturnValue(false),
+      isSystemPromptOverrideActive: vi.fn().mockReturnValue(false),
       getExperiments: () => {},
       getActiveModel: vi.fn().mockReturnValue('test-model'),
       setActiveModel: vi.fn(),

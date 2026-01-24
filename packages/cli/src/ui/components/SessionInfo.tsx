@@ -17,6 +17,7 @@ interface SessionInfoProps {
   targetDir: string;
   isTrustedFolder?: boolean;
   mainAreaWidth: number;
+  isSystemPromptOverrideActive?: boolean;
 }
 
 /**
@@ -43,6 +44,7 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({
   targetDir,
   isTrustedFolder,
   mainAreaWidth,
+  isSystemPromptOverrideActive,
 }) => {
   const pathLength = Math.max(20, Math.floor(mainAreaWidth * 0.5));
   const displayPath = shortenPath(tildeifyPath(targetDir), pathLength);
@@ -92,6 +94,15 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({
 
       {/* Sandbox - always show */}
       <BulletItem label="Sandbox" value={renderSandboxStatus()} alwaysShow />
+
+      {/* System prompt override indicator */}
+      {isSystemPromptOverrideActive && (
+        <BulletItem
+          label="System"
+          value={<Text color={theme.status.warning}>OVERRIDE</Text>}
+          alwaysShow
+        />
+      )}
     </Box>
   );
 };
