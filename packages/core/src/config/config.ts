@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { inspect } from 'node:util';
 import process from 'node:process';
@@ -556,7 +557,6 @@ export class Config {
   private remoteAdminSettings: FetchAdminControlsResponse | undefined;
   private latestApiRequest: GenerateContentParameters | undefined;
   private lastModeSwitchTime: number = Date.now();
-  private systemPromptOverrideActive: boolean = false;
 
   constructor(params: ConfigParameters) {
     this.sessionId = params.sessionId;
@@ -1015,16 +1015,25 @@ export class Config {
 
   /**
    * Returns true if a local system prompt override file is active.
+   * Checks for .gemini/system-prompt.md in the working directory.
    */
   isSystemPromptOverrideActive(): boolean {
-    return this.systemPromptOverrideActive;
+    // Check directly for the override file to ensure accurate state
+    // regardless of when this is called during app lifecycle
+    const overridePath = path.join(
+      this.getWorkingDir(),
+      '.gemini',
+      'system-prompt.md',
+    );
+    return fs.existsSync(overridePath);
   }
 
   /**
    * Sets whether a system prompt override is active.
+   * @deprecated This is now determined dynamically by checking the file system.
    */
-  setSystemPromptOverrideActive(active: boolean): void {
-    this.systemPromptOverrideActive = active;
+  setSystemPromptOverrideActive(_active: boolean): void {
+    // No-op: override status is now determined by file existence
   }
 
   getRemoteAdminSettings(): FetchAdminControlsResponse | undefined {
