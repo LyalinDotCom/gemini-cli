@@ -67,12 +67,9 @@ useSessionStatsMock.mockReturnValue({
 
 describe('Gradient Crash Regression Tests', () => {
   it('<Header /> should not crash when theme.ui.gradient is empty', () => {
-    const { lastFrame } = renderWithProviders(
-      <Header version="1.0.0" nightly={false} />,
-      {
-        width: 120,
-      },
-    );
+    const { lastFrame } = renderWithProviders(<Header />, {
+      width: 120,
+    });
     expect(lastFrame()).toBeDefined();
   });
 

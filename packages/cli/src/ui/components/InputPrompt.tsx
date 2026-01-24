@@ -93,6 +93,8 @@ export interface InputPromptProps {
   popAllMessages?: () => string | undefined;
   suggestionsPosition?: 'above' | 'below';
   setBannerVisible: (visible: boolean) => void;
+  onToggleHelp?: () => void;
+  onHideHelp?: () => void;
 }
 
 // The input content, input container, and input suggestions list may have different widths
@@ -135,6 +137,8 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   popAllMessages,
   suggestionsPosition = 'below',
   setBannerVisible,
+  onToggleHelp,
+  onHideHelp,
 }) => {
   const { stdout } = useStdout();
   const { merged: settings } = useSettings();
@@ -444,6 +448,16 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         return;
       }
 
+      // Handle ? key for help when input is empty
+      if (
+        key.sequence === '?' &&
+        buffer.text === '' &&
+        !completion.showSuggestions
+      ) {
+        onToggleHelp?.();
+        return;
+      }
+
       // Reset ESC count and hide prompt on any non-ESC key
       if (key.name !== 'escape') {
         if (escPressCount.current > 0 || showEscapePrompt) {
@@ -457,6 +471,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         !completion.showSuggestions
       ) {
         setShellModeActive(!shellModeActive);
+        onHideHelp?.();
         buffer.setText(''); // Clear the '!' from input
         return;
       }
@@ -859,17 +874,19 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       // Fall back to the text buffer's default input handling for all other keys
       buffer.handleInput(key);
 
-      // Clear ghost text when user types regular characters (not navigation/control keys)
+      // Clear ghost text and hide help when user types regular characters (not navigation/control keys)
       if (
-        completion.promptCompletion.text &&
         key.sequence &&
         key.sequence.length === 1 &&
         !key.alt &&
         !key.ctrl &&
         !key.cmd
       ) {
-        completion.promptCompletion.clear();
+        if (completion.promptCompletion.text) {
+          completion.promptCompletion.clear();
+        }
         setExpandedSuggestionIndex(-1);
+        onHideHelp?.();
       }
     },
     [
@@ -902,6 +919,8 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       activePtyId,
       setEmbeddedShellFocused,
       history,
+      onToggleHelp,
+      onHideHelp,
     ],
   );
 

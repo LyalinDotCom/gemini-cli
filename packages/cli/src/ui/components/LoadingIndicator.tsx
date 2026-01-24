@@ -97,6 +97,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
             )}
           </Box>
           {statusText && <Text color={theme.text.accent}>{statusText}</Text>}
+          {isIdle && <Text color={theme.text.secondary}> ? for help</Text>}
         </Box>
         {!isNarrow && rightContent && (
           <Box flexShrink={0} justifyContent="flex-end">

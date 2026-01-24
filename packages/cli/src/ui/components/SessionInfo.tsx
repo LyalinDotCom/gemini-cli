@@ -15,16 +15,32 @@ interface SessionInfoProps {
   version: string;
   nightly: boolean;
   targetDir: string;
-  branchName?: string;
   isTrustedFolder?: boolean;
   mainAreaWidth: number;
 }
+
+/**
+ * Renders a bullet item. Only shows if value is provided, unless alwaysShow is true.
+ */
+const BulletItem: React.FC<{
+  label: string;
+  value?: React.ReactNode;
+  alwaysShow?: boolean;
+}> = ({ label, value, alwaysShow }) => {
+  if (!alwaysShow && !value) return null;
+
+  return (
+    <Box>
+      <Text color={theme.text.secondary}>• {label}: </Text>
+      {value ?? <Text color={theme.text.secondary}>-</Text>}
+    </Box>
+  );
+};
 
 export const SessionInfo: React.FC<SessionInfoProps> = ({
   version,
   nightly,
   targetDir,
-  branchName,
   isTrustedFolder,
   mainAreaWidth,
 }) => {
@@ -52,37 +68,30 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({
         </Text>
       );
     }
-    return <Text color={theme.status.error}>no sandbox</Text>;
+    return <Text color={theme.status.error}>none</Text>;
+  };
+
+  const renderPath = () => {
+    if (nightly) {
+      return <ThemedGradient>{displayPath}</ThemedGradient>;
+    }
+    return <Text color={theme.text.link}>{displayPath}</Text>;
   };
 
   return (
     <Box flexDirection="column" marginBottom={1}>
-      {/* Version (always show for non-nightly, nightly shows in Header) */}
-      {!nightly && <Text color={theme.text.secondary}>v{version}</Text>}
+      {/* Client version - always show */}
+      <BulletItem
+        label="Client"
+        value={<Text color={theme.text.secondary}>v{version}</Text>}
+        alwaysShow
+      />
 
-      {/* Path + branch */}
-      <Box>
-        <Text color={theme.text.secondary}>Path: </Text>
-        {nightly ? (
-          <ThemedGradient>
-            {displayPath}
-            {branchName && <Text> ({branchName}*)</Text>}
-          </ThemedGradient>
-        ) : (
-          <Text color={theme.text.link}>
-            {displayPath}
-            {branchName && (
-              <Text color={theme.text.secondary}> ({branchName}*)</Text>
-            )}
-          </Text>
-        )}
-      </Box>
+      {/* Path - always show */}
+      <BulletItem label="Path" value={renderPath()} alwaysShow />
 
-      {/* Sandbox/Trust status */}
-      <Box>
-        <Text color={theme.text.secondary}>Sandbox: </Text>
-        {renderSandboxStatus()}
-      </Box>
+      {/* Sandbox - always show */}
+      <BulletItem label="Sandbox" value={renderSandboxStatus()} alwaysShow />
     </Box>
   );
 };

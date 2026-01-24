@@ -12,6 +12,7 @@ import { ContextSummaryDisplay } from './ContextSummaryDisplay.js';
 import { DetailedMessagesDisplay } from './DetailedMessagesDisplay.js';
 import { InputPrompt } from './InputPrompt.js';
 import { Footer } from './Footer.js';
+import { HotkeyQuickReference } from './HotkeyQuickReference.js';
 import { ShowMoreLines } from './ShowMoreLines.js';
 import { QueuedMessageDisplay } from './QueuedMessageDisplay.js';
 import { OverflowProvider } from '../contexts/OverflowContext.js';
@@ -36,6 +37,7 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
   const isNarrow = isNarrowWidth(terminalWidth);
   const debugConsoleMaxHeight = Math.floor(Math.max(terminalWidth * 0.2, 5));
   const [suggestionsVisible, setSuggestionsVisible] = useState(false);
+  const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
 
   const isAlternateBuffer = useAlternateBuffer();
   const suggestionsPosition = isAlternateBuffer ? 'above' : 'below';
@@ -109,6 +111,8 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
         </OverflowProvider>
       )}
 
+      {showHotkeyHelp && <HotkeyQuickReference width={uiState.mainAreaWidth} />}
+
       {uiState.isInputActive && (
         <InputPrompt
           buffer={uiState.buffer}
@@ -140,6 +144,8 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           streamingState={uiState.streamingState}
           suggestionsPosition={suggestionsPosition}
           onSuggestionsVisibilityChange={setSuggestionsVisible}
+          onToggleHelp={() => setShowHotkeyHelp((prev) => !prev)}
+          onHideHelp={() => setShowHotkeyHelp(false)}
         />
       )}
 

@@ -22,14 +22,8 @@ interface AppHeaderProps {
 export const AppHeader = ({ version }: AppHeaderProps) => {
   const settings = useSettings();
   const config = useConfig();
-  const {
-    nightly,
-    mainAreaWidth,
-    bannerData,
-    bannerVisible,
-    branchName,
-    isTrustedFolder,
-  } = useUIState();
+  const { nightly, mainAreaWidth, bannerData, bannerVisible, isTrustedFolder } =
+    useUIState();
 
   const { bannerText } = useBanner(bannerData, config);
   const { showTips } = useTips();
@@ -38,12 +32,11 @@ export const AppHeader = ({ version }: AppHeaderProps) => {
     <Box flexDirection="column">
       {!(settings.merged.ui.hideBanner || config.getScreenReader()) && (
         <>
-          <Header version={version} nightly={nightly} />
+          <Header />
           <SessionInfo
             version={version}
             nightly={nightly}
             targetDir={config.getTargetDir()}
-            branchName={branchName}
             isTrustedFolder={isTrustedFolder}
             mainAreaWidth={mainAreaWidth}
           />

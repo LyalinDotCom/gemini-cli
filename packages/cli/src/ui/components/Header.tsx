@@ -22,15 +22,9 @@ import { useSnowfall } from '../hooks/useSnowfall.js';
 
 interface HeaderProps {
   customAsciiArt?: string; // For user-defined ASCII art
-  version: string;
-  nightly: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  customAsciiArt,
-  version,
-  nightly,
-}) => {
+export const Header: React.FC<HeaderProps> = ({ customAsciiArt }) => {
   const { columns: terminalWidth } = useTerminalSize();
   const isIde = getTerminalProgram();
   let displayTitle;
@@ -58,11 +52,6 @@ export const Header: React.FC<HeaderProps> = ({
       flexDirection="column"
     >
       <ThemedGradient>{title}</ThemedGradient>
-      {nightly && (
-        <Box width="100%" flexDirection="row" justifyContent="flex-end">
-          <ThemedGradient>v{version}</ThemedGradient>
-        </Box>
-      )}
     </Box>
   );
 };

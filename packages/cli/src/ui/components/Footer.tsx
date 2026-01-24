@@ -39,6 +39,7 @@ export const Footer: React.FC = () => {
     shellModeActive,
     showApprovalModeIndicator,
     renderMarkdown,
+    branchName,
   } = {
     model: uiState.currentModel,
     debugMode: config.getDebugMode(),
@@ -51,6 +52,7 @@ export const Footer: React.FC = () => {
     shellModeActive: uiState.shellModeActive,
     showApprovalModeIndicator: uiState.showApprovalModeIndicator,
     renderMarkdown: uiState.renderMarkdown,
+    branchName: uiState.branchName,
   };
 
   const showMemoryUsage =
@@ -76,8 +78,11 @@ export const Footer: React.FC = () => {
       paddingX={1}
       marginBottom={1}
     >
-      {/* Left Section: Mode indicators, Debug profiler and Vim mode */}
+      {/* Left Section: Branch, Mode indicators, Debug profiler and Vim mode */}
       <Box>
+        {branchName && (
+          <Text color={theme.text.secondary}>({branchName}*) </Text>
+        )}
         {shellModeActive && <ShellModeIndicator />}
         {hasApprovalModeIndicator && (
           <ApprovalModeIndicator approvalMode={showApprovalModeIndicator} />
