@@ -76,6 +76,10 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
       ? rawStatusText.slice(0, MAX_STATUS_LENGTH - 3) + '...'
       : rawStatusText;
 
+  // Check if this is a retry/connection attempt - show in yellow to draw attention
+  const isRetrying =
+    currentLoadingPhrase?.startsWith('Trying to reach') ?? false;
+
   // Spinner takes about 2 chars + 1 margin = 3 chars
   const SPINNER_WIDTH = 3;
 
@@ -116,7 +120,13 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
           </Box>
           {statusText && (
             <Text
-              color={isYolo && isIdle ? theme.status.error : theme.text.accent}
+              color={
+                isYolo && isIdle
+                  ? theme.status.error
+                  : isRetrying
+                    ? theme.status.warning
+                    : theme.text.accent
+              }
             >
               {statusText}
             </Text>

@@ -26,9 +26,11 @@ export const UserMessage: React.FC<UserMessageProps> = ({ text, width }) => {
     <Box
       flexDirection="row"
       paddingY={0}
+      paddingX={1}
       marginY={1}
       alignSelf="flex-start"
       width={width}
+      backgroundColor={theme.background.inputBar}
     >
       <Box width={prefixWidth} flexShrink={0}>
         <Text color={theme.text.accent} aria-label={SCREEN_READER_USER_PREFIX}>
