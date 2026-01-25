@@ -1110,6 +1110,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       <Box
         backgroundColor={theme.background.inputBar}
         paddingX={1}
+        marginY={1}
         width={mainAreaWidth}
         flexDirection="row"
         alignItems="flex-start"
