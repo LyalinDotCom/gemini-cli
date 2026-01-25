@@ -6,7 +6,7 @@
 
 import type React from 'react';
 import clipboardy from 'clipboardy';
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Box, Text, useStdout, type DOMElement } from 'ink';
 import { SuggestionsDisplay, MAX_WIDTH } from './SuggestionsDisplay.js';
 import { theme } from '../semantic-colors.js';
@@ -86,12 +86,13 @@ export interface InputPromptProps {
   approvalMode: ApprovalMode;
   onEscapePromptChange?: (showPrompt: boolean) => void;
   onSuggestionsVisibilityChange?: (visible: boolean) => void;
+  onSuggestionsNodeChange?: (node: React.ReactNode) => void;
   vimHandleInput?: (key: Key) => boolean;
   isEmbeddedShellFocused?: boolean;
   setQueueErrorMessage: (message: string | null) => void;
   streamingState: StreamingState;
   popAllMessages?: () => string | undefined;
-  suggestionsPosition?: 'above' | 'below';
+  suggestionsPosition?: 'above' | 'below' | 'external';
   setBannerVisible: (visible: boolean) => void;
   onToggleHelp?: () => void;
   onHideHelp?: () => void;
@@ -130,6 +131,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   approvalMode,
   onEscapePromptChange,
   onSuggestionsVisibilityChange,
+  onSuggestionsNodeChange,
   vimHandleInput,
   isEmbeddedShellFocused,
   setQueueErrorMessage,
@@ -1084,28 +1086,51 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
     statusText = 'Accepting edits';
   }
 
-  const suggestionsNode = shouldShowSuggestions ? (
-    <Box paddingRight={2}>
-      <SuggestionsDisplay
-        suggestions={activeCompletion.suggestions}
-        activeIndex={activeCompletion.activeSuggestionIndex}
-        isLoading={activeCompletion.isLoadingSuggestions}
-        width={suggestionsWidth}
-        scrollOffset={activeCompletion.visibleStartIndex}
-        userInput={buffer.text}
-        mode={
-          completion.completionMode === CompletionMode.AT
-            ? 'reverse'
-            : buffer.text.startsWith('/') &&
-                !reverseSearchActive &&
-                !commandSearchActive
-              ? 'slash'
-              : 'reverse'
-        }
-        expandedIndex={expandedSuggestionIndex}
-      />
-    </Box>
-  ) : null;
+  const suggestionsNode = useMemo(
+    () =>
+      shouldShowSuggestions ? (
+        <Box paddingRight={2}>
+          <SuggestionsDisplay
+            suggestions={activeCompletion.suggestions}
+            activeIndex={activeCompletion.activeSuggestionIndex}
+            isLoading={activeCompletion.isLoadingSuggestions}
+            width={suggestionsWidth}
+            scrollOffset={activeCompletion.visibleStartIndex}
+            userInput={buffer.text}
+            mode={
+              completion.completionMode === CompletionMode.AT
+                ? 'reverse'
+                : buffer.text.startsWith('/') &&
+                    !reverseSearchActive &&
+                    !commandSearchActive
+                  ? 'slash'
+                  : 'reverse'
+            }
+            expandedIndex={expandedSuggestionIndex}
+          />
+        </Box>
+      ) : null,
+    [
+      shouldShowSuggestions,
+      activeCompletion.suggestions,
+      activeCompletion.activeSuggestionIndex,
+      activeCompletion.isLoadingSuggestions,
+      activeCompletion.visibleStartIndex,
+      buffer.text,
+      suggestionsWidth,
+      completion.completionMode,
+      reverseSearchActive,
+      commandSearchActive,
+      expandedSuggestionIndex,
+    ],
+  );
+
+  // When suggestions are rendered externally, pass the node to parent
+  useEffect(() => {
+    if (suggestionsPosition === 'external') {
+      onSuggestionsNodeChange?.(suggestionsNode);
+    }
+  }, [suggestionsPosition, onSuggestionsNodeChange, suggestionsNode]);
 
   return (
     <>

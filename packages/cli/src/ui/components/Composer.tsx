@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Box, useIsScreenReaderEnabled } from 'ink';
 import { LoadingIndicator } from './LoadingIndicator.js';
 import { StatusDisplay } from './StatusDisplay.js';
@@ -22,7 +22,6 @@ import { useUIActions } from '../contexts/UIActionsContext.js';
 import { useVimMode } from '../contexts/VimModeContext.js';
 import { useConfig } from '../contexts/ConfigContext.js';
 import { useSettings } from '../contexts/SettingsContext.js';
-import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 import { ConfigInitDisplay } from '../components/ConfigInitDisplay.js';
 import { TodoTray } from './messages/Todo.js';
 
@@ -36,28 +35,25 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
   const terminalWidth = process.stdout.columns;
   const isNarrow = isNarrowWidth(terminalWidth);
   const debugConsoleMaxHeight = Math.floor(Math.max(terminalWidth * 0.2, 5));
-  const [suggestionsVisible, setSuggestionsVisible] = useState(false);
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
+  const [suggestionsNode, setSuggestionsNode] = useState<ReactNode>(null);
 
-  const isAlternateBuffer = useAlternateBuffer();
-  const suggestionsPosition = isAlternateBuffer ? 'above' : 'below';
-  const hideContextSummary =
-    suggestionsVisible && suggestionsPosition === 'above';
+  // Render suggestions externally (after footer) so footer stays in place
+  const suggestionsPosition = 'external' as const;
 
   // Context summary to show on the right side of status line
-  const contextSummaryContent =
-    !settings.merged.ui.hideContextSummary && !hideContextSummary ? (
-      <ContextSummaryDisplay
-        ideContext={uiState.ideContextState}
-        geminiMdFileCount={uiState.geminiMdFileCount}
-        contextFileNames={uiState.contextFileNames}
-        mcpServers={config.getMcpClientManager()?.getMcpServers() ?? {}}
-        blockedMcpServers={
-          config.getMcpClientManager()?.getBlockedMcpServers() ?? []
-        }
-        skillCount={config.getSkillManager().getDisplayableSkills().length}
-      />
-    ) : undefined;
+  const contextSummaryContent = !settings.merged.ui.hideContextSummary ? (
+    <ContextSummaryDisplay
+      ideContext={uiState.ideContextState}
+      geminiMdFileCount={uiState.geminiMdFileCount}
+      contextFileNames={uiState.contextFileNames}
+      mcpServers={config.getMcpClientManager()?.getMcpServers() ?? {}}
+      blockedMcpServers={
+        config.getMcpClientManager()?.getBlockedMcpServers() ?? []
+      }
+      skillCount={config.getSkillManager().getDisplayableSkills().length}
+    />
+  ) : undefined;
 
   return (
     <Box
@@ -142,7 +138,7 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           setQueueErrorMessage={uiActions.setQueueErrorMessage}
           streamingState={uiState.streamingState}
           suggestionsPosition={suggestionsPosition}
-          onSuggestionsVisibilityChange={setSuggestionsVisible}
+          onSuggestionsNodeChange={setSuggestionsNode}
           onToggleHelp={() => setShowHotkeyHelp((prev) => !prev)}
           onHideHelp={() => setShowHotkeyHelp(false)}
         />
@@ -150,6 +146,8 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
 
       {!settings.merged.ui.hideFooter && !isScreenReaderEnabled && <Footer />}
 
+      {/* Suggestions and hotkey help render below footer */}
+      {suggestionsNode}
       {showHotkeyHelp && <HotkeyQuickReference width={uiState.mainAreaWidth} />}
     </Box>
   );

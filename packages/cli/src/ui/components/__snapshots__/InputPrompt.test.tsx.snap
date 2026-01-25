@@ -30,6 +30,12 @@ exports[`InputPrompt > command search (Ctrl+R when not in shell) > renders match
  git commit -m "feat: add search" in src/app"
 `;
 
+exports[`InputPrompt > command search (Ctrl+R when not in shell) > renders match window and expanded view (snapshots) > command-search-render-collapsed-match 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ (r:)  commit
+ git commit -m "feat: add search" in src/app"
+`;
+
 exports[`InputPrompt > command search (Ctrl+R when not in shell) > renders match window and expanded view (snapshots) > command-search-render-expanded-match 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ (r:)  commit                                                                                                        │
@@ -42,6 +48,12 @@ exports[`InputPrompt > command search (Ctrl+R when not in shell) > renders match
  git commit -m "feat: add search" in src/app"
 `;
 
+exports[`InputPrompt > command search (Ctrl+R when not in shell) > renders match window and expanded view (snapshots) > command-search-render-expanded-match 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ (r:)  commit
+ git commit -m "feat: add search" in src/app"
+`;
+
 exports[`InputPrompt > image path transformation snapshots > should snapshot collapsed image path 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ > [Image ...reenshot2x.png]                                                                                         │
@@ -49,6 +61,11 @@ exports[`InputPrompt > image path transformation snapshots > should snapshot col
 `;
 
 exports[`InputPrompt > image path transformation snapshots > should snapshot collapsed image path 2`] = `" › [Image ...reenshot2x.png]"`;
+
+exports[`InputPrompt > image path transformation snapshots > should snapshot collapsed image path 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ › [Image ...reenshot2x.png]"
+`;
 
 exports[`InputPrompt > image path transformation snapshots > should snapshot expanded image path when cursor is on it 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -58,6 +75,11 @@ exports[`InputPrompt > image path transformation snapshots > should snapshot exp
 
 exports[`InputPrompt > image path transformation snapshots > should snapshot expanded image path when cursor is on it 2`] = `" › @/path/to/screenshots/screenshot2x.png"`;
 
+exports[`InputPrompt > image path transformation snapshots > should snapshot expanded image path when cursor is on it 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ › @/path/to/screenshots/screenshot2x.png"
+`;
+
 exports[`InputPrompt > snapshots > should not show inverted cursor when shell is focused 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ >   Type your message or @path/to/file                                                                              │
@@ -65,6 +87,11 @@ exports[`InputPrompt > snapshots > should not show inverted cursor when shell is
 `;
 
 exports[`InputPrompt > snapshots > should not show inverted cursor when shell is focused 2`] = `" ›   Type your message or @path/to/file"`;
+
+exports[`InputPrompt > snapshots > should not show inverted cursor when shell is focused 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ›   Type your message or @path/to/file"
+`;
 
 exports[`InputPrompt > snapshots > should render correctly in shell mode 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -74,6 +101,11 @@ exports[`InputPrompt > snapshots > should render correctly in shell mode 1`] = `
 
 exports[`InputPrompt > snapshots > should render correctly in shell mode 2`] = `" !   Type your message or @path/to/file"`;
 
+exports[`InputPrompt > snapshots > should render correctly in shell mode 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ !   Type your message or @path/to/file"
+`;
+
 exports[`InputPrompt > snapshots > should render correctly in yolo mode 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *   Type your message or @path/to/file                                                                              │
@@ -82,6 +114,11 @@ exports[`InputPrompt > snapshots > should render correctly in yolo mode 1`] = `
 
 exports[`InputPrompt > snapshots > should render correctly in yolo mode 2`] = `" *   Type your message or @path/to/file"`;
 
+exports[`InputPrompt > snapshots > should render correctly in yolo mode 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ *   Type your message or @path/to/file"
+`;
+
 exports[`InputPrompt > snapshots > should render correctly when accepting edits 1`] = `
 "╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ >   Type your message or @path/to/file                                                                              │
@@ -89,3 +126,8 @@ exports[`InputPrompt > snapshots > should render correctly when accepting edits 
 `;
 
 exports[`InputPrompt > snapshots > should render correctly when accepting edits 2`] = `" ›   Type your message or @path/to/file"`;
+
+exports[`InputPrompt > snapshots > should render correctly when accepting edits 3`] = `
+"───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ›   Type your message or @path/to/file"
+`;
