@@ -46,7 +46,8 @@ export const WebResearcherAgent = (
         },
         question: {
           type: 'string',
-          description: 'The exact question to answer using web research.',
+          description:
+            'The exact question to answer using web research (include any constraints if relevant).',
         },
         constraints: {
           type: 'string',
@@ -88,9 +89,7 @@ export const WebResearcherAgent = (
 <question>
 \${question}
 </question>
-<constraints>
-\${constraints}
-</constraints>`,
+`,
     systemPrompt: `You are Web Researcher, a specialized subagent that answers questions using the public internet.
 You operate in a non-interactive loop and MUST call the complete_task tool with a "report" argument when finished.
 
