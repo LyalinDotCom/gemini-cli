@@ -65,8 +65,8 @@ describe('ProQuotaDialog', () => {
       it('should render switch, upgrade, and stop options for paid tiers', () => {
         const { unmount } = render(
           <ProQuotaDialog
-            failedModel="gemini-2.5-pro"
-            fallbackModel="gemini-2.5-flash"
+            failedModel="gemini-3-pro-preview"
+            fallbackModel="gemini-3-flash-preview"
             message="paid tier quota error"
             isTerminalQuotaError={true}
             isModelNotFoundError={false}
@@ -78,7 +78,7 @@ describe('ProQuotaDialog', () => {
           expect.objectContaining({
             items: [
               {
-                label: 'Switch to gemini-2.5-flash',
+                label: 'Switch to gemini-3-flash-preview',
                 value: 'retry_always',
                 key: 'retry_always',
               },
@@ -133,8 +133,8 @@ describe('ProQuotaDialog', () => {
       it('should render switch, upgrade, and stop options for free tier', () => {
         const { unmount } = render(
           <ProQuotaDialog
-            failedModel="gemini-2.5-pro"
-            fallbackModel="gemini-2.5-flash"
+            failedModel="gemini-3-pro-preview"
+            fallbackModel="gemini-3-flash-preview"
             message="free tier quota error"
             isTerminalQuotaError={true}
             isModelNotFoundError={false}
@@ -146,7 +146,7 @@ describe('ProQuotaDialog', () => {
           expect.objectContaining({
             items: [
               {
-                label: 'Switch to gemini-2.5-flash',
+                label: 'Switch to gemini-3-flash-preview',
                 value: 'retry_always',
                 key: 'retry_always',
               },
@@ -172,8 +172,8 @@ describe('ProQuotaDialog', () => {
       it('should render keep trying, switch, and stop options', () => {
         const { unmount } = render(
           <ProQuotaDialog
-            failedModel="gemini-2.5-pro"
-            fallbackModel="gemini-2.5-flash"
+            failedModel="gemini-3-pro-preview"
+            fallbackModel="gemini-3-flash-preview"
             message="capacity error"
             isTerminalQuotaError={false}
             isModelNotFoundError={false}
@@ -190,7 +190,7 @@ describe('ProQuotaDialog', () => {
                 key: 'retry_once',
               },
               {
-                label: 'Switch to gemini-2.5-flash',
+                label: 'Switch to gemini-3-flash-preview',
                 value: 'retry_always',
                 key: 'retry_always',
               },
@@ -208,7 +208,7 @@ describe('ProQuotaDialog', () => {
         const { unmount } = render(
           <ProQuotaDialog
             failedModel="gemini-3-pro-preview"
-            fallbackModel="gemini-2.5-pro"
+            fallbackModel="gemini-3-pro-preview"
             message="You don't have access to gemini-3-pro-preview yet."
             isTerminalQuotaError={false}
             isModelNotFoundError={true}
@@ -220,14 +220,9 @@ describe('ProQuotaDialog', () => {
           expect.objectContaining({
             items: [
               {
-                label: 'Switch to gemini-2.5-pro',
-                value: 'retry_always',
-                key: 'retry_always',
-              },
-              {
-                label: 'Upgrade for higher limits',
-                value: 'upgrade',
-                key: 'upgrade',
+                label: 'Keep trying',
+                value: 'retry_once',
+                key: 'retry_once',
               },
               {
                 label: 'Stop',
@@ -245,7 +240,7 @@ describe('ProQuotaDialog', () => {
         const { unmount } = render(
           <ProQuotaDialog
             failedModel="gemini-3-pro-preview"
-            fallbackModel="gemini-2.5-pro"
+            fallbackModel="gemini-3-pro-preview"
             message="You don't have access to gemini-3-pro-preview yet."
             isTerminalQuotaError={false}
             isModelNotFoundError={true}
@@ -257,14 +252,9 @@ describe('ProQuotaDialog', () => {
           expect.objectContaining({
             items: [
               {
-                label: 'Switch to gemini-2.5-pro',
-                value: 'retry_always',
-                key: 'retry_always',
-              },
-              {
-                label: 'Upgrade for higher limits',
-                value: 'upgrade',
-                key: 'upgrade',
+                label: 'Keep trying',
+                value: 'retry_once',
+                key: 'retry_once',
               },
               {
                 label: 'Stop',
@@ -284,8 +274,8 @@ describe('ProQuotaDialog', () => {
     it('should call onChoice with the selected value', () => {
       const { unmount } = render(
         <ProQuotaDialog
-          failedModel="gemini-2.5-pro"
-          fallbackModel="gemini-2.5-flash"
+          failedModel="gemini-3-pro-preview"
+          fallbackModel="gemini-3-flash-preview"
           message=""
           isTerminalQuotaError={false}
           onChoice={mockOnChoice}

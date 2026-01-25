@@ -307,7 +307,11 @@ describe('useQuotaAndFallback', () => {
         const error = new ModelNotFoundError('model not found', 404);
 
         act(() => {
-          promise = handler('gemini-3-pro-preview', 'gemini-2.5-pro', error);
+          promise = handler(
+            'gemini-3-pro-preview',
+            'gemini-3-pro-preview',
+            error,
+          );
         });
 
         // The hook should now have a pending request for the UI to handle
@@ -459,7 +463,7 @@ To disable gemini-3-pro-preview, disable "Preview features" in /settings.`,
       const lastCall = (mockHistoryManager.addItem as Mock).mock.calls[0][0];
       expect(lastCall.type).toBe(MessageType.INFO);
       expect(lastCall.text).toContain(
-        `Switched to fallback model gemini-2.5-pro`,
+        `Switched to fallback model gemini-3-pro-preview`,
       );
     });
 
@@ -494,7 +498,7 @@ To disable gemini-3-pro-preview, disable "Preview features" in /settings.`,
       const lastCall = (mockHistoryManager.addItem as Mock).mock.calls[0][0];
       expect(lastCall.type).toBe(MessageType.INFO);
       expect(lastCall.text).toContain(
-        `Switched to fallback model gemini-2.5-flash`,
+        `Switched to fallback model gemini-3-flash-preview`,
       );
     });
   });

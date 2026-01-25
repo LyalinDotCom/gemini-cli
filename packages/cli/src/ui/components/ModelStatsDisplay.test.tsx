@@ -84,7 +84,7 @@ describe('<ModelStatsDisplay />', () => {
   it('should not display conditional rows if no model has data for them', () => {
     const { lastFrame } = renderWithMockedStats({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 100 },
           tokens: {
             input: 10,
@@ -126,7 +126,7 @@ describe('<ModelStatsDisplay />', () => {
   it('should display conditional rows if at least one model has data', () => {
     const { lastFrame } = renderWithMockedStats({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 100 },
           tokens: {
             input: 5,
@@ -138,7 +138,7 @@ describe('<ModelStatsDisplay />', () => {
             tool: 0,
           },
         },
-        'gemini-2.5-flash': {
+        'gemini-3-flash-preview': {
           api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 50 },
           tokens: {
             input: 5,
@@ -180,7 +180,7 @@ describe('<ModelStatsDisplay />', () => {
   it('should display stats for multiple models correctly', () => {
     const { lastFrame } = renderWithMockedStats({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: { totalRequests: 10, totalErrors: 1, totalLatencyMs: 1000 },
           tokens: {
             input: 50,
@@ -192,7 +192,7 @@ describe('<ModelStatsDisplay />', () => {
             tool: 5,
           },
         },
-        'gemini-2.5-flash': {
+        'gemini-3-flash-preview': {
           api: { totalRequests: 20, totalErrors: 2, totalLatencyMs: 500 },
           tokens: {
             input: 100,
@@ -225,15 +225,15 @@ describe('<ModelStatsDisplay />', () => {
     });
 
     const output = lastFrame();
-    expect(output).toContain('gemini-2.5-pro');
-    expect(output).toContain('gemini-2.5-flash');
+    expect(output).toContain('gemini-3-pro-preview');
+    expect(output).toContain('gemini-3-flash-preview');
     expect(output).toMatchSnapshot();
   });
 
   it('should handle large values without wrapping or overlapping', () => {
     const { lastFrame } = renderWithMockedStats({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: {
             totalRequests: 999999999,
             totalErrors: 123456789,
@@ -275,7 +275,7 @@ describe('<ModelStatsDisplay />', () => {
   it('should display a single model correctly', () => {
     const { lastFrame } = renderWithMockedStats({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 100 },
           tokens: {
             input: 5,
@@ -308,8 +308,8 @@ describe('<ModelStatsDisplay />', () => {
     });
 
     const output = lastFrame();
-    expect(output).toContain('gemini-2.5-pro');
-    expect(output).not.toContain('gemini-2.5-flash');
+    expect(output).toContain('gemini-3-pro-preview');
+    expect(output).not.toContain('gemini-3-flash-preview');
     expect(output).toMatchSnapshot();
   });
 

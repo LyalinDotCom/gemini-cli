@@ -1813,8 +1813,10 @@ ${JSON.stringify(
           model: 'fallback-model',
           reason: 'test',
         });
-        vi.mocked(mockConfig.getModel).mockReturnValue('gemini-2.5-flash');
-        coreEvents.emitModelChanged('gemini-2.5-flash');
+        vi.mocked(mockConfig.getModel).mockReturnValue(
+          'gemini-3-flash-preview',
+        );
+        coreEvents.emitModelChanged('gemini-3-flash-preview');
 
         stream = client.sendMessageStream(
           [{ text: 'Continue' }],

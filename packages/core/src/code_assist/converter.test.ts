@@ -304,11 +304,11 @@ describe('converter', () => {
       const codeAssistRes: CaGenerateContentResponse = {
         response: {
           candidates: [],
-          modelVersion: 'gemini-2.5-pro',
+          modelVersion: 'gemini-3-pro-preview',
         },
       };
       const genaiRes = fromGenerateContentResponse(codeAssistRes);
-      expect(genaiRes.modelVersion).toEqual('gemini-2.5-pro');
+      expect(genaiRes.modelVersion).toEqual('gemini-3-pro-preview');
     });
 
     it('should handle traceId', () => {

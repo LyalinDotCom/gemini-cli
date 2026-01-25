@@ -69,8 +69,9 @@ rate-limited, it automatically switches to the "flash" model for the current
 session. This allows you to continue working without interruption.
 
 Internal utility calls that use `gemini-2.5-flash-lite` (for example, prompt
-completion and classification) silently fall back to `gemini-2.5-flash` and
-`gemini-2.5-pro` when quota is exhausted, without changing the configured model.
+completion and classification) silently fall back to `gemini-3-flash-preview`
+and `gemini-3-pro-preview` when quota is exhausted, without changing the
+configured model.
 
 ## File discovery service
 

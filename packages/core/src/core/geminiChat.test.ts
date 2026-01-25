@@ -799,7 +799,7 @@ describe('GeminiChat', () => {
       );
 
       const stream = await chat.sendMessageStream(
-        { model: 'gemini-2.5-pro' },
+        { model: 'gemini-3-pro-preview' },
         'test',
         'prompt-id-malformed',
         new AbortController().signal,
@@ -846,7 +846,7 @@ describe('GeminiChat', () => {
 
       // 2. Send a message
       const stream = await chat.sendMessageStream(
-        { model: 'gemini-2.5-pro' },
+        { model: 'gemini-3-pro-preview' },
         'test retry',
         'prompt-id-retry-malformed',
         new AbortController().signal,

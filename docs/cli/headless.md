@@ -153,7 +153,7 @@ Response:
   "response": "The capital of France is Paris.",
   "stats": {
     "models": {
-      "gemini-2.5-pro": {
+      "gemini-3-pro-preview": {
         "api": {
           "totalRequests": 2,
           "totalErrors": 0,
@@ -168,7 +168,7 @@ Response:
           "tool": 0
         }
       },
-      "gemini-2.5-flash": {
+      "gemini-3-flash-preview": {
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
@@ -300,7 +300,7 @@ Key command-line options for headless usage:
 | ----------------------- | ---------------------------------- | -------------------------------------------------- |
 | `--prompt`, `-p`        | Run in headless mode               | `gemini -p "query"`                                |
 | `--output-format`       | Specify output format (text, json) | `gemini -p "query" --output-format json`           |
-| `--model`, `-m`         | Specify the Gemini model           | `gemini -p "query" -m gemini-2.5-flash`            |
+| `--model`, `-m`         | Specify the Gemini model           | `gemini -p "query" -m gemini-3-flash-preview`      |
 | `--debug`, `-d`         | Enable debug mode                  | `gemini -p "query" --debug`                        |
 | `--include-directories` | Include additional directories     | `gemini -p "query" --include-directories src,docs` |
 | `--yolo`, `-y`          | Auto-approve all actions           | `gemini -p "query" --yolo`                         |

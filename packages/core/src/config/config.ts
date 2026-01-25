@@ -30,6 +30,7 @@ import { EditTool } from '../tools/edit.js';
 import { ShellTool } from '../tools/shell.js';
 import { WriteFileTool } from '../tools/write-file.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
+import { WebSearchTool } from '../tools/web-search.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
 import { GeminiClient } from '../core/client.js';
 import { BaseLlmClient } from '../core/baseLlmClient.js';
@@ -1995,6 +1996,10 @@ export class Config {
     registerCoreTool(EditTool, this);
     registerCoreTool(WriteFileTool, this);
     registerCoreTool(WebFetchTool, this);
+    const coreTools = this.getCoreTools();
+    if (coreTools) {
+      registerCoreTool(WebSearchTool, this);
+    }
     registerCoreTool(ShellTool, this);
     registerCoreTool(MemoryTool);
     if (this.getUseWriteTodos()) {

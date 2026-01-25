@@ -30,10 +30,8 @@ describe('getDisplayString', () => {
     expect(getDisplayString(PREVIEW_GEMINI_MODEL_AUTO)).toBe('Auto (Gemini 3)');
   });
 
-  it('should return Auto (Gemini 2.5) for default auto model', () => {
-    expect(getDisplayString(DEFAULT_GEMINI_MODEL_AUTO)).toBe(
-      'Auto (Gemini 2.5)',
-    );
+  it('should return Auto (Gemini 3) for default auto model', () => {
+    expect(getDisplayString(DEFAULT_GEMINI_MODEL_AUTO)).toBe('Auto (Gemini 3)');
   });
 
   it('should return concrete model name for pro alias', () => {
@@ -85,7 +83,7 @@ describe('resolveModel', () => {
       expect(model).toBe(PREVIEW_GEMINI_MODEL);
     });
 
-    it('should return the Default Pro model when auto-gemini-2.5 is requested', () => {
+    it('should return the Default Pro model when auto-gemini-3 is requested', () => {
       const model = resolveModel(DEFAULT_GEMINI_MODEL_AUTO, false);
       expect(model).toBe(DEFAULT_GEMINI_MODEL);
     });
@@ -164,8 +162,8 @@ describe('isGemini2Model', () => {
     expect(isGemini2Model('gemini-1.5-pro')).toBe(false);
   });
 
-  it('should return false for gemini-3-pro', () => {
-    expect(isGemini2Model('gemini-3-pro')).toBe(false);
+  it('should return false for gemini-3-pro-preview', () => {
+    expect(isGemini2Model('gemini-3-pro-preview')).toBe(false);
   });
 
   it('should return false for arbitrary strings', () => {
@@ -182,7 +180,7 @@ describe('isAutoModel', () => {
     expect(isAutoModel(PREVIEW_GEMINI_MODEL_AUTO)).toBe(true);
   });
 
-  it('should return true for "auto-gemini-2.5"', () => {
+  it('should return true for the default auto model', () => {
     expect(isAutoModel(DEFAULT_GEMINI_MODEL_AUTO)).toBe(true);
   });
 
@@ -222,7 +220,7 @@ describe('resolveClassifierModel', () => {
     // If preview is enabled, resolving 'flash' without context (fallback) might switch to preview flash,
     // but here we test explicit auto models which should stick to their families if possible?
     // Actually our logic forces DEFAULT_GEMINI_FLASH_MODEL for DEFAULT_GEMINI_MODEL_AUTO even if preview is on,
-    // because the USER requested 2.5 explicitly via "auto-gemini-2.5".
+    // because the USER requested the default family explicitly via "auto-gemini-3".
     expect(
       resolveClassifierModel(
         DEFAULT_GEMINI_MODEL_AUTO,

@@ -38,7 +38,7 @@ describe('Retry Utility Fallback Integration', () => {
       targetDir: '/test',
       debugMode: false,
       cwd: '/test',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3-pro-preview',
     });
     mockGoogleApiError = {
       code: 429,
@@ -61,7 +61,7 @@ describe('Retry Utility Fallback Integration', () => {
 
     // Call the handler directly via the config property
     const result = await config.fallbackModelHandler!(
-      'gemini-2.5-pro',
+      'gemini-3-pro-preview',
       DEFAULT_GEMINI_FLASH_MODEL,
       new Error('test'),
     );

@@ -128,10 +128,10 @@ The configuration follows the `ModelConfigServiceConfig` interface.
 
 Defines the actual parameters for the model.
 
-| Property                | Type     | Description                                                        |
-| :---------------------- | :------- | :----------------------------------------------------------------- |
-| `model`                 | `string` | The identifier of the model to be called (e.g., `gemini-2.5-pro`). |
-| `generateContentConfig` | `object` | The configuration object passed to the `@google/genai` SDK.        |
+| Property                | Type     | Description                                                              |
+| :---------------------- | :------- | :----------------------------------------------------------------------- |
+| `model`                 | `string` | The identifier of the model to be called (e.g., `gemini-3-pro-preview`). |
+| `generateContentConfig` | `object` | The configuration object passed to the `@google/genai` SDK.              |
 
 ### `GenerateContentConfig` (Common Parameters)
 
@@ -199,10 +199,10 @@ changing client code.
   "overrides": [
     {
       "match": {
-        "model": "gemini-2.5-pro"
+        "model": "gemini-3-pro-preview"
       },
       "modelConfig": {
-        "model": "gemini-2.5-pro-experimental-001"
+        "model": "gemini-3-pro-preview"
       }
     }
   ]

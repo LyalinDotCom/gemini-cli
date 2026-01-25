@@ -37,8 +37,13 @@ export function ModelDialog({ onClose }: ModelDialogProps): React.JSX.Element {
   // Determine the Preferred Model (read once when the dialog opens).
   const preferredModel = config?.getModel() || DEFAULT_GEMINI_MODEL_AUTO;
 
+  const hasPreviewVariants =
+    DEFAULT_GEMINI_MODEL !== PREVIEW_GEMINI_MODEL ||
+    DEFAULT_GEMINI_FLASH_MODEL !== PREVIEW_GEMINI_FLASH_MODEL;
   const shouldShowPreviewModels =
-    config?.getPreviewFeatures() && config.getHasAccessToPreviewModel();
+    hasPreviewVariants &&
+    config?.getPreviewFeatures() &&
+    config.getHasAccessToPreviewModel();
 
   const manualModelSelected = useMemo(() => {
     const manualModels = [
@@ -76,7 +81,7 @@ export function ModelDialog({ onClose }: ModelDialogProps): React.JSX.Element {
         value: DEFAULT_GEMINI_MODEL_AUTO,
         title: getDisplayString(DEFAULT_GEMINI_MODEL_AUTO),
         description:
-          'Let Gemini CLI decide the best model for the task: gemini-2.5-pro, gemini-2.5-flash',
+          'Let Gemini CLI decide the best model for the task: gemini-3-pro-preview, gemini-3-flash-preview',
         key: DEFAULT_GEMINI_MODEL_AUTO,
       },
       {
@@ -94,7 +99,7 @@ export function ModelDialog({ onClose }: ModelDialogProps): React.JSX.Element {
         value: PREVIEW_GEMINI_MODEL_AUTO,
         title: getDisplayString(PREVIEW_GEMINI_MODEL_AUTO),
         description:
-          'Let Gemini CLI decide the best model for the task: gemini-3-pro, gemini-3-flash',
+          'Let Gemini CLI decide the best model for the task: gemini-3-pro-preview, gemini-3-flash-preview',
         key: PREVIEW_GEMINI_MODEL_AUTO,
       });
     }
@@ -179,12 +184,15 @@ export function ModelDialog({ onClose }: ModelDialogProps): React.JSX.Element {
     header = undefined;
     subheader = undefined;
     // When a user has the access but has not enabled the preview features.
-  } else if (config?.getHasAccessToPreviewModel()) {
+  } else if (hasPreviewVariants && config?.getHasAccessToPreviewModel()) {
     header = 'Gemini 3 is now available.';
     subheader =
       'Enable "Preview features" in /settings.\nLearn more at https://goo.gle/enable-preview-features';
-  } else {
+  } else if (hasPreviewVariants) {
     header = 'Gemini 3 is coming soon.';
+    subheader = undefined;
+  } else {
+    header = undefined;
     subheader = undefined;
   }
 

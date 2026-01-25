@@ -82,7 +82,7 @@ describe('<StatsDisplay />', () => {
   it('renders a table with two models correctly', () => {
     const metrics = createTestMetrics({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: { totalRequests: 3, totalErrors: 0, totalLatencyMs: 15000 },
           tokens: {
             input: 500,
@@ -94,7 +94,7 @@ describe('<StatsDisplay />', () => {
             tool: 50,
           },
         },
-        'gemini-2.5-flash': {
+        'gemini-3-flash-preview': {
           api: { totalRequests: 5, totalErrors: 1, totalLatencyMs: 4500 },
           tokens: {
             input: 15000,
@@ -112,8 +112,8 @@ describe('<StatsDisplay />', () => {
     const { lastFrame } = renderWithMockedStats(metrics);
     const output = lastFrame();
 
-    expect(output).toContain('gemini-2.5-pro');
-    expect(output).toContain('gemini-2.5-flash');
+    expect(output).toContain('gemini-3-pro-preview');
+    expect(output).toContain('gemini-3-flash-preview');
     expect(output).toContain('15,000');
     expect(output).toContain('10,000');
     expect(output).toMatchSnapshot();
@@ -122,7 +122,7 @@ describe('<StatsDisplay />', () => {
   it('renders all sections when all data is present', () => {
     const metrics = createTestMetrics({
       models: {
-        'gemini-2.5-pro': {
+        'gemini-3-pro-preview': {
           api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 100 },
           tokens: {
             input: 50,
@@ -169,7 +169,7 @@ describe('<StatsDisplay />', () => {
     expect(output).toContain('Performance');
     expect(output).toContain('Interaction Summary');
     expect(output).toContain('User Agreement');
-    expect(output).toContain('gemini-2.5-pro');
+    expect(output).toContain('gemini-3-pro-preview');
     expect(output).toMatchSnapshot();
   });
 
@@ -216,7 +216,7 @@ describe('<StatsDisplay />', () => {
     it('hides Efficiency section when cache is not used', () => {
       const metrics = createTestMetrics({
         models: {
-          'gemini-2.5-pro': {
+          'gemini-3-pro-preview': {
             api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 100 },
             tokens: {
               input: 100,
@@ -399,7 +399,7 @@ describe('<StatsDisplay />', () => {
 
       const metrics = createTestMetrics({
         models: {
-          'gemini-2.5-pro': {
+          'gemini-3-pro-preview': {
             api: { totalRequests: 1, totalErrors: 0, totalLatencyMs: 100 },
             tokens: {
               input: 50,
@@ -419,7 +419,7 @@ describe('<StatsDisplay />', () => {
       const quotas: RetrieveUserQuotaResponse = {
         buckets: [
           {
-            modelId: 'gemini-2.5-pro',
+            modelId: 'gemini-3-pro-preview',
             remainingFraction: 0.75,
             resetTime,
           },
@@ -457,7 +457,7 @@ describe('<StatsDisplay />', () => {
       vi.useFakeTimers();
       vi.setSystemTime(now);
 
-      // No models in metrics, but a quota for gemini-2.5-flash
+      // No models in metrics, but a quota for gemini-3-flash-preview
       const metrics = createTestMetrics();
 
       const resetTime = new Date(now.getTime() + 1000 * 60 * 120).toISOString(); // 2 hours from now
@@ -465,7 +465,7 @@ describe('<StatsDisplay />', () => {
       const quotas: RetrieveUserQuotaResponse = {
         buckets: [
           {
-            modelId: 'gemini-2.5-flash',
+            modelId: 'gemini-3-flash-preview',
             remainingFraction: 0.5,
             resetTime,
           },
@@ -489,7 +489,7 @@ describe('<StatsDisplay />', () => {
       );
       const output = lastFrame();
 
-      expect(output).toContain('gemini-2.5-flash');
+      expect(output).toContain('gemini-3-flash-preview');
       expect(output).toContain('-'); // for requests
       expect(output).toContain('50.0%');
       expect(output).toContain('(Resets in 2h)');

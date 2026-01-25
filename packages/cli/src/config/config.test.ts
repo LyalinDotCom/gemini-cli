@@ -269,10 +269,10 @@ describe('parseArguments', () => {
           '@path',
           './file.md',
           '--model',
-          'gemini-2.5-pro',
+          'gemini-3-pro-preview',
         ],
         expectedQuery: '@path ./file.md',
-        expectedModel: 'gemini-2.5-pro',
+        expectedModel: 'gemini-3-pro-preview',
         debug: false,
       },
       {
@@ -1439,14 +1439,14 @@ describe('loadCliConfig model selection', () => {
     const config = await loadCliConfig(
       createTestMergedSettings({
         model: {
-          name: 'gemini-2.5-pro',
+          name: 'gemini-3-pro-preview',
         },
       }),
       'test-session',
       argv,
     );
 
-    expect(config.getModel()).toBe('gemini-2.5-pro');
+    expect(config.getModel()).toBe('gemini-3-pro-preview');
   });
 
   it('uses the default gemini model if nothing is set', async () => {
@@ -1460,27 +1460,37 @@ describe('loadCliConfig model selection', () => {
       argv,
     );
 
-    expect(config.getModel()).toBe('auto-gemini-2.5');
+    expect(config.getModel()).toBe('auto-gemini-3');
   });
 
   it('always prefers model from argv', async () => {
-    process.argv = ['node', 'script.js', '--model', 'gemini-2.5-flash-preview'];
+    process.argv = [
+      'node',
+      'script.js',
+      '--model',
+      'gemini-3-flash-preview-preview',
+    ];
     const argv = await parseArguments(createTestMergedSettings());
     const config = await loadCliConfig(
       createTestMergedSettings({
         model: {
-          name: 'gemini-2.5-pro',
+          name: 'gemini-3-pro-preview',
         },
       }),
       'test-session',
       argv,
     );
 
-    expect(config.getModel()).toBe('gemini-2.5-flash-preview');
+    expect(config.getModel()).toBe('gemini-3-flash-preview-preview');
   });
 
   it('selects the model from argv if provided', async () => {
-    process.argv = ['node', 'script.js', '--model', 'gemini-2.5-flash-preview'];
+    process.argv = [
+      'node',
+      'script.js',
+      '--model',
+      'gemini-3-flash-preview-preview',
+    ];
     const argv = await parseArguments(createTestMergedSettings());
     const config = await loadCliConfig(
       createTestMergedSettings({
@@ -1490,7 +1500,7 @@ describe('loadCliConfig model selection', () => {
       argv,
     );
 
-    expect(config.getModel()).toBe('gemini-2.5-flash-preview');
+    expect(config.getModel()).toBe('gemini-3-flash-preview-preview');
   });
 
   it('selects the default auto model if provided via auto alias', async () => {
@@ -1504,7 +1514,7 @@ describe('loadCliConfig model selection', () => {
       argv,
     );
 
-    expect(config.getModel()).toBe('auto-gemini-2.5');
+    expect(config.getModel()).toBe('auto-gemini-3');
   });
 });
 
@@ -1970,7 +1980,13 @@ describe('loadCliConfig interactive', () => {
 
   it('should be interactive if positional prompt words are provided with other flags', async () => {
     process.stdin.isTTY = true;
-    process.argv = ['node', 'script.js', '--model', 'gemini-2.5-pro', 'Hello'];
+    process.argv = [
+      'node',
+      'script.js',
+      '--model',
+      'gemini-3-pro-preview',
+      'Hello',
+    ];
     const argv = await parseArguments(createTestMergedSettings());
     const config = await loadCliConfig(
       createTestMergedSettings(),
@@ -1986,7 +2002,7 @@ describe('loadCliConfig interactive', () => {
       'node',
       'script.js',
       '--model',
-      'gemini-2.5-pro',
+      'gemini-3-pro-preview',
       '--yolo',
       'Hello world',
     ];
@@ -2037,7 +2053,7 @@ describe('loadCliConfig interactive', () => {
       'node',
       'script.js',
       '--model',
-      'gemini-2.5-pro',
+      'gemini-3-pro-preview',
       'write',
       'a',
       'function',
@@ -2054,7 +2070,7 @@ describe('loadCliConfig interactive', () => {
     expect(config.isInteractive()).toBe(true);
     expect(argv.query).toBe('write a function to sort array');
     expect(argv.promptInteractive).toBe('write a function to sort array');
-    expect(argv.model).toBe('gemini-2.5-pro');
+    expect(argv.model).toBe('gemini-3-pro-preview');
   });
 
   it('should handle empty positional arguments', async () => {
@@ -2097,7 +2113,7 @@ describe('loadCliConfig interactive', () => {
 
   it('should be interactive if no positional prompt words are provided with flags', async () => {
     process.stdin.isTTY = true;
-    process.argv = ['node', 'script.js', '--model', 'gemini-2.5-pro'];
+    process.argv = ['node', 'script.js', '--model', 'gemini-3-pro-preview'];
     const argv = await parseArguments(createTestMergedSettings());
     const config = await loadCliConfig(
       createTestMergedSettings(),

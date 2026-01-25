@@ -267,7 +267,7 @@ describe('CoreEventEmitter', () => {
       const listener = vi.fn();
       events.on(CoreEvent.ModelChanged, listener);
 
-      const newModel = 'gemini-2.5-pro';
+      const newModel = 'gemini-3-pro-preview';
       events.emitModelChanged(newModel);
 
       expect(listener).toHaveBeenCalledTimes(1);

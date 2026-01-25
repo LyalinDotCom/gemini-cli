@@ -42,7 +42,7 @@ function getModelFromPath(reportPath) {
   if (matchNew) return matchNew[1];
 
   const matchOld = artifactDir.match(/^eval-logs-(\d+)$/);
-  if (matchOld) return 'gemini-2.5-pro'; // Legacy default
+  if (matchOld) return 'gemini-3-pro-preview'; // Legacy default
 
   return 'unknown';
 }

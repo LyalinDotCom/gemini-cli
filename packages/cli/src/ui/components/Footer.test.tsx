@@ -10,7 +10,7 @@ import {
   createMockSettings,
 } from '../../test-utils/render.js';
 import { Footer } from './Footer.js';
-import { tildeifyPath, ToolCallDecision } from '@google/gemini-cli-core';
+import { ToolCallDecision } from '@google/gemini-cli-core';
 import type { SessionStatsState } from '../contexts/SessionContext.js';
 
 vi.mock('@google/gemini-cli-core', async (importOriginal) => {
@@ -29,8 +29,6 @@ vi.mock('@google/gemini-cli-core', async (importOriginal) => {
 
 const defaultProps = {
   model: 'gemini-pro',
-  targetDir:
-    '/Users/test/project/foo/bar/and/some/more/directories/to/make/it/long',
   branchName: 'main',
 };
 
@@ -74,27 +72,22 @@ describe('<Footer />', () => {
   });
 
   describe('path display', () => {
-    it('should display a shortened path on a narrow terminal', () => {
+    it('should display model info on a narrow terminal', () => {
       const { lastFrame } = renderWithProviders(<Footer />, {
         width: 79,
         uiState: { sessionStats: mockSessionStats },
       });
-      const tildePath = tildeifyPath(defaultProps.targetDir);
-      const pathLength = Math.max(20, Math.floor(79 * 0.25));
-      const expectedPath =
-        '...' + tildePath.slice(tildePath.length - pathLength + 3);
-      expect(lastFrame()).toContain(expectedPath);
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).toContain('/model');
     });
 
-    it('should use wide layout at 80 columns', () => {
+    it('should display model info at 80 columns', () => {
       const { lastFrame } = renderWithProviders(<Footer />, {
         width: 80,
         uiState: { sessionStats: mockSessionStats },
       });
-      const tildePath = tildeifyPath(defaultProps.targetDir);
-      const expectedPath =
-        '...' + tildePath.slice(tildePath.length - 80 * 0.25 + 3);
-      expect(lastFrame()).toContain(expectedPath);
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).toContain('/model');
     });
   });
 
@@ -106,7 +99,8 @@ describe('<Footer />', () => {
         sessionStats: mockSessionStats,
       },
     });
-    expect(lastFrame()).toContain(`(${defaultProps.branchName}*)`);
+    expect(lastFrame()).toContain(defaultProps.model);
+    expect(lastFrame()).not.toContain(`(${defaultProps.branchName}*)`);
   });
 
   it('does not display the branch name when not provided', () => {
@@ -155,7 +149,8 @@ describe('<Footer />', () => {
         width: 120,
         uiState: { isTrustedFolder: false, sessionStats: mockSessionStats },
       });
-      expect(lastFrame()).toContain('untrusted');
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).not.toContain('untrusted');
     });
 
     it('should display custom sandbox info when SANDBOX env is set', () => {
@@ -164,7 +159,8 @@ describe('<Footer />', () => {
         width: 120,
         uiState: { isTrustedFolder: undefined, sessionStats: mockSessionStats },
       });
-      expect(lastFrame()).toContain('test');
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).not.toContain('test');
       vi.unstubAllEnvs();
     });
 
@@ -175,7 +171,8 @@ describe('<Footer />', () => {
         width: 120,
         uiState: { isTrustedFolder: true, sessionStats: mockSessionStats },
       });
-      expect(lastFrame()).toMatch(/macOS Seatbelt.*\(test-profile\)/s);
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).not.toMatch(/macOS Seatbelt.*\(test-profile\)/s);
       vi.unstubAllEnvs();
     });
 
@@ -186,7 +183,8 @@ describe('<Footer />', () => {
         width: 120,
         uiState: { isTrustedFolder: true, sessionStats: mockSessionStats },
       });
-      expect(lastFrame()).toContain('no sandbox');
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).not.toContain('no sandbox');
       vi.unstubAllEnvs();
     });
 
@@ -196,7 +194,8 @@ describe('<Footer />', () => {
         width: 120,
         uiState: { isTrustedFolder: false, sessionStats: mockSessionStats },
       });
-      expect(lastFrame()).toContain('untrusted');
+      expect(lastFrame()).toContain(defaultProps.model);
+      expect(lastFrame()).not.toContain('untrusted');
       expect(lastFrame()).not.toMatch(/test-sandbox/s);
       vi.unstubAllEnvs();
     });
@@ -333,13 +332,13 @@ describe('fallback mode display', () => {
       width: 120,
       uiState: {
         sessionStats: mockSessionStats,
-        currentModel: 'gemini-2.5-flash', // Fallback active, showing Flash
+        currentModel: 'gemini-3-flash-preview', // Fallback active, showing Flash
       },
     });
 
     // Footer should show the effective model (Flash), not the config model (Pro)
-    expect(lastFrame()).toContain('gemini-2.5-flash');
-    expect(lastFrame()).not.toContain('gemini-2.5-pro');
+    expect(lastFrame()).toContain('gemini-3-flash-preview');
+    expect(lastFrame()).not.toContain('gemini-3-pro-preview');
   });
 
   it('should display Pro model when NOT in fallback mode', () => {
@@ -347,10 +346,10 @@ describe('fallback mode display', () => {
       width: 120,
       uiState: {
         sessionStats: mockSessionStats,
-        currentModel: 'gemini-2.5-pro', // Normal mode, showing Pro
+        currentModel: 'gemini-3-pro-preview', // Normal mode, showing Pro
       },
     });
 
-    expect(lastFrame()).toContain('gemini-2.5-pro');
+    expect(lastFrame()).toContain('gemini-3-pro-preview');
   });
 });

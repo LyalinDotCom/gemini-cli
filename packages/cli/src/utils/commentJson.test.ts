@@ -38,7 +38,7 @@ describe('commentJson', () => {
     it('should preserve comments when updating settings', () => {
       const originalContent = `{
         // Model configuration
-        "model": "gemini-2.5-pro",
+        "model": "gemini-3-pro-preview",
         "ui": {
           // Theme setting
           "theme": "dark"
@@ -48,7 +48,7 @@ describe('commentJson', () => {
       fs.writeFileSync(testFilePath, originalContent, 'utf-8');
 
       updateSettingsFilePreservingFormat(testFilePath, {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         ui: {
           theme: 'dark',
         },
@@ -58,7 +58,7 @@ describe('commentJson', () => {
 
       expect(updatedContent).toContain('// Model configuration');
       expect(updatedContent).toContain('// Theme setting');
-      expect(updatedContent).toContain('"model": "gemini-2.5-flash"');
+      expect(updatedContent).toContain('"model": "gemini-3-flash-preview"');
       expect(updatedContent).toContain('"theme": "dark"');
     });
 
@@ -87,13 +87,13 @@ describe('commentJson', () => {
     it('should add new fields while preserving existing structure', () => {
       const originalContent = `{
         // Existing config
-        "model": "gemini-2.5-pro"
+        "model": "gemini-3-pro-preview"
       }`;
 
       fs.writeFileSync(testFilePath, originalContent, 'utf-8');
 
       updateSettingsFilePreservingFormat(testFilePath, {
-        model: 'gemini-2.5-pro',
+        model: 'gemini-3-pro-preview',
         newField: 'newValue',
       });
 
@@ -104,18 +104,18 @@ describe('commentJson', () => {
 
     it('should create file if it does not exist', () => {
       updateSettingsFilePreservingFormat(testFilePath, {
-        model: 'gemini-2.5-pro',
+        model: 'gemini-3-pro-preview',
       });
 
       expect(fs.existsSync(testFilePath)).toBe(true);
       const content = fs.readFileSync(testFilePath, 'utf-8');
-      expect(content).toContain('"model": "gemini-2.5-pro"');
+      expect(content).toContain('"model": "gemini-3-pro-preview"');
     });
 
     it('should handle complex real-world scenario', () => {
       const complexContent = `{
         // Settings
-        "model": "gemini-2.5-pro",
+        "model": "gemini-3-pro-preview",
         "mcpServers": {
           // Active server
           "context7": {
@@ -129,7 +129,7 @@ describe('commentJson', () => {
       fs.writeFileSync(testFilePath, complexContent, 'utf-8');
 
       updateSettingsFilePreservingFormat(testFilePath, {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         mcpServers: {
           context7: {
             headers: {
@@ -150,14 +150,14 @@ describe('commentJson', () => {
       expect(updatedContent).toContain('// API key');
 
       // Verify updates applied
-      expect(updatedContent).toContain('"model": "gemini-2.5-flash"');
+      expect(updatedContent).toContain('"model": "gemini-3-flash-preview"');
       expect(updatedContent).toContain('"newSection"');
       expect(updatedContent).toContain('"API_KEY": "new-test-key"');
     });
 
     it('should handle corrupted JSON files gracefully', () => {
       const corruptedContent = `{
-        "model": "gemini-2.5-pro",
+        "model": "gemini-3-pro-preview",
         "ui": {
           "theme": "dark"
         // Missing closing brace
@@ -167,7 +167,7 @@ describe('commentJson', () => {
 
       expect(() => {
         updateSettingsFilePreservingFormat(testFilePath, {
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3-flash-preview',
         });
       }).not.toThrow();
 
@@ -207,7 +207,7 @@ describe('commentJson', () => {
     it('should sync nested objects, removing omitted fields', () => {
       const originalContent = `{
         // Configuration
-        "model": "gemini-2.5-pro",
+        "model": "gemini-3-pro-preview",
         "ui": {
           "theme": "dark",
           "existingSetting": "value"
@@ -218,7 +218,7 @@ describe('commentJson', () => {
       fs.writeFileSync(testFilePath, originalContent, 'utf-8');
 
       updateSettingsFilePreservingFormat(testFilePath, {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         ui: {
           theme: 'light',
         },
@@ -227,7 +227,7 @@ describe('commentJson', () => {
 
       const updatedContent = fs.readFileSync(testFilePath, 'utf-8');
       expect(updatedContent).toContain('// Configuration');
-      expect(updatedContent).toContain('"model": "gemini-2.5-flash"');
+      expect(updatedContent).toContain('"model": "gemini-3-flash-preview"');
       expect(updatedContent).toContain('"theme": "light"');
       expect(updatedContent).not.toContain('"existingSetting": "value"');
       expect(updatedContent).toContain('"preservedField": "keep me"');
@@ -235,7 +235,7 @@ describe('commentJson', () => {
 
     it('should handle mcpServers field deletion properly', () => {
       const originalContent = `{
-        "model": "gemini-2.5-pro",
+        "model": "gemini-3-pro-preview",
         "mcpServers": {
           // Server to keep
           "context7": {
@@ -253,7 +253,7 @@ describe('commentJson', () => {
       fs.writeFileSync(testFilePath, originalContent, 'utf-8');
 
       updateSettingsFilePreservingFormat(testFilePath, {
-        model: 'gemini-2.5-pro',
+        model: 'gemini-3-pro-preview',
         mcpServers: {
           context7: {
             command: 'node',

@@ -68,8 +68,7 @@ describe('<ModelDialog />', () => {
 
     // Default implementation for getDisplayString
     mockGetDisplayString.mockImplementation((val: string) => {
-      if (val === 'auto-gemini-2.5') return 'Auto (Gemini 2.5)';
-      if (val === 'auto-gemini-3') return 'Auto (Preview)';
+      if (val === 'auto-gemini-3') return 'Auto (Gemini 3)';
       return val;
     });
   });
@@ -94,11 +93,11 @@ describe('<ModelDialog />', () => {
     expect(lastFrame()).toContain('Manual');
   });
 
-  it('renders "main" view with preview options when preview features are enabled', () => {
+  it('does not render preview options when preview features are enabled but variants are identical', () => {
     mockGetPreviewFeatures.mockReturnValue(true);
     mockGetHasAccessToPreviewModel.mockReturnValue(true); // Must have access
     const { lastFrame } = renderComponent();
-    expect(lastFrame()).toContain('Auto (Preview)');
+    expect(lastFrame()).not.toContain('Auto (Preview)');
   });
 
   it('switches to "manual" view when "Manual" is selected', async () => {
@@ -119,16 +118,14 @@ describe('<ModelDialog />', () => {
     expect(lastFrame()).toContain(DEFAULT_GEMINI_FLASH_LITE_MODEL);
   });
 
-  it('renders "manual" view with preview options when preview features are enabled', async () => {
+  it('renders "manual" view with default models when preview features are enabled but variants are identical', async () => {
     mockGetPreviewFeatures.mockReturnValue(true);
     mockGetHasAccessToPreviewModel.mockReturnValue(true); // Must have access
     mockGetModel.mockReturnValue(PREVIEW_GEMINI_MODEL_AUTO);
     const { lastFrame, stdin } = renderComponent();
 
-    // Select "Manual" (index 2 because Preview Auto is first, then Auto (Gemini 2.5))
+    // Select "Manual" (index 1 because Preview Auto is not shown)
     // Press down enough times to ensure we reach the bottom (Manual)
-    stdin.write('\u001B[B'); // Arrow Down
-    await waitForUpdate();
     stdin.write('\u001B[B'); // Arrow Down
     await waitForUpdate();
 
@@ -236,26 +233,28 @@ describe('<ModelDialog />', () => {
       expect(lastFrame()).not.toContain('Auto (Preview)');
     });
 
-    it('should show preview options if user has access AND preview features are enabled', () => {
+    it('should NOT show preview options even if user has access AND preview features are enabled', () => {
       mockGetHasAccessToPreviewModel.mockReturnValue(true);
       mockGetPreviewFeatures.mockReturnValue(true);
       const { lastFrame } = renderComponent();
-      expect(lastFrame()).toContain('Auto (Preview)');
+      expect(lastFrame()).not.toContain('Auto (Preview)');
     });
 
-    it('should show "Gemini 3 is now available" header if user has access but preview features disabled', () => {
+    it('should NOT show "Gemini 3 is now available" header if variants are identical', () => {
       mockGetHasAccessToPreviewModel.mockReturnValue(true);
       mockGetPreviewFeatures.mockReturnValue(false);
       const { lastFrame } = renderComponent();
-      expect(lastFrame()).toContain('Gemini 3 is now available.');
-      expect(lastFrame()).toContain('Enable "Preview features" in /settings');
+      expect(lastFrame()).not.toContain('Gemini 3 is now available.');
+      expect(lastFrame()).not.toContain(
+        'Enable "Preview features" in /settings',
+      );
     });
 
-    it('should show "Gemini 3 is coming soon" header if user has no access', () => {
+    it('should NOT show "Gemini 3 is coming soon" header if variants are identical', () => {
       mockGetHasAccessToPreviewModel.mockReturnValue(false);
       mockGetPreviewFeatures.mockReturnValue(false);
       const { lastFrame } = renderComponent();
-      expect(lastFrame()).toContain('Gemini 3 is coming soon.');
+      expect(lastFrame()).not.toContain('Gemini 3 is coming soon.');
     });
 
     it('should NOT show header/subheader if preview options are shown', () => {

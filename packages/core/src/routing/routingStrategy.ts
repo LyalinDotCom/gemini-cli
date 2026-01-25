@@ -12,7 +12,7 @@ import type { Config } from '../config/config.js';
  * The output of a routing decision. It specifies which model to use and why.
  */
 export interface RoutingDecision {
-  /** The model identifier string to use for the next API call (e.g., 'gemini-2.5-pro'). */
+  /** The model identifier string to use for the next API call (e.g., 'gemini-3-pro-preview'). */
   model: string;
   /**
    * Metadata about the routing decision for logging purposes.

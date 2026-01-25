@@ -21,18 +21,15 @@ For more information, see [Gemini CLI model selection](../cli/model.md).
 ### Usage limits and fallback
 
 Gemini CLI will tell you when you reach your Gemini 3 Pro daily usage limit.
-When you encounter that limit, you’ll be given the option to switch to Gemini
-2.5 Pro, upgrade for higher limits, or stop. You’ll also be told when your usage
+When you encounter that limit, you’ll be given the option to switch to Gemini 3
+Flash, upgrade for higher limits, or stop. You’ll also be told when your usage
 limit resets and Gemini 3 Pro can be used again.
-
-Similarly, when you reach your daily usage limit for Gemini 2.5 Pro, you’ll see
-a message prompting fallback to Gemini 2.5 Flash.
 
 ### Capacity errors
 
 There may be times when the Gemini 3 Pro model is overloaded. When that happens,
 Gemini CLI will ask you to decide whether you want to keep trying Gemini 3 Pro
-or fallback to Gemini 2.5 Pro.
+or fallback to Gemini 3 Flash.
 
 > **Note:** The **Keep trying** option uses exponential backoff, in which Gemini
 > CLI waits longer between each retry, when the system is busy. If the retry
@@ -49,8 +46,7 @@ manage your usage limits:
 
 - **Auto routing:** Auto routing first determines whether a prompt involves a
   complex or simple operation. For simple prompts, it will automatically use
-  Gemini 2.5 Flash. For complex prompts, if Gemini 3 Pro is enabled, it will use
-  Gemini 3 Pro; otherwise, it will use Gemini 2.5 Pro.
+  Gemini 3 Flash. For complex prompts, it will use Gemini 3 Pro.
 - **Pro routing:** If you want to ensure your task is processed by the most
   capable model, use `/model` and select **Pro**. Gemini CLI will prioritize the
   most capable model available, including Gemini 3 Pro if it has been enabled.

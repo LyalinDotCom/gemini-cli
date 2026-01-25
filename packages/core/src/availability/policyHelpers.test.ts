@@ -21,7 +21,7 @@ const createMockConfig = (overrides: Partial<Config> = {}): Config =>
   ({
     getPreviewFeatures: () => false,
     getUserTier: () => undefined,
-    getModel: () => 'gemini-2.5-pro',
+    getModel: () => 'gemini-3-pro-preview',
     ...overrides,
   }) as unknown as Config;
 
@@ -38,10 +38,10 @@ describe('policyHelpers', () => {
 
     it('leaves catalog order untouched when active model already present', () => {
       const config = createMockConfig({
-        getModel: () => 'gemini-2.5-pro',
+        getModel: () => 'gemini-3-pro-preview',
       });
       const chain = resolvePolicyChain(config);
-      expect(chain[0]?.model).toBe('gemini-2.5-pro');
+      expect(chain[0]?.model).toBe('gemini-3-pro-preview');
     });
 
     it('returns the default chain when active model is "auto"', () => {
@@ -52,37 +52,37 @@ describe('policyHelpers', () => {
 
       // Expect default chain [Pro, Flash]
       expect(chain).toHaveLength(2);
-      expect(chain[0]?.model).toBe('gemini-2.5-pro');
-      expect(chain[1]?.model).toBe('gemini-2.5-flash');
+      expect(chain[0]?.model).toBe('gemini-3-pro-preview');
+      expect(chain[1]?.model).toBe('gemini-3-flash-preview');
     });
 
     it('uses auto chain when preferred model is auto', () => {
       const config = createMockConfig({
-        getModel: () => 'gemini-2.5-pro',
+        getModel: () => 'gemini-3-pro-preview',
       });
       const chain = resolvePolicyChain(config, DEFAULT_GEMINI_MODEL_AUTO);
       expect(chain).toHaveLength(2);
-      expect(chain[0]?.model).toBe('gemini-2.5-pro');
-      expect(chain[1]?.model).toBe('gemini-2.5-flash');
+      expect(chain[0]?.model).toBe('gemini-3-pro-preview');
+      expect(chain[1]?.model).toBe('gemini-3-flash-preview');
     });
 
     it('uses auto chain when configured model is auto even if preferred is concrete', () => {
       const config = createMockConfig({
         getModel: () => DEFAULT_GEMINI_MODEL_AUTO,
       });
-      const chain = resolvePolicyChain(config, 'gemini-2.5-pro');
+      const chain = resolvePolicyChain(config, 'gemini-3-pro-preview');
       expect(chain).toHaveLength(2);
-      expect(chain[0]?.model).toBe('gemini-2.5-pro');
-      expect(chain[1]?.model).toBe('gemini-2.5-flash');
+      expect(chain[0]?.model).toBe('gemini-3-pro-preview');
+      expect(chain[1]?.model).toBe('gemini-3-flash-preview');
     });
 
     it('starts chain from preferredModel when model is "auto"', () => {
       const config = createMockConfig({
         getModel: () => DEFAULT_GEMINI_MODEL_AUTO,
       });
-      const chain = resolvePolicyChain(config, 'gemini-2.5-flash');
+      const chain = resolvePolicyChain(config, 'gemini-3-flash-preview');
       expect(chain).toHaveLength(1);
-      expect(chain[0]?.model).toBe('gemini-2.5-flash');
+      expect(chain[0]?.model).toBe('gemini-3-flash-preview');
     });
 
     it('returns flash-lite chain when preferred model is flash-lite', () => {
@@ -92,8 +92,8 @@ describe('policyHelpers', () => {
       const chain = resolvePolicyChain(config, DEFAULT_GEMINI_FLASH_LITE_MODEL);
       expect(chain).toHaveLength(3);
       expect(chain[0]?.model).toBe('gemini-2.5-flash-lite');
-      expect(chain[1]?.model).toBe('gemini-2.5-flash');
-      expect(chain[2]?.model).toBe('gemini-2.5-pro');
+      expect(chain[1]?.model).toBe('gemini-3-flash-preview');
+      expect(chain[2]?.model).toBe('gemini-3-pro-preview');
     });
 
     it('returns flash-lite chain when configured model is flash-lite', () => {
@@ -103,18 +103,18 @@ describe('policyHelpers', () => {
       const chain = resolvePolicyChain(config);
       expect(chain).toHaveLength(3);
       expect(chain[0]?.model).toBe('gemini-2.5-flash-lite');
-      expect(chain[1]?.model).toBe('gemini-2.5-flash');
-      expect(chain[2]?.model).toBe('gemini-2.5-pro');
+      expect(chain[1]?.model).toBe('gemini-3-flash-preview');
+      expect(chain[2]?.model).toBe('gemini-3-pro-preview');
     });
 
     it('wraps around the chain when wrapsAround is true', () => {
       const config = createMockConfig({
         getModel: () => DEFAULT_GEMINI_MODEL_AUTO,
       });
-      const chain = resolvePolicyChain(config, 'gemini-2.5-flash', true);
+      const chain = resolvePolicyChain(config, 'gemini-3-flash-preview', true);
       expect(chain).toHaveLength(2);
-      expect(chain[0]?.model).toBe('gemini-2.5-flash');
-      expect(chain[1]?.model).toBe('gemini-2.5-pro');
+      expect(chain[0]?.model).toBe('gemini-3-flash-preview');
+      expect(chain[1]?.model).toBe('gemini-3-pro-preview');
     });
   });
 

@@ -849,9 +849,9 @@ describe('Server Config (config.ts)', () => {
   });
 
   describe('UseWriteTodos Configuration', () => {
-    it('should default useWriteTodos to true when not provided', () => {
+    it('should default useWriteTodos to false when not provided', () => {
       const config = new Config(baseParams);
-      expect(config.getUseWriteTodos()).toBe(true);
+      expect(config.getUseWriteTodos()).toBe(false);
     });
 
     it('should set useWriteTodos to false when provided as false', () => {
@@ -875,7 +875,7 @@ describe('Server Config (config.ts)', () => {
     it('should NOT disable useWriteTodos for non-preview models', () => {
       const params: ConfigParameters = {
         ...baseParams,
-        model: 'gemini-2.5-pro',
+        model: 'gemini-2.5-flash-lite',
       };
       const config = new Config(params);
       expect(config.getUseWriteTodos()).toBe(true);
@@ -1646,7 +1646,7 @@ describe('Config getHooks', () => {
       const service = config.getModelAvailabilityService();
       const spy = vi.spyOn(service, 'reset');
 
-      const proModel = 'gemini-2.5-pro';
+      const proModel = 'gemini-3-pro-preview';
       config.setModel(proModel);
 
       expect(config.getModel()).toBe(proModel);

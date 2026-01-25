@@ -195,7 +195,7 @@ describe('classifyGoogleError', () => {
               quotaId: 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier',
               quotaDimensions: {
                 location: 'global',
-                model: 'gemini-2.5-pro',
+                model: 'gemini-3-pro-preview',
               },
               quotaValue: '2',
             },
@@ -234,7 +234,7 @@ describe('classifyGoogleError', () => {
           domain: 'cloudcode-pa.googleapis.com',
           metadata: {
             uiMessage: 'true',
-            model: 'gemini-2.5-pro',
+            model: 'gemini-3-pro-preview',
             quotaResetDelay: '539.477544ms',
             quotaResetTimeStamp: '2025-10-20T19:14:08Z',
           },
@@ -265,7 +265,7 @@ describe('classifyGoogleError', () => {
           domain: 'cloudcode-pa.googleapis.com',
           metadata: {
             uiMessage: 'true',
-            model: 'gemini-2.5-pro',
+            model: 'gemini-3-pro-preview',
             quotaResetDelay: '539.477544ms',
             quotaResetTimeStamp: '2025-10-20T19:14:08Z',
           },
