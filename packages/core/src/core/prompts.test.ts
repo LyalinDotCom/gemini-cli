@@ -277,15 +277,18 @@ describe('Core System Prompt (prompts.ts)', () => {
       ]);
 
       const prompt = getCoreSystemPrompt(mockConfig);
+      const availableToolsSection =
+        prompt.split('## Available Tools')[1]?.split('## Workflow Phases')[0] ??
+        '';
 
       // Should include enabled tools
-      expect(prompt).toContain('`glob`');
-      expect(prompt).toContain('`read_file`');
+      expect(availableToolsSection).toContain('`glob`');
+      expect(availableToolsSection).toContain('`read_file`');
 
       // Should NOT include disabled tools
-      expect(prompt).not.toContain('`google_web_search`');
-      expect(prompt).not.toContain('`list_directory`');
-      expect(prompt).not.toContain('`search_file_content`');
+      expect(availableToolsSection).not.toContain('`google_web_search`');
+      expect(availableToolsSection).not.toContain('`list_directory`');
+      expect(availableToolsSection).not.toContain('`search_file_content`');
     });
   });
 

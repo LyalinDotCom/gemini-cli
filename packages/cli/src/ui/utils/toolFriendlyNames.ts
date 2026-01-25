@@ -130,6 +130,7 @@ export const TOOL_FRIENDLY_NAMES: Record<string, ToolMessageGenerator> = {
     const skillName = args['skill_name'] as string | undefined;
     return skillName ? `activating ${skillName}` : 'activating skill';
   },
+  web_researcher: () => 'researching on the web',
 };
 
 /**
