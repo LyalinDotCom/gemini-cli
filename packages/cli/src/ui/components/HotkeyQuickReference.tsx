@@ -36,73 +36,58 @@ interface Hotkey {
 
 /**
  * Compact hotkey quick reference display shown when user presses ? with empty input.
+ * Three-column layout: input prefixes | hotkeys | hotkeys
  */
 export const HotkeyQuickReference: React.FC<HotkeyQuickReferenceProps> = ({
   width,
 }) => {
+  // Column 1: Input bar prefixes
+  const inputKeys: Hotkey[] = [
+    { key: '!', action: 'shell mode' },
+    { key: '@', action: 'attach file' },
+    { key: '/', action: 'commands' },
+  ];
+
+  // Columns 2-3: Hotkeys
   const hotkeys: Hotkey[] = [
-    { key: 'Enter', action: 'send' },
-    { key: 'Esc', action: 'cancel' },
     { key: formatKey('Ctrl+C'), action: 'quit' },
-    { key: formatKey('Ctrl+Y'), action: 'yolo' },
-    { key: formatKey('Shift+Tab'), action: 'modes' },
+    { key: formatKey('Ctrl+Y'), action: 'yolo mode' },
+    { key: formatKey('Shift+Tab'), action: 'switch modes' },
     { key: getNewlineKey(), action: 'newline' },
-    { key: '!', action: 'shell' },
-    { key: '@', action: 'file' },
-    { key: '/help', action: 'commands' },
     { key: '↑/↓', action: 'history' },
   ];
 
-  // Format as: "Hotkeys: Enter send · Esc cancel · ..."
-  const separator = ' · ';
-  const prefix = 'Hotkeys: ';
+  // Split hotkeys into two columns
+  const midpoint = Math.ceil(hotkeys.length / 2);
+  const hotkeyCol1 = hotkeys.slice(0, midpoint);
+  const hotkeyCol2 = hotkeys.slice(midpoint);
 
-  // Calculate if we need to wrap based on width
-  const fullLine =
-    prefix + hotkeys.map((h) => `${h.key} ${h.action}`).join(separator);
+  // Calculate column widths
+  const columnWidth = Math.floor((width - 6) / 3); // 6 for padding/margins
 
-  // If terminal is too narrow, show in multiple lines
-  const isNarrow = width < fullLine.length + 4; // Add some margin
-
-  if (isNarrow) {
-    // Split into two lines for narrow terminals
-    const midpoint = Math.ceil(hotkeys.length / 2);
-    const firstHalf = hotkeys.slice(0, midpoint);
-    const secondHalf = hotkeys.slice(midpoint);
-
-    return (
-      <Box flexDirection="column" paddingX={1} marginTop={1}>
-        <Box>
-          <Text color={theme.text.secondary}>{prefix}</Text>
-          {firstHalf.map((h, i) => (
-            <Text key={h.key} color={theme.text.secondary}>
-              <Text color={theme.text.accent}>{h.key}</Text> {h.action}
-              {i < firstHalf.length - 1 && separator}
-            </Text>
-          ))}
+  const renderColumn = (items: Hotkey[], minWidth: number) => (
+    <Box flexDirection="column" minWidth={minWidth}>
+      {items.map((h) => (
+        <Box key={h.key}>
+          <Text color={theme.text.accent}>{h.key}</Text>
+          <Text color={theme.text.secondary}> {h.action}</Text>
         </Box>
-        <Box paddingLeft={prefix.length}>
-          {secondHalf.map((h, i) => (
-            <Text key={h.key} color={theme.text.secondary}>
-              <Text color={theme.text.accent}>{h.key}</Text> {h.action}
-              {i < secondHalf.length - 1 && separator}
-            </Text>
-          ))}
-        </Box>
-      </Box>
-    );
-  }
-
-  // Single line for wider terminals
-  return (
-    <Box paddingX={1} marginTop={1}>
-      <Text color={theme.text.secondary}>{prefix}</Text>
-      {hotkeys.map((h, i) => (
-        <Text key={h.key} color={theme.text.secondary}>
-          <Text color={theme.text.accent}>{h.key}</Text> {h.action}
-          {i < hotkeys.length - 1 && separator}
-        </Text>
       ))}
+    </Box>
+  );
+
+  return (
+    <Box
+      flexDirection="row"
+      paddingX={1}
+      marginTop={1}
+      width={width}
+      justifyContent="flex-start"
+      gap={3}
+    >
+      {renderColumn(inputKeys, columnWidth)}
+      {renderColumn(hotkeyCol1, columnWidth)}
+      {renderColumn(hotkeyCol2, columnWidth)}
     </Box>
   );
 };

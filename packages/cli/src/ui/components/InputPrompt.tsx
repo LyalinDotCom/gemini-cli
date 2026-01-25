@@ -477,6 +477,9 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       }
 
       if (keyMatchers[Command.ESCAPE](key)) {
+        // Hide hotkey help on escape
+        onHideHelp?.();
+
         const cancelSearch = (
           setActive: (active: boolean) => void,
           resetCompletion: () => void,
@@ -1110,7 +1113,12 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       <Box
         backgroundColor={theme.background.inputBar}
         paddingX={1}
-        marginY={1}
+        borderStyle="single"
+        borderTop={true}
+        borderBottom={false}
+        borderLeft={false}
+        borderRight={false}
+        borderColor={theme.text.secondary}
         width={mainAreaWidth}
         flexDirection="row"
         alignItems="flex-start"

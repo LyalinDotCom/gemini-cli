@@ -21,6 +21,8 @@ interface LoadingIndicatorProps {
   elapsedTime: number;
   /** Optional content to display on the right side */
   rightContent?: React.ReactNode;
+  /** Git branch name to display next to Ready status */
+  branchName?: string;
 }
 
 /**
@@ -33,10 +35,14 @@ interface LoadingIndicatorProps {
  * - Thought summary
  * - Generic "Thinking..." fallback
  */
+// Max length for branch name display to prevent layout issues
+const MAX_BRANCH_LENGTH = 24;
+
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   currentLoadingPhrase,
   elapsedTime,
   rightContent,
+  branchName,
 }) => {
   const streamingState = useStreamingContext();
   const { columns: terminalWidth } = useTerminalSize();
@@ -97,6 +103,15 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
             )}
           </Box>
           {statusText && <Text color={theme.text.accent}>{statusText}</Text>}
+          {isIdle && branchName && (
+            <Text color={theme.text.secondary}>
+              {' | ('}
+              {branchName.length > MAX_BRANCH_LENGTH
+                ? branchName.slice(0, MAX_BRANCH_LENGTH - 1) + '…'
+                : branchName}
+              {'*)'}
+            </Text>
+          )}
           {isIdle && <Text color={theme.text.secondary}> ? for help</Text>}
         </Box>
         {!isNarrow && rightContent && (

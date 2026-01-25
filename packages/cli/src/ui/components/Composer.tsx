@@ -75,6 +75,7 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           }
           elapsedTime={uiState.elapsedTime}
           rightContent={contextSummaryContent}
+          branchName={uiState.branchName}
         />
       )}
 
@@ -110,8 +111,6 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           </Box>
         </OverflowProvider>
       )}
-
-      {showHotkeyHelp && <HotkeyQuickReference width={uiState.mainAreaWidth} />}
 
       {uiState.isInputActive && (
         <InputPrompt
@@ -150,6 +149,8 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
       )}
 
       {!settings.merged.ui.hideFooter && !isScreenReaderEnabled && <Footer />}
+
+      {showHotkeyHelp && <HotkeyQuickReference width={uiState.mainAreaWidth} />}
     </Box>
   );
 };
