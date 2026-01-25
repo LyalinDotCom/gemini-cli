@@ -26,10 +26,40 @@ export const GeminiMessage: React.FC<GeminiMessageProps> = ({
   terminalWidth,
 }) => {
   const { renderMarkdown } = useUIState();
+  const isAlternateBuffer = useAlternateBuffer();
+
+  // When complete, show "✦ Done." header then indented content
+  // When streaming, show "✦ " prefix with inline content
+  if (!isPending) {
+    return (
+      <Box flexDirection="column">
+        <Box paddingLeft={1}>
+          <Text
+            color={theme.text.accent}
+            aria-label={SCREEN_READER_MODEL_PREFIX}
+          >
+            ✦ Done.
+          </Text>
+        </Box>
+        <Box flexDirection="column" paddingLeft={2} marginTop={1}>
+          <MarkdownDisplay
+            text={text}
+            isPending={isPending}
+            availableTerminalHeight={
+              isAlternateBuffer ? undefined : availableTerminalHeight
+            }
+            terminalWidth={terminalWidth}
+            renderMarkdown={renderMarkdown}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  // While streaming, use inline prefix layout
   const prefix = '✦ ';
   const prefixWidth = prefix.length;
 
-  const isAlternateBuffer = useAlternateBuffer();
   return (
     <Box flexDirection="row">
       <Box width={prefixWidth}>

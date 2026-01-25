@@ -31,11 +31,10 @@ export const GeminiMessageContent: React.FC<GeminiMessageContentProps> = ({
 }) => {
   const { renderMarkdown } = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
-  const originalPrefix = '✦ ';
-  const prefixWidth = originalPrefix.length;
 
+  // Always indent to align with "✦ " prefix
   return (
-    <Box flexDirection="column" paddingLeft={prefixWidth}>
+    <Box flexDirection="column" paddingLeft={2}>
       <MarkdownDisplay
         text={text}
         isPending={isPending}
