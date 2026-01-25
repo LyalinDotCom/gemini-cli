@@ -13,6 +13,10 @@ import { GeminiRespondingSpinner } from './GeminiRespondingSpinner.js';
 import { formatDuration } from '../utils/formatters.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { isNarrowWidth } from '../utils/isNarrowWidth.js';
+import { ApprovalMode } from '@google/gemini-cli-core';
+
+const isMac = process.platform === 'darwin';
+const modKey = isMac ? 'Cmd' : 'Ctrl';
 
 interface LoadingIndicatorProps {
   /** The status message to display (already prioritized by useLoadingIndicator) */
@@ -23,6 +27,8 @@ interface LoadingIndicatorProps {
   rightContent?: React.ReactNode;
   /** Git branch name to display next to Ready status */
   branchName?: string;
+  /** Current approval mode to show YOLO indicator */
+  approvalMode?: ApprovalMode;
 }
 
 /**
@@ -43,22 +49,28 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   elapsedTime,
   rightContent,
   branchName,
+  approvalMode,
 }) => {
   const streamingState = useStreamingContext();
   const { columns: terminalWidth } = useTerminalSize();
   const isNarrow = isNarrowWidth(terminalWidth);
 
   const isIdle = streamingState === StreamingState.Idle;
+  const isYolo = approvalMode === ApprovalMode.YOLO;
 
   const cancelAndTimerContent =
     !isIdle && streamingState !== StreamingState.WaitingForConfirmation
       ? `esc to cancel, ${elapsedTime < 60 ? `${elapsedTime}s` : formatDuration(elapsedTime * 1000)}`
       : null;
 
-  // Status text: "Ready" when idle, loading phrase when active
+  // Status text: "Ready" or "YOLO" when idle, loading phrase when active
   // Truncate to prevent line wrapping (leave room for spinner, spacing, and right content)
   const MAX_STATUS_LENGTH = 40;
-  const rawStatusText = isIdle ? 'Ready' : currentLoadingPhrase;
+  const rawStatusText = isIdle
+    ? isYolo
+      ? 'YOLO'
+      : 'Ready'
+    : currentLoadingPhrase;
   const statusText =
     rawStatusText && rawStatusText.length > MAX_STATUS_LENGTH
       ? rawStatusText.slice(0, MAX_STATUS_LENGTH - 3) + '...'
@@ -102,7 +114,16 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
               />
             )}
           </Box>
-          {statusText && <Text color={theme.text.accent}>{statusText}</Text>}
+          {statusText && (
+            <Text
+              color={isYolo && isIdle ? theme.status.error : theme.text.accent}
+            >
+              {statusText}
+            </Text>
+          )}
+          {isIdle && isYolo && (
+            <Text color={theme.text.secondary}> ({modKey}+Y)</Text>
+          )}
           {isIdle && branchName && (
             <Text color={theme.text.secondary}>
               {' | ('}

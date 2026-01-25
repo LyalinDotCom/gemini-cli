@@ -419,9 +419,10 @@ describe('Composer', () => {
       expect(lastFrame()).not.toContain('InputPrompt');
     });
 
-    it('shows ApprovalModeIndicator when approval mode is not default and shell mode is inactive', () => {
+    it('shows ApprovalModeIndicator when approval mode is AUTO_EDIT and shell mode is inactive', () => {
+      // Note: YOLO mode indicator is shown in LoadingIndicator, not in Footer
       const uiState = createMockUIState({
-        showApprovalModeIndicator: ApprovalMode.YOLO,
+        showApprovalModeIndicator: ApprovalMode.AUTO_EDIT,
         shellModeActive: false,
       });
 

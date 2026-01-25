@@ -12,6 +12,7 @@ import { StreamingContext } from '../contexts/StreamingContext.js';
 import { StreamingState } from '../types.js';
 import { vi } from 'vitest';
 import * as useTerminalSize from '../hooks/useTerminalSize.js';
+import { ApprovalMode } from '@google/gemini-cli-core';
 
 // Mock GeminiRespondingSpinner
 vi.mock('./GeminiRespondingSpinner.js', () => ({
@@ -57,12 +58,14 @@ describe('<LoadingIndicator />', () => {
     elapsedTime: 5,
   };
 
-  it('should not render when streamingState is Idle', () => {
+  it('should render Ready status when streamingState is Idle', () => {
     const { lastFrame } = renderWithContext(
       <LoadingIndicator {...defaultProps} />,
       StreamingState.Idle,
     );
-    expect(lastFrame()).toBe('');
+    const output = lastFrame();
+    expect(output).toContain('Ready');
+    expect(output).toContain('? for help');
   });
 
   it('should render spinner, phrase, and time when streamingState is Responding', () => {
@@ -73,7 +76,7 @@ describe('<LoadingIndicator />', () => {
     const output = lastFrame();
     expect(output).toContain('MockRespondingSpinner');
     expect(output).toContain('Loading...');
-    expect(output).toContain('(esc to cancel, 5s)');
+    expect(output).toContain('esc to cancel, 5s');
   });
 
   it('should render spinner (static), phrase but no time/cancel when streamingState is WaitingForConfirmation', () => {
@@ -114,7 +117,7 @@ describe('<LoadingIndicator />', () => {
       <LoadingIndicator {...props} />,
       StreamingState.Responding,
     );
-    expect(lastFrame()).toContain('(esc to cancel, 1m)');
+    expect(lastFrame()).toContain('esc to cancel, 1m');
     unmount();
   });
 
@@ -127,7 +130,7 @@ describe('<LoadingIndicator />', () => {
       <LoadingIndicator {...props} />,
       StreamingState.Responding,
     );
-    expect(lastFrame()).toContain('(esc to cancel, 2m 5s)');
+    expect(lastFrame()).toContain('esc to cancel, 2m 5s');
     unmount();
   });
 
@@ -146,7 +149,9 @@ describe('<LoadingIndicator />', () => {
       <LoadingIndicator {...defaultProps} />,
       StreamingState.Idle,
     );
-    expect(lastFrame()).toBe(''); // Initial: Idle
+    let output = lastFrame();
+    expect(output).toContain('Ready'); // Initial: Idle shows Ready
+    expect(output).toContain('? for help');
 
     // Transition to Responding
     rerender(
@@ -157,10 +162,10 @@ describe('<LoadingIndicator />', () => {
         />
       </StreamingContext.Provider>,
     );
-    let output = lastFrame();
+    output = lastFrame();
     expect(output).toContain('MockRespondingSpinner');
     expect(output).toContain('Now Responding');
-    expect(output).toContain('(esc to cancel, 2s)');
+    expect(output).toContain('esc to cancel, 2s');
 
     // Transition to WaitingForConfirmation
     rerender(
@@ -174,7 +179,7 @@ describe('<LoadingIndicator />', () => {
     output = lastFrame();
     expect(output).toContain('⠏');
     expect(output).toContain('Please Confirm');
-    expect(output).not.toContain('(esc to cancel)');
+    expect(output).not.toContain('esc to cancel');
     expect(output).not.toContain(', 15s');
 
     // Transition back to Idle
@@ -183,7 +188,9 @@ describe('<LoadingIndicator />', () => {
         <LoadingIndicator {...defaultProps} />
       </StreamingContext.Provider>,
     );
-    expect(lastFrame()).toBe('');
+    output = lastFrame();
+    expect(output).toContain('Ready');
+    expect(output).toContain('? for help');
     unmount();
   });
 
@@ -218,7 +225,7 @@ describe('<LoadingIndicator />', () => {
   });
 
   describe('responsive layout', () => {
-    it('should render on a single line on a wide terminal', () => {
+    it('should render all elements on a wide terminal', () => {
       const { lastFrame, unmount } = renderWithContext(
         <LoadingIndicator
           {...defaultProps}
@@ -228,15 +235,13 @@ describe('<LoadingIndicator />', () => {
         120,
       );
       const output = lastFrame();
-      // Check for single line output
-      expect(output?.includes('\n')).toBe(false);
       expect(output).toContain('Loading...');
-      expect(output).toContain('(esc to cancel, 5s)');
+      expect(output).toContain('esc to cancel, 5s');
       expect(output).toContain('Right');
       unmount();
     });
 
-    it('should render on multiple lines on a narrow terminal', () => {
+    it('should render with right content below on a narrow terminal', () => {
       const { lastFrame, unmount } = renderWithContext(
         <LoadingIndicator
           {...defaultProps}
@@ -246,38 +251,71 @@ describe('<LoadingIndicator />', () => {
         79,
       );
       const output = lastFrame();
-      const lines = output?.split('\n');
-      // Expecting 3 lines:
-      // 1. Spinner + Primary Text
-      // 2. Cancel + Timer
-      // 3. Right Content
-      expect(lines).toHaveLength(3);
-      if (lines) {
-        expect(lines[0]).toContain('Loading...');
-        expect(lines[0]).not.toContain('(esc to cancel, 5s)');
-        expect(lines[1]).toContain('(esc to cancel, 5s)');
-        expect(lines[2]).toContain('Right');
-      }
+      expect(output).toContain('Loading...');
+      expect(output).toContain('esc to cancel, 5s');
+      expect(output).toContain('Right');
       unmount();
     });
 
-    it('should use wide layout at 80 columns', () => {
+    it('should render at 80 columns', () => {
       const { lastFrame, unmount } = renderWithContext(
         <LoadingIndicator {...defaultProps} />,
         StreamingState.Responding,
         80,
       );
-      expect(lastFrame()?.includes('\n')).toBe(false);
+      const output = lastFrame();
+      expect(output).toContain('Loading...');
+      expect(output).toContain('esc to cancel, 5s');
       unmount();
     });
 
-    it('should use narrow layout at 79 columns', () => {
+    it('should render at 79 columns', () => {
       const { lastFrame, unmount } = renderWithContext(
         <LoadingIndicator {...defaultProps} />,
         StreamingState.Responding,
         79,
       );
-      expect(lastFrame()?.includes('\n')).toBe(true);
+      const output = lastFrame();
+      expect(output).toContain('Loading...');
+      expect(output).toContain('esc to cancel, 5s');
+      unmount();
+    });
+  });
+
+  describe('YOLO mode', () => {
+    it('should show YOLO instead of Ready when in YOLO mode', () => {
+      const { lastFrame, unmount } = renderWithContext(
+        <LoadingIndicator {...defaultProps} approvalMode={ApprovalMode.YOLO} />,
+        StreamingState.Idle,
+      );
+      const output = lastFrame();
+      expect(output).toContain('YOLO');
+      expect(output).not.toContain('Ready');
+      unmount();
+    });
+
+    it('should show key shortcut next to YOLO', () => {
+      const { lastFrame, unmount } = renderWithContext(
+        <LoadingIndicator {...defaultProps} approvalMode={ApprovalMode.YOLO} />,
+        StreamingState.Idle,
+      );
+      const output = lastFrame();
+      // Check for either Cmd+Y (macOS) or Ctrl+Y (other platforms)
+      expect(output).toMatch(/\(Cmd\+Y\)|\(Ctrl\+Y\)/);
+      unmount();
+    });
+
+    it('should show Ready when not in YOLO mode', () => {
+      const { lastFrame, unmount } = renderWithContext(
+        <LoadingIndicator
+          {...defaultProps}
+          approvalMode={ApprovalMode.DEFAULT}
+        />,
+        StreamingState.Idle,
+      );
+      const output = lastFrame();
+      expect(output).toContain('Ready');
+      expect(output).not.toContain('YOLO');
       unmount();
     });
   });
