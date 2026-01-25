@@ -148,9 +148,12 @@ export type HistoryItemAbout = HistoryItemBase & {
   tier?: string;
 };
 
+export type HelpMode = 'overview' | 'commands' | 'shortcuts';
+
 export type HistoryItemHelp = HistoryItemBase & {
   type: 'help';
   timestamp: Date;
+  mode?: HelpMode;
 };
 
 export type HistoryItemStats = HistoryItemBase & {

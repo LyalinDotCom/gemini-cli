@@ -244,15 +244,12 @@ export class FileCommandLoader implements ICommandLoader {
       })
       .join(':');
 
-    // Add extension name tag for extension commands
+    // Use provided description or generate a default one
     const defaultDescription = `Custom command from ${path.basename(filePath)}`;
-    let description = validDef.description || defaultDescription;
-
-    description = sanitizeForListDisplay(description, 100);
-
-    if (extensionName) {
-      description = `[${extensionName}] ${description}`;
-    }
+    const description = sanitizeForListDisplay(
+      validDef.description || defaultDescription,
+      100,
+    );
 
     const processors: IPromptProcessor[] = [];
     const usesArgs = validDef.prompt.includes(SHORTHAND_ARGS_PLACEHOLDER);
@@ -288,6 +285,7 @@ export class FileCommandLoader implements ICommandLoader {
       kind: CommandKind.FILE,
       extensionName,
       extensionId,
+      sourceName: extensionName,
       action: async (
         context: CommandContext,
         _args: string,

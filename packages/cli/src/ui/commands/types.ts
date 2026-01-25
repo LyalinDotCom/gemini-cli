@@ -195,6 +195,9 @@ export interface SlashCommand {
   extensionName?: string;
   extensionId?: string;
 
+  /** Source name for grouping (server name for MCP, extension name for extensions) */
+  sourceName?: string;
+
   // The action to run. Optional for parent commands that only group sub-commands.
   action?: (
     context: CommandContext,

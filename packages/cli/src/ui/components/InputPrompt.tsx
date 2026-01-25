@@ -25,6 +25,7 @@ import {
   useCommandCompletion,
   CompletionMode,
 } from '../hooks/useCommandCompletion.js';
+import { groupAndFlattenSuggestions } from '../hooks/useSlashCompletion.js';
 import type { Key } from '../hooks/useKeypress.js';
 import { useKeypress } from '../hooks/useKeypress.js';
 import { keyMatchers, Command } from '../keyMatchers.js';
@@ -1086,44 +1087,63 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
     statusText = 'Accepting edits';
   }
 
-  const suggestionsNode = useMemo(
-    () =>
-      shouldShowSuggestions ? (
-        <Box paddingRight={2}>
-          <SuggestionsDisplay
-            suggestions={activeCompletion.suggestions}
-            activeIndex={activeCompletion.activeSuggestionIndex}
-            isLoading={activeCompletion.isLoadingSuggestions}
-            width={suggestionsWidth}
-            scrollOffset={activeCompletion.visibleStartIndex}
-            userInput={buffer.text}
-            mode={
-              completion.completionMode === CompletionMode.AT
-                ? 'reverse'
-                : buffer.text.startsWith('/') &&
-                    !reverseSearchActive &&
-                    !commandSearchActive
-                  ? 'slash'
-                  : 'reverse'
-            }
-            expandedIndex={expandedSuggestionIndex}
-          />
-        </Box>
-      ) : null,
-    [
-      shouldShowSuggestions,
-      activeCompletion.suggestions,
-      activeCompletion.activeSuggestionIndex,
-      activeCompletion.isLoadingSuggestions,
-      activeCompletion.visibleStartIndex,
-      buffer.text,
-      suggestionsWidth,
-      completion.completionMode,
-      reverseSearchActive,
-      commandSearchActive,
-      expandedSuggestionIndex,
-    ],
-  );
+  const suggestionsNode = useMemo(() => {
+    if (!shouldShowSuggestions) {
+      return null;
+    }
+
+    const isSlashMode =
+      completion.completionMode === CompletionMode.SLASH &&
+      buffer.text.startsWith('/') &&
+      !reverseSearchActive &&
+      !commandSearchActive;
+
+    const mode =
+      completion.completionMode === CompletionMode.AT
+        ? 'reverse'
+        : isSlashMode
+          ? 'slash'
+          : 'reverse';
+
+    // Compute groups and sorted suggestions for slash mode
+    // This ensures the suggestions array matches the group structure
+    let suggestions = activeCompletion.suggestions;
+    let groups;
+
+    if (isSlashMode) {
+      const grouped = groupAndFlattenSuggestions(activeCompletion.suggestions);
+      groups = grouped.groups;
+      suggestions = grouped.sortedSuggestions;
+    }
+
+    return (
+      <Box paddingRight={2}>
+        <SuggestionsDisplay
+          suggestions={suggestions}
+          activeIndex={activeCompletion.activeSuggestionIndex}
+          isLoading={activeCompletion.isLoadingSuggestions}
+          width={suggestionsWidth}
+          scrollOffset={activeCompletion.visibleStartIndex}
+          userInput={buffer.text}
+          mode={mode}
+          expandedIndex={expandedSuggestionIndex}
+          groups={groups}
+        />
+      </Box>
+    );
+  }, [
+    shouldShowSuggestions,
+    activeCompletion.suggestions,
+    activeCompletion.activeSuggestionIndex,
+    activeCompletion.isLoadingSuggestions,
+    activeCompletion.visibleStartIndex,
+    buffer.text,
+    suggestionsWidth,
+    completion.completionMode,
+    reverseSearchActive,
+    commandSearchActive,
+    expandedSuggestionIndex,
+  ]);
 
   // When suggestions are rendered externally, pass the node to parent
   useEffect(() => {

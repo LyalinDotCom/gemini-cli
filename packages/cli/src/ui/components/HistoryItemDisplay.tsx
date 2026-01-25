@@ -116,7 +116,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
         />
       )}
       {itemForDisplay.type === 'help' && commands && (
-        <Help commands={commands} />
+        <Help commands={commands} mode={itemForDisplay.mode} />
       )}
       {itemForDisplay.type === 'stats' && (
         <StatsDisplay

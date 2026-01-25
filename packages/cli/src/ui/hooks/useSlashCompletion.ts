@@ -6,13 +6,72 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { AsyncFzf } from 'fzf';
-import type { Suggestion } from '../components/SuggestionsDisplay.js';
+import type {
+  Suggestion,
+  SuggestionGroup,
+} from '../components/SuggestionsDisplay.js';
 import {
   CommandKind,
   type CommandContext,
   type SlashCommand,
 } from '../commands/types.js';
 import { debugLogger } from '@google/gemini-cli-core';
+
+const BUILT_IN_GROUP_NAME = 'Built-in';
+
+/**
+ * Groups suggestions by their source (Built-in first, then others alphabetically).
+ * Filters out empty groups.
+ */
+export function groupSuggestions(suggestions: Suggestion[]): SuggestionGroup[] {
+  const groups: Map<string, Suggestion[]> = new Map();
+  groups.set(BUILT_IN_GROUP_NAME, []);
+
+  for (const suggestion of suggestions) {
+    if (
+      !suggestion.sourceName ||
+      suggestion.commandKind === CommandKind.BUILT_IN
+    ) {
+      groups.get(BUILT_IN_GROUP_NAME)!.push(suggestion);
+    } else {
+      const groupName = suggestion.sourceName;
+      if (!groups.has(groupName)) {
+        groups.set(groupName, []);
+      }
+      groups.get(groupName)!.push(suggestion);
+    }
+  }
+
+  // Return Built-in first (if non-empty), then others alphabetically (if non-empty)
+  const result: SuggestionGroup[] = [];
+
+  const builtInSuggestions = groups.get(BUILT_IN_GROUP_NAME) || [];
+  if (builtInSuggestions.length > 0) {
+    result.push({ name: BUILT_IN_GROUP_NAME, suggestions: builtInSuggestions });
+  }
+
+  const otherGroups = Array.from(groups.entries())
+    .filter(([name, sug]) => name !== BUILT_IN_GROUP_NAME && sug.length > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, sug]) => ({ name, suggestions: sug }));
+
+  result.push(...otherGroups);
+
+  return result;
+}
+
+/**
+ * Groups and flattens suggestions, returning both the groups and the sorted flat array.
+ * This ensures the suggestions array matches the group structure.
+ */
+export function groupAndFlattenSuggestions(suggestions: Suggestion[]): {
+  groups: SuggestionGroup[];
+  sortedSuggestions: Suggestion[];
+} {
+  const groups = groupSuggestions(suggestions);
+  const sortedSuggestions = groups.flatMap((group) => group.suggestions);
+  return { groups, sortedSuggestions };
+}
 
 // Type alias for improved type safety based on actual fzf result structure
 type FzfCommandResult = {
@@ -173,6 +232,40 @@ interface PerfectMatchResult {
   isPerfectMatch: boolean;
 }
 
+/**
+ * Finds commands that match by group name (sourceName).
+ * Returns all commands from groups whose name starts with the partial query.
+ * Uses startsWith for precise matching - user must type the beginning of a group name.
+ */
+function getGroupMatchingCommands(
+  commands: readonly SlashCommand[],
+  partial: string,
+): { commands: SlashCommand[]; matchedGroupNames: Set<string> } {
+  const lowerPartial = partial.toLowerCase();
+  const matchedGroupNames = new Set<string>();
+
+  // First, find all group names that start with the partial
+  for (const cmd of commands) {
+    if (
+      cmd.sourceName &&
+      cmd.sourceName.toLowerCase().startsWith(lowerPartial)
+    ) {
+      matchedGroupNames.add(cmd.sourceName);
+    }
+  }
+
+  // Then, get all commands from those matching groups
+  const groupMatchingCommands = commands.filter(
+    (cmd) =>
+      cmd.sourceName &&
+      matchedGroupNames.has(cmd.sourceName) &&
+      cmd.description &&
+      !cmd.hidden,
+  );
+
+  return { commands: groupMatchingCommands, matchedGroupNames };
+}
+
 function useCommandSuggestions(
   query: string | null,
   parserResult: CommandParserResult,
@@ -260,6 +353,7 @@ function useCommandSuggestions(
       const performFuzzySearch = async () => {
         if (signal.aborted) return;
         let potentialSuggestions: SlashCommand[] = [];
+        let matchedGroupNames = new Set<string>();
 
         if (partial === '') {
           // If no partial query, show all available commands
@@ -267,47 +361,103 @@ function useCommandSuggestions(
             (cmd) => cmd.description && !cmd.hidden,
           );
         } else {
-          // Use fuzzy search for non-empty partial queries with fallback
+          // First, check for group name matches
+          const groupMatches = getGroupMatchingCommands(
+            commandsToSearch,
+            partial,
+          );
+          matchedGroupNames = groupMatches.matchedGroupNames;
+
+          // Then, do fuzzy search on command names
           const fzfInstance = getFzfForCommands(commandsToSearch);
+          let commandNameMatches: SlashCommand[] = [];
+
           if (fzfInstance) {
             try {
               const fzfResults = await fzfInstance.fzf.find(partial);
               if (signal.aborted) return;
               const uniqueCommands = new Set<SlashCommand>();
+
+              // Filter fzf results to require reasonable match quality
+              // Either the item starts with the search term, or has a good fzf score
+              const lowerPartial = partial.toLowerCase();
               fzfResults.forEach((result: FzfCommandResult) => {
                 const cmd = fzfInstance.commandMap.get(result.item);
                 if (cmd && cmd.description) {
-                  uniqueCommands.add(cmd);
+                  // Accept if: starts with partial, contains partial, or has high fzf score
+                  const itemLower = result.item.toLowerCase();
+                  const startsWithMatch = itemLower.startsWith(lowerPartial);
+                  const containsMatch = itemLower.includes(lowerPartial);
+                  // Score threshold: fzf scores are typically negative, closer to 0 is better
+                  // A score > -50 indicates a reasonably good match
+                  const hasGoodScore = result.score > -50;
+
+                  if (startsWithMatch || containsMatch || hasGoodScore) {
+                    uniqueCommands.add(cmd);
+                  }
                 }
               });
-              potentialSuggestions = Array.from(uniqueCommands);
+              commandNameMatches = Array.from(uniqueCommands);
             } catch (error) {
               logErrorSafely(
                 error,
                 'Fuzzy search - falling back to prefix matching',
               );
-              // Fallback to prefix-based filtering
-              potentialSuggestions = getPrefixSuggestions(
+              commandNameMatches = getPrefixSuggestions(
                 commandsToSearch,
                 partial,
               );
             }
           } else {
-            // Fallback to prefix-based filtering when fzf instance creation fails
-            potentialSuggestions = getPrefixSuggestions(
+            commandNameMatches = getPrefixSuggestions(
               commandsToSearch,
               partial,
             );
           }
+
+          // Merge group matches and command name matches, prioritizing group matches
+          // but avoiding duplicates
+          const seen = new Set<string>();
+          potentialSuggestions = [];
+
+          // Add group-matched commands first
+          for (const cmd of groupMatches.commands) {
+            if (!seen.has(cmd.name)) {
+              seen.add(cmd.name);
+              potentialSuggestions.push(cmd);
+            }
+          }
+
+          // Then add command name matches that aren't already included
+          for (const cmd of commandNameMatches) {
+            if (!seen.has(cmd.name)) {
+              seen.add(cmd.name);
+              potentialSuggestions.push(cmd);
+            }
+          }
         }
 
         if (!signal.aborted) {
-          // Sort potentialSuggestions so that exact match (by name or altName) comes first
+          // Sort suggestions:
+          // 1. Commands from matching groups come first (grouped by their sourceName)
+          // 2. Within each group, exact command name matches come first
+          // 3. Then other commands
           const sortedSuggestions = [...potentialSuggestions].sort((a, b) => {
+            const aGroupMatch =
+              a.sourceName && matchedGroupNames.has(a.sourceName);
+            const bGroupMatch =
+              b.sourceName && matchedGroupNames.has(b.sourceName);
+
+            // Group matches come first
+            if (aGroupMatch && !bGroupMatch) return -1;
+            if (!aGroupMatch && bGroupMatch) return 1;
+
+            // Within same group priority, sort by exact command name match
             const aIsExact = matchesCommand(a, partial);
             const bIsExact = matchesCommand(b, partial);
             if (aIsExact && !bIsExact) return -1;
             if (!aIsExact && bIsExact) return 1;
+
             return 0;
           });
 
@@ -316,6 +466,7 @@ function useCommandSuggestions(
             value: cmd.name,
             description: cmd.description,
             commandKind: cmd.kind,
+            sourceName: cmd.sourceName,
           }));
 
           setSuggestions(finalSuggestions);

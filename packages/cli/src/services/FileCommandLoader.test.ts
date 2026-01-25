@@ -582,7 +582,9 @@ describe('FileCommandLoader', () => {
 
       const extCommand = commands.find((cmd) => cmd.name === 'ext');
       expect(extCommand?.extensionName).toBe('test-ext');
-      expect(extCommand?.description).toMatch(/^\[test-ext\]/);
+      // Description no longer includes [extensionName] prefix since we have grouping
+      expect(extCommand?.description).toBe('Custom command from ext.toml');
+      expect(extCommand?.sourceName).toBe('test-ext');
     });
 
     it('extension commands have extensionName metadata for conflict resolution', async () => {
@@ -670,7 +672,9 @@ describe('FileCommandLoader', () => {
 
       expect(commands[2].name).toBe('deploy');
       expect(commands[2].extensionName).toBe('test-ext');
-      expect(commands[2].description).toMatch(/^\[test-ext\]/);
+      // Description no longer includes [extensionName] prefix since we have grouping
+      expect(commands[2].description).toBe('Custom command from deploy.toml');
+      expect(commands[2].sourceName).toBe('test-ext');
       const result2 = await commands[2].action?.(
         createMockCommandContext({
           invocation: {
@@ -747,7 +751,9 @@ describe('FileCommandLoader', () => {
       expect(commands).toHaveLength(1);
       expect(commands[0].name).toBe('active');
       expect(commands[0].extensionName).toBe('active-ext');
-      expect(commands[0].description).toMatch(/^\[active-ext\]/);
+      // Description no longer includes [extensionName] prefix since we have grouping
+      expect(commands[0].description).toBe('Custom command from active.toml');
+      expect(commands[0].sourceName).toBe('active-ext');
     });
 
     it('handles missing extension commands directory gracefully', async () => {
@@ -830,7 +836,9 @@ describe('FileCommandLoader', () => {
 
       const nestedCmd = commands.find((cmd) => cmd.name === 'b:c');
       expect(nestedCmd?.extensionName).toBe('a');
-      expect(nestedCmd?.description).toMatch(/^\[a\]/);
+      // Description no longer includes [extensionName] prefix since we have grouping
+      expect(nestedCmd?.description).toBe('Custom command from c.toml');
+      expect(nestedCmd?.sourceName).toBe('a');
       expect(nestedCmd).toBeDefined();
       const result = await nestedCmd!.action?.(
         createMockCommandContext({
