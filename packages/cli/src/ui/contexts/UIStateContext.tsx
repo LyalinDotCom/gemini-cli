@@ -154,6 +154,9 @@ export interface UIState {
   terminalBackgroundColor: TerminalBackgroundColor;
   settingsNonce: number;
   adminSettingsChanged: boolean;
+  // User hint mode for typing hints during tool execution
+  hintMode: boolean;
+  hintBuffer: string;
 }
 
 export const UIStateContext = createContext<UIState | null>(null);

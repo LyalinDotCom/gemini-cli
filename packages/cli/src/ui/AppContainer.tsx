@@ -127,6 +127,7 @@ import { terminalCapabilityManager } from './utils/terminalCapabilityManager.js'
 import { useInputHistoryStore } from './hooks/useInputHistoryStore.js';
 import { useBanner } from './hooks/useBanner.js';
 import { useHookDisplayState } from './hooks/useHookDisplayState.js';
+import { useUserHintBuffer } from './hooks/useUserHintBuffer.js';
 import {
   WARNING_PROMPT_DURATION_MS,
   QUEUE_ERROR_DISPLAY_DURATION_MS,
@@ -208,6 +209,13 @@ export const AppContainer = (props: AppContainerProps) => {
   const [historyRemountKey, setHistoryRemountKey] = useState(0);
   const [settingsNonce, setSettingsNonce] = useState(0);
   const activeHooks = useHookDisplayState();
+  const {
+    hintBuffer,
+    appendToHintBuffer,
+    clearHintBuffer,
+    consumeHintBuffer,
+    removeLastCharFromHintBuffer,
+  } = useUserHintBuffer();
   const [updateInfo, setUpdateInfo] = useState<UpdateObject | null>(null);
   const [isTrustedFolder, setIsTrustedFolder] = useState<boolean | undefined>(
     isWorkspaceTrusted(settings.merged).isTrusted,
@@ -885,6 +893,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     terminalWidth,
     terminalHeight,
     embeddedShellFocused,
+    consumeHintBuffer,
   );
 
   const lastOutputTimeRef = useRef(0);
@@ -1569,6 +1578,12 @@ Logging in with Google... Restarting Gemini CLI to continue.
     [pendingSlashCommandHistoryItems, pendingGeminiHistoryItems],
   );
 
+  // Hint mode is active when tools are executing (allows typing hints)
+  const hintMode = useMemo(
+    () => isToolExecuting(pendingHistoryItems) && !embeddedShellFocused,
+    [pendingHistoryItems, embeddedShellFocused],
+  );
+
   const allToolCalls = useMemo(
     () =>
       pendingHistoryItems
@@ -1724,6 +1739,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       terminalBackgroundColor: config.getTerminalBackground(),
       settingsNonce,
       adminSettingsChanged,
+      hintMode,
+      hintBuffer,
     }),
     [
       isThemeDialogOpen,
@@ -1823,6 +1840,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       config,
       settingsNonce,
       adminSettingsChanged,
+      hintMode,
+      hintBuffer,
     ],
   );
 
@@ -1874,6 +1893,9 @@ Logging in with Google... Restarting Gemini CLI to continue.
         await runExitCleanup();
         process.exit(RELAUNCH_EXIT_CODE);
       },
+      onHintInput: appendToHintBuffer,
+      onHintBackspace: removeLastCharFromHintBuffer,
+      onHintClear: clearHintBuffer,
     }),
     [
       handleThemeSelect,
@@ -1913,6 +1935,9 @@ Logging in with Google... Restarting Gemini CLI to continue.
       setBannerVisible,
       setEmbeddedShellFocused,
       setAuthContext,
+      appendToHintBuffer,
+      removeLastCharFromHintBuffer,
+      clearHintBuffer,
     ],
   );
 

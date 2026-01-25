@@ -69,6 +69,10 @@ export interface UIActions {
   setEmbeddedShellFocused: (value: boolean) => void;
   setAuthContext: (context: { requiresRestart?: boolean }) => void;
   handleRestart: () => void;
+  // User hint actions for typing hints during tool execution
+  onHintInput: (char: string) => void;
+  onHintBackspace: () => void;
+  onHintClear: () => void;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);

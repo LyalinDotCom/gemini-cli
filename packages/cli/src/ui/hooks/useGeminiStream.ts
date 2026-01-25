@@ -117,6 +117,7 @@ export const useGeminiStream = (
   terminalWidth: number,
   terminalHeight: number,
   isShellFocused?: boolean,
+  getUserHint?: () => string,
 ) => {
   const [initError, setInitError] = useState<string | null>(null);
   const [retryStatus, setRetryStatus] = useState<RetryAttemptPayload | null>(
@@ -1355,6 +1356,22 @@ export const useGeminiStream = (
       const responsesToSend: Part[] = geminiTools.flatMap(
         (toolCall) => toolCall.response.responseParts,
       );
+
+      // Inject user hint as text part if available
+      if (getUserHint) {
+        const userHint = getUserHint();
+        if (userHint && userHint.trim().length > 0) {
+          responsesToSend.unshift({
+            text: `User hint: ${userHint.trim()}`,
+          });
+          // Visual feedback that hint was sent
+          addItem({
+            type: MessageType.INFO,
+            text: `Hint sent: "${userHint.trim()}"`,
+          });
+        }
+      }
+
       const callIdsToMarkAsSubmitted = geminiTools.map(
         (toolCall) => toolCall.request.callId,
       );
@@ -1386,6 +1403,7 @@ export const useGeminiStream = (
       performMemoryRefresh,
       modelSwitchedFromQuotaError,
       addItem,
+      getUserHint,
     ],
   );
 

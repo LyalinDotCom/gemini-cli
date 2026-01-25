@@ -152,6 +152,8 @@ const baseMockUiState = {
   terminalHeight: 40,
   currentModel: 'gemini-pro',
   terminalBackgroundColor: undefined,
+  hintMode: false,
+  hintBuffer: '',
 };
 
 export const mockAppState: AppState = {
@@ -198,6 +200,9 @@ const mockUIActions: UIActions = {
   setEmbeddedShellFocused: vi.fn(),
   setAuthContext: vi.fn(),
   handleRestart: vi.fn(),
+  onHintInput: vi.fn(),
+  onHintBackspace: vi.fn(),
+  onHintClear: vi.fn(),
 };
 
 export const renderWithProviders = (

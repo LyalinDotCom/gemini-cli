@@ -97,6 +97,12 @@ export interface InputPromptProps {
   setBannerVisible: (visible: boolean) => void;
   onToggleHelp?: () => void;
   onHideHelp?: () => void;
+  // Hint mode props for capturing user input during tool execution
+  hintMode?: boolean;
+  onHintInput?: (char: string) => void;
+  onHintBackspace?: () => void;
+  onHintClear?: () => void;
+  hintBuffer?: string;
 }
 
 // The input content, input container, and input suggestions list may have different widths
@@ -142,6 +148,11 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   setBannerVisible,
   onToggleHelp,
   onHideHelp,
+  hintMode,
+  onHintInput,
+  onHintBackspace,
+  onHintClear,
+  hintBuffer,
 }) => {
   const { stdout } = useStdout();
   const { merged: settings } = useSettings();
@@ -415,6 +426,42 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       // focused.
       /// We want to handle paste even when not focused to support drag and drop.
       if (!focus && key.name !== 'paste') {
+        return;
+      }
+
+      // Handle hint mode - capture input while tools are executing
+      if (hintMode && onHintInput) {
+        // Handle escape to clear hint buffer
+        if (keyMatchers[Command.ESCAPE](key)) {
+          onHintClear?.();
+          return;
+        }
+
+        // Handle backspace to remove last character
+        if (key.name === 'backspace' || key.name === 'delete') {
+          onHintBackspace?.();
+          return;
+        }
+
+        // Ignore control keys, navigation, etc.
+        if (
+          key.ctrl ||
+          key.alt ||
+          key.cmd ||
+          key.name === 'return' ||
+          key.name === 'up' ||
+          key.name === 'down' ||
+          key.name === 'left' ||
+          key.name === 'right' ||
+          key.name === 'tab'
+        ) {
+          return;
+        }
+
+        // Capture regular character input
+        if (key.sequence && key.sequence.length > 0) {
+          onHintInput(key.sequence);
+        }
         return;
       }
 
@@ -927,6 +974,10 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       history,
       onToggleHelp,
       onHideHelp,
+      hintMode,
+      onHintInput,
+      onHintBackspace,
+      onHintClear,
     ],
   );
 
@@ -1172,7 +1223,9 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           color={statusColor ?? theme.text.accent}
           aria-label={statusText || undefined}
         >
-          {shellModeActive ? (
+          {hintMode ? (
+            <Text color={theme.text.secondary}>(hint) </Text>
+          ) : shellModeActive ? (
             reverseSearchActive ? (
               <Text
                 color={theme.text.link}
@@ -1192,7 +1245,13 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           )}{' '}
         </Text>
         <Box flexGrow={1} flexDirection="column" ref={innerBoxRef}>
-          {buffer.text.length === 0 && placeholder ? (
+          {hintMode ? (
+            // Hint mode display - show hint buffer with cursor
+            <Text color={theme.text.secondary}>
+              {hintBuffer || ''}
+              {showCursor ? chalk.inverse(' ') : ''}
+            </Text>
+          ) : buffer.text.length === 0 && placeholder ? (
             showCursor ? (
               <Text>
                 {chalk.inverse(placeholder.slice(0, 1))}

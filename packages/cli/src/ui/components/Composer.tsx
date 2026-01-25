@@ -142,6 +142,11 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           onSuggestionsNodeChange={setSuggestionsNode}
           onToggleHelp={() => setShowHotkeyHelp((prev) => !prev)}
           onHideHelp={() => setShowHotkeyHelp(false)}
+          hintMode={uiState.hintMode}
+          hintBuffer={uiState.hintBuffer}
+          onHintInput={uiActions.onHintInput}
+          onHintBackspace={uiActions.onHintBackspace}
+          onHintClear={uiActions.onHintClear}
         />
       )}
 
