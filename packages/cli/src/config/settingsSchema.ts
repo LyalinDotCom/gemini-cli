@@ -526,6 +526,16 @@ const SETTINGS_SCHEMA = {
         description: 'Show the model name in the chat for each model turn.',
         showInDialog: true,
       },
+      showFullThought: {
+        type: 'boolean',
+        label: 'Show Full Thought',
+        category: 'UI',
+        requiresRestart: false,
+        default: false,
+        description:
+          'Display model thinking as persistent history items with summary headers.',
+        showInDialog: true,
+      },
       useFullWidth: {
         type: 'boolean',
         label: 'Use Full Width',

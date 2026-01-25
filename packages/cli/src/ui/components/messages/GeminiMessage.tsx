@@ -17,6 +17,7 @@ interface GeminiMessageProps {
   isPending: boolean;
   availableTerminalHeight?: number;
   terminalWidth: number;
+  isFinal?: boolean; // true if this is the final response (no tool calls follow)
 }
 
 export const GeminiMessage: React.FC<GeminiMessageProps> = ({
@@ -24,24 +25,56 @@ export const GeminiMessage: React.FC<GeminiMessageProps> = ({
   isPending,
   availableTerminalHeight,
   terminalWidth,
+  isFinal = false,
 }) => {
   const { renderMarkdown } = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
 
-  // When complete, show "✦ Done." header then indented content
-  // When streaming, show "✦ " prefix with inline content
+  // When complete:
+  // - Show "✦ Done." header only for final response (no tool calls follow)
+  // - Show just "✦ " prefix for intermediate responses (tool calls pending)
   if (!isPending) {
+    if (isFinal) {
+      return (
+        <Box flexDirection="column">
+          <Box paddingLeft={1}>
+            <Text
+              color={theme.text.accent}
+              aria-label={SCREEN_READER_MODEL_PREFIX}
+            >
+              ✦ Done.
+            </Text>
+          </Box>
+          <Box flexDirection="column" paddingLeft={2} marginTop={1}>
+            <MarkdownDisplay
+              text={text}
+              isPending={isPending}
+              availableTerminalHeight={
+                isAlternateBuffer ? undefined : availableTerminalHeight
+              }
+              terminalWidth={terminalWidth}
+              renderMarkdown={renderMarkdown}
+            />
+          </Box>
+        </Box>
+      );
+    }
+
+    // Intermediate response (tool calls follow) - just show prefix without "Done"
+    const prefix = '✦ ';
+    const prefixWidth = prefix.length;
+
     return (
-      <Box flexDirection="column">
-        <Box paddingLeft={1}>
+      <Box flexDirection="row">
+        <Box width={prefixWidth}>
           <Text
             color={theme.text.accent}
             aria-label={SCREEN_READER_MODEL_PREFIX}
           >
-            ✦ Done.
+            {prefix}
           </Text>
         </Box>
-        <Box flexDirection="column" paddingLeft={2} marginTop={1}>
+        <Box flexGrow={1} flexDirection="column">
           <MarkdownDisplay
             text={text}
             isPending={isPending}

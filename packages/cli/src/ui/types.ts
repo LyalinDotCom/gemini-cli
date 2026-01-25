@@ -111,6 +111,7 @@ export type HistoryItemUser = HistoryItemBase & {
 export type HistoryItemGemini = HistoryItemBase & {
   type: 'gemini';
   text: string;
+  isFinal?: boolean; // true if this is the final response (no tool calls follow)
 };
 
 export type HistoryItemGeminiContent = HistoryItemBase & {
@@ -301,6 +302,13 @@ export type HistoryItemHooksList = HistoryItemBase & {
   }>;
 };
 
+export type HistoryItemThought = HistoryItemBase & {
+  type: 'thought';
+  summary: string;
+  fullThought: string;
+  isAction: boolean;
+};
+
 // Using Omit<HistoryItem, 'id'> seems to have some issues with typescript's
 // type inference e.g. historyItem.type === 'tool_group' isn't auto-inferring that
 // 'tools' in historyItem.
@@ -328,7 +336,8 @@ export type HistoryItemWithoutId =
   | HistoryItemAgentsList
   | HistoryItemMcpStatus
   | HistoryItemChatList
-  | HistoryItemHooksList;
+  | HistoryItemHooksList
+  | HistoryItemThought;
 
 export type HistoryItem = HistoryItemWithoutId & { id: number };
 

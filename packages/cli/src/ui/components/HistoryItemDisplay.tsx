@@ -34,6 +34,7 @@ import { McpStatus } from './views/McpStatus.js';
 import { ChatList } from './views/ChatList.js';
 import { HooksList } from './views/HooksList.js';
 import { ModelMessage } from './messages/ModelMessage.js';
+import { ThoughtMessage } from './messages/ThoughtMessage.js';
 
 interface HistoryItemDisplayProps {
   item: HistoryItem;
@@ -45,6 +46,7 @@ interface HistoryItemDisplayProps {
   activeShellPtyId?: number | null;
   embeddedShellFocused?: boolean;
   availableTerminalHeightGemini?: number;
+  showFullThought?: boolean; // From settings - controls whether full thought text is shown
 }
 
 export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
@@ -57,6 +59,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
   activeShellPtyId,
   embeddedShellFocused,
   availableTerminalHeightGemini,
+  showFullThought = false,
 }) => {
   const itemForDisplay = useMemo(() => escapeAnsiCtrlCodes(item), [item]);
 
@@ -77,6 +80,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
             availableTerminalHeightGemini ?? availableTerminalHeight
           }
           terminalWidth={terminalWidth}
+          isFinal={itemForDisplay.isFinal}
         />
       )}
       {itemForDisplay.type === 'gemini_content' && (
@@ -176,6 +180,14 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
       )}
       {itemForDisplay.type === 'hooks_list' && (
         <HooksList hooks={itemForDisplay.hooks} />
+      )}
+      {itemForDisplay.type === 'thought' && (
+        <ThoughtMessage
+          summary={itemForDisplay.summary}
+          fullThought={itemForDisplay.fullThought}
+          isAction={itemForDisplay.isAction}
+          showFullThought={showFullThought}
+        />
       )}
     </Box>
   );

@@ -87,11 +87,24 @@ export const useLoadingIndicator = ({
   const { executingMessage, confirmationMessage } =
     useToolStatusMessage(pendingToolCalls);
 
+  // Check if there are pending tool calls (for action vs considering tone)
+  const hasPendingToolCalls = useMemo(
+    () =>
+      pendingToolCalls?.some(
+        (tc) =>
+          tc.status === 'scheduled' ||
+          tc.status === 'awaiting_approval' ||
+          tc.status === 'executing',
+      ) ?? false,
+    [pendingToolCalls],
+  );
+
   // Get summarized thought (config is optional - works without it)
   const { summarizedThought } = useThoughtSummarizer(
     thought,
     streamingState,
     config,
+    hasPendingToolCalls,
   );
 
   // Compute the loading phrase based on priority

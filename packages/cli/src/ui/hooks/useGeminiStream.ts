@@ -51,6 +51,7 @@ import type {
   HistoryItem,
   HistoryItemWithoutId,
   HistoryItemToolGroup,
+  HistoryItemThought,
   SlashCommandProcessorResult,
   HistoryItemModel,
 } from '../types.js';
@@ -604,6 +605,40 @@ export const useGeminiStream = (
     [addItem, pendingHistoryItemRef, setPendingHistoryItem],
   );
 
+  const handleThoughtEvent = useCallback(
+    (eventValue: ThoughtSummary, userMessageTimestamp: number) => {
+      setThought(eventValue);
+
+      // Always add thoughts to history (summary shown by default)
+      // The showFullThought setting only controls whether full text is displayed
+
+      // If there's a pending item that's not a thought, flush it first
+      if (
+        pendingHistoryItemRef.current &&
+        pendingHistoryItemRef.current.type !== 'thought'
+      ) {
+        addItem(pendingHistoryItemRef.current, userMessageTimestamp);
+        setPendingHistoryItem(null);
+      }
+
+      // Add thought as a history item
+      // Use subject as summary, or fall back to a default
+      const summary = eventValue.subject || 'Thinking...';
+      const fullThought = eventValue.description || '';
+
+      addItem(
+        {
+          type: 'thought',
+          summary,
+          fullThought,
+          isAction: false, // Will be updated when we detect tool calls follow
+        } as HistoryItemThought,
+        userMessageTimestamp,
+      );
+    },
+    [addItem, pendingHistoryItemRef, setPendingHistoryItem],
+  );
+
   const handleUserCancelledEvent = useCallback(
     (userMessageTimestamp: number) => {
       if (turnCancelledRef.current) {
@@ -876,7 +911,7 @@ export const useGeminiStream = (
         switch (event.type) {
           case ServerGeminiEventType.Thought:
             setLastGeminiActivityTime(Date.now());
-            setThought(event.value);
+            handleThoughtEvent(event.value, userMessageTimestamp);
             break;
           case ServerGeminiEventType.Content:
             setLastGeminiActivityTime(Date.now());
@@ -952,6 +987,7 @@ export const useGeminiStream = (
           }
         }
       }
+
       if (toolCallRequests.length > 0) {
         if (pendingHistoryItemRef.current) {
           addItem(pendingHistoryItemRef.current, userMessageTimestamp);
@@ -963,6 +999,7 @@ export const useGeminiStream = (
     },
     [
       handleContentEvent,
+      handleThoughtEvent,
       handleUserCancelledEvent,
       handleErrorEvent,
       scheduleToolCalls,
@@ -1068,7 +1105,12 @@ export const useGeminiStream = (
               }
 
               if (pendingHistoryItemRef.current) {
-                addItem(pendingHistoryItemRef.current, userMessageTimestamp);
+                // Mark as final if this is a gemini response (no tool calls follow)
+                const itemToAdd =
+                  pendingHistoryItemRef.current.type === 'gemini'
+                    ? { ...pendingHistoryItemRef.current, isFinal: true }
+                    : pendingHistoryItemRef.current;
+                addItem(itemToAdd, userMessageTimestamp);
                 setPendingHistoryItem(null);
               }
               if (loopDetectedRef.current) {

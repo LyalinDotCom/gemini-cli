@@ -10,6 +10,7 @@ import { ShowMoreLines } from './ShowMoreLines.js';
 import { OverflowProvider } from '../contexts/OverflowContext.js';
 import { useUIState } from '../contexts/UIStateContext.js';
 import { useAppContext } from '../contexts/AppContext.js';
+import { useSettings } from '../contexts/SettingsContext.js';
 import { AppHeader } from './AppHeader.js';
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 import { SCROLL_TO_ITEM_END } from './shared/VirtualizedList.js';
@@ -27,7 +28,10 @@ const MemoizedAppHeader = memo(AppHeader);
 export const MainContent = () => {
   const { version } = useAppContext();
   const uiState = useUIState();
+  const settings = useSettings();
   const isAlternateBuffer = useAlternateBuffer();
+
+  const showFullThought = settings.merged.ui?.showFullThought ?? false;
 
   const {
     pendingHistoryItems,
@@ -47,6 +51,7 @@ export const MainContent = () => {
           item={h}
           isPending={false}
           commands={uiState.slashCommands}
+          showFullThought={showFullThought}
         />
       )),
     [
@@ -54,6 +59,7 @@ export const MainContent = () => {
       mainAreaWidth,
       staticAreaMaxItemHeight,
       uiState.slashCommands,
+      showFullThought,
     ],
   );
 
@@ -75,6 +81,7 @@ export const MainContent = () => {
               isFocused={!uiState.isEditorDialogOpen}
               activeShellPtyId={uiState.activePtyId}
               embeddedShellFocused={uiState.embeddedShellFocused}
+              showFullThought={showFullThought}
             />
           ))}
           <ShowMoreLines constrainHeight={uiState.constrainHeight} />
@@ -90,6 +97,7 @@ export const MainContent = () => {
       uiState.isEditorDialogOpen,
       uiState.activePtyId,
       uiState.embeddedShellFocused,
+      showFullThought,
     ],
   );
 
@@ -116,13 +124,20 @@ export const MainContent = () => {
             item={item.item}
             isPending={false}
             commands={uiState.slashCommands}
+            showFullThought={showFullThought}
           />
         );
       } else {
         return pendingItems;
       }
     },
-    [version, mainAreaWidth, uiState.slashCommands, pendingItems],
+    [
+      version,
+      mainAreaWidth,
+      uiState.slashCommands,
+      pendingItems,
+      showFullThought,
+    ],
   );
 
   if (isAlternateBuffer) {
