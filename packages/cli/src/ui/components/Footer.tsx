@@ -63,11 +63,8 @@ export const Footer: React.FC = () => {
   const showDebugProfiler = debugMode || isDevelopment;
 
   // Determine if any mode indicator is shown
-  // YOLO mode is shown in the LoadingIndicator status line, so exclude it here
   const hasApprovalModeIndicator =
-    showApprovalModeIndicator !== ApprovalMode.DEFAULT &&
-    showApprovalModeIndicator !== ApprovalMode.YOLO &&
-    !shellModeActive;
+    showApprovalModeIndicator !== ApprovalMode.DEFAULT && !shellModeActive;
   const hasRawMarkdownIndicator = !renderMarkdown;
 
   return (

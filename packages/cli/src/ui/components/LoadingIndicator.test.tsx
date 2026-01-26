@@ -12,7 +12,6 @@ import { StreamingContext } from '../contexts/StreamingContext.js';
 import { StreamingState } from '../types.js';
 import { vi } from 'vitest';
 import * as useTerminalSize from '../hooks/useTerminalSize.js';
-import { ApprovalMode } from '@google/gemini-cli-core';
 
 // Mock GeminiRespondingSpinner
 vi.mock('./GeminiRespondingSpinner.js', () => ({
@@ -282,41 +281,14 @@ describe('<LoadingIndicator />', () => {
     });
   });
 
-  describe('YOLO mode', () => {
-    it('should show YOLO instead of Ready when in YOLO mode', () => {
-      const { lastFrame, unmount } = renderWithContext(
-        <LoadingIndicator {...defaultProps} approvalMode={ApprovalMode.YOLO} />,
-        StreamingState.Idle,
-      );
-      const output = lastFrame();
-      expect(output).toContain('YOLO');
-      expect(output).not.toContain('Ready');
-      unmount();
-    });
-
-    it('should show key shortcut next to YOLO', () => {
-      const { lastFrame, unmount } = renderWithContext(
-        <LoadingIndicator {...defaultProps} approvalMode={ApprovalMode.YOLO} />,
-        StreamingState.Idle,
-      );
-      const output = lastFrame();
-      // Check for either Cmd+Y (macOS) or Ctrl+Y (other platforms)
-      expect(output).toMatch(/\(Cmd\+Y\)|\(Ctrl\+Y\)/);
-      unmount();
-    });
-
-    it('should show Ready when not in YOLO mode', () => {
-      const { lastFrame, unmount } = renderWithContext(
-        <LoadingIndicator
-          {...defaultProps}
-          approvalMode={ApprovalMode.DEFAULT}
-        />,
-        StreamingState.Idle,
-      );
-      const output = lastFrame();
-      expect(output).toContain('Ready');
-      expect(output).not.toContain('YOLO');
-      unmount();
-    });
+  it('should show Ready when idle', () => {
+    const { lastFrame, unmount } = renderWithContext(
+      <LoadingIndicator {...defaultProps} />,
+      StreamingState.Idle,
+    );
+    const output = lastFrame();
+    expect(output).toContain('Ready');
+    expect(output).not.toContain('YOLO');
+    unmount();
   });
 });

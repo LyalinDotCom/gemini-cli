@@ -33,7 +33,8 @@ describe('ApprovalModeIndicator', () => {
       <ApprovalModeIndicator approvalMode={ApprovalMode.YOLO} />,
     );
     const output = lastFrame();
-    expect(output).toContain('YOLO mode');
+    expect(output).toContain('YOLO');
+    expect(output).toContain('accepting edits');
     expect(output).toContain('(ctrl + y to toggle)');
   });
 
@@ -43,6 +44,6 @@ describe('ApprovalModeIndicator', () => {
     );
     const output = lastFrame();
     expect(output).not.toContain('accepting edits');
-    expect(output).not.toContain('YOLO mode');
+    expect(output).not.toContain('YOLO');
   });
 });

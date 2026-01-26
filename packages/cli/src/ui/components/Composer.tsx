@@ -72,7 +72,6 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           elapsedTime={uiState.elapsedTime}
           rightContent={contextSummaryContent}
           branchName={uiState.branchName}
-          approvalMode={uiState.showApprovalModeIndicator}
         />
       )}
 

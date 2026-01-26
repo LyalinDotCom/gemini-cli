@@ -19,6 +19,7 @@ export const ApprovalModeIndicator: React.FC<ApprovalModeIndicatorProps> = ({
   let textColor = '';
   let textContent = '';
   let subText = '';
+  let customContent: React.ReactNode | null = null;
 
   switch (approvalMode) {
     case ApprovalMode.AUTO_EDIT:
@@ -33,7 +34,13 @@ export const ApprovalModeIndicator: React.FC<ApprovalModeIndicatorProps> = ({
       break;
     case ApprovalMode.YOLO:
       textColor = theme.status.error;
-      textContent = 'YOLO mode';
+      customContent = (
+        <>
+          <Text color={theme.status.error}>YOLO</Text>
+          <Text color={theme.text.secondary}> | </Text>
+          <Text color={theme.status.warning}>accepting edits</Text>
+        </>
+      );
       subText = ' (ctrl + y to toggle)';
       break;
     case ApprovalMode.DEFAULT:
@@ -43,10 +50,17 @@ export const ApprovalModeIndicator: React.FC<ApprovalModeIndicatorProps> = ({
 
   return (
     <Box>
-      <Text color={textColor}>
-        {textContent}
-        {subText && <Text color={theme.text.secondary}>{subText}</Text>}
-      </Text>
+      {customContent ? (
+        <Text>
+          {customContent}
+          {subText && <Text color={theme.text.secondary}>{subText}</Text>}
+        </Text>
+      ) : (
+        <Text color={textColor}>
+          {textContent}
+          {subText && <Text color={theme.text.secondary}>{subText}</Text>}
+        </Text>
+      )}
     </Box>
   );
 };
