@@ -37,6 +37,7 @@ const noColorSemanticColors: SemanticColors = {
   background: {
     primary: '',
     inputBar: '',
+    hintMode: '',
     diff: {
       added: '',
       removed: '',

@@ -203,6 +203,7 @@ const mockUIActions: UIActions = {
   onHintInput: vi.fn(),
   onHintBackspace: vi.fn(),
   onHintClear: vi.fn(),
+  onHintSubmit: vi.fn(),
 };
 
 export const renderWithProviders = (

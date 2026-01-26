@@ -102,6 +102,7 @@ export interface InputPromptProps {
   onHintInput?: (char: string) => void;
   onHintBackspace?: () => void;
   onHintClear?: () => void;
+  onHintSubmit?: (hint: string) => void;
   hintBuffer?: string;
 }
 
@@ -152,6 +153,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   onHintInput,
   onHintBackspace,
   onHintClear,
+  onHintSubmit,
   hintBuffer,
 }) => {
   const { stdout } = useStdout();
@@ -433,6 +435,13 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       if (hintMode && onHintInput) {
         // Handle escape to clear hint buffer
         if (keyMatchers[Command.ESCAPE](key)) {
+          onHintClear?.();
+          return;
+        }
+
+        // Handle Enter to submit hint
+        if (key.name === 'return' && hintBuffer?.trim()) {
+          onHintSubmit?.(hintBuffer.trim());
           onHintClear?.();
           return;
         }
@@ -975,9 +984,11 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       onToggleHelp,
       onHideHelp,
       hintMode,
+      hintBuffer,
       onHintInput,
       onHintBackspace,
       onHintClear,
+      onHintSubmit,
     ],
   );
 
@@ -1207,14 +1218,16 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
     <>
       {suggestionsPosition === 'above' && suggestionsNode}
       <Box
-        backgroundColor={theme.background.inputBar}
+        backgroundColor={
+          hintMode ? theme.background.hintMode : theme.background.inputBar
+        }
         paddingX={1}
         borderStyle="single"
         borderTop={true}
         borderBottom={false}
         borderLeft={false}
         borderRight={false}
-        borderColor={theme.text.secondary}
+        borderColor={hintMode ? theme.text.accent : theme.text.secondary}
         width={mainAreaWidth}
         flexDirection="row"
         alignItems="flex-start"
@@ -1224,7 +1237,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           aria-label={statusText || undefined}
         >
           {hintMode ? (
-            <Text color={theme.text.secondary}>(hint) </Text>
+            <Text color={theme.text.accent}>💡 </Text>
           ) : shellModeActive ? (
             reverseSearchActive ? (
               <Text
@@ -1247,10 +1260,20 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         <Box flexGrow={1} flexDirection="column" ref={innerBoxRef}>
           {hintMode ? (
             // Hint mode display - show hint buffer with cursor
-            <Text color={theme.text.secondary}>
-              {hintBuffer || ''}
-              {showCursor ? chalk.inverse(' ') : ''}
-            </Text>
+            hintBuffer ? (
+              <Text color={theme.text.primary}>
+                {hintBuffer}
+                {showCursor ? chalk.inverse(' ') : ''}
+              </Text>
+            ) : (
+              <Text>
+                {showCursor ? chalk.inverse(' ') : ''}
+                <Text color={theme.text.secondary}>
+                  {' '}
+                  Add a tip for the agent...
+                </Text>
+              </Text>
+            )
           ) : buffer.text.length === 0 && placeholder ? (
             showCursor ? (
               <Text>

@@ -17,6 +17,7 @@ export interface SemanticColors {
   background: {
     primary: string;
     inputBar: string;
+    hintMode: string;
     diff: {
       added: string;
       removed: string;
@@ -50,6 +51,7 @@ export const lightSemanticColors: SemanticColors = {
   background: {
     primary: lightTheme.Background,
     inputBar: '#EEEEEE',
+    hintMode: '#E8E0F0',
     diff: {
       added: lightTheme.DiffAdded,
       removed: lightTheme.DiffRemoved,
@@ -83,6 +85,7 @@ export const darkSemanticColors: SemanticColors = {
   background: {
     primary: darkTheme.Background,
     inputBar: '#2A2A3E',
+    hintMode: '#352A45',
     diff: {
       added: darkTheme.DiffAdded,
       removed: darkTheme.DiffRemoved,
@@ -116,6 +119,7 @@ export const ansiSemanticColors: SemanticColors = {
   background: {
     primary: ansiTheme.Background,
     inputBar: 'gray',
+    hintMode: 'magenta',
     diff: {
       added: ansiTheme.DiffAdded,
       removed: ansiTheme.DiffRemoved,

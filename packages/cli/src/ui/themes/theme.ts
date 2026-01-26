@@ -180,6 +180,11 @@ export class Theme {
           this.colors.Gray,
           0.15,
         ),
+        hintMode: interpolateColor(
+          this.colors.Background,
+          this.colors.AccentPurple,
+          0.15,
+        ),
         diff: {
           added: this.colors.DiffAdded,
           removed: this.colors.DiffRemoved,
@@ -448,6 +453,11 @@ export function createCustomTheme(customTheme: CustomTheme): Theme {
       inputBar: interpolateColor(
         customTheme.background?.primary ?? colors.Background,
         customTheme.text?.secondary ?? colors.Gray,
+        0.15,
+      ),
+      hintMode: interpolateColor(
+        customTheme.background?.primary ?? colors.Background,
+        customTheme.text?.accent ?? colors.AccentPurple,
         0.15,
       ),
       diff: {

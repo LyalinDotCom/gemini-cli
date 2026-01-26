@@ -147,6 +147,7 @@ export const Composer = ({ isFocused = true }: { isFocused?: boolean }) => {
           onHintInput={uiActions.onHintInput}
           onHintBackspace={uiActions.onHintBackspace}
           onHintClear={uiActions.onHintClear}
+          onHintSubmit={uiActions.onHintSubmit}
         />
       )}
 

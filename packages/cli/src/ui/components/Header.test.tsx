@@ -109,6 +109,7 @@ describe('<Header />', () => {
       background: {
         primary: '',
         inputBar: '',
+        hintMode: '',
         diff: { added: '', removed: '' },
       },
       border: {

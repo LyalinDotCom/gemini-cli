@@ -1008,6 +1008,17 @@ Logging in with Google... Restarting Gemini CLI to continue.
     refreshStatic();
   }, [historyManager, clearConsoleMessagesState, refreshStatic]);
 
+  // Handle hint submission - adds hint to history immediately
+  const handleHintSubmit = useCallback(
+    (hint: string) => {
+      historyManager.addItem({
+        type: 'hint',
+        text: hint,
+      });
+    },
+    [historyManager],
+  );
+
   const { handleInput: vimHandleInput } = useVim(buffer, handleFinalSubmit);
 
   /**
@@ -1896,6 +1907,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       onHintInput: appendToHintBuffer,
       onHintBackspace: removeLastCharFromHintBuffer,
       onHintClear: clearHintBuffer,
+      onHintSubmit: handleHintSubmit,
     }),
     [
       handleThemeSelect,
@@ -1938,6 +1950,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       appendToHintBuffer,
       removeLastCharFromHintBuffer,
       clearHintBuffer,
+      handleHintSubmit,
     ],
   );
 

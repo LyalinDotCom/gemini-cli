@@ -73,6 +73,7 @@ export interface UIActions {
   onHintInput: (char: string) => void;
   onHintBackspace: () => void;
   onHintClear: () => void;
+  onHintSubmit: (hint: string) => void;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);
