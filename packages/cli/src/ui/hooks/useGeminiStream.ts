@@ -1367,7 +1367,7 @@ export const useGeminiStream = (
           // Visual feedback that hint was sent
           addItem({
             type: MessageType.INFO,
-            text: `Hint sent: "${userHint.trim()}"`,
+            text: ` Hint sent: "${userHint.trim()}" `,
           });
         }
       }
