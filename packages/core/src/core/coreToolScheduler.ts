@@ -66,7 +66,7 @@ export type {
 };
 
 export const PLAN_MODE_DENIAL_MESSAGE =
-  'You are in Plan Mode - adjust your prompt to only use read and search tools.';
+  'You are in Plan Mode - this tool is not allowed. Use read/search tools or approved subagents and continue planning.';
 const HINT_DEBOUNCE_MS = 400;
 
 const createErrorResponse = (
@@ -635,7 +635,7 @@ export class CoreToolScheduler {
 
             if (this.config.getApprovalMode() === ApprovalMode.PLAN) {
               errorMessage = PLAN_MODE_DENIAL_MESSAGE;
-              errorType = ToolErrorType.STOP_EXECUTION;
+              errorType = ToolErrorType.POLICY_VIOLATION;
             }
             this.setStatusInternal(
               reqInfo.callId,

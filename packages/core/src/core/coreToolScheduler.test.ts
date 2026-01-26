@@ -2088,7 +2088,7 @@ describe('CoreToolScheduler Sequential Execution', () => {
   });
 
   describe('Policy Decisions in Plan Mode', () => {
-    it('should return STOP_EXECUTION error type and informative message when denied in Plan Mode', async () => {
+    it('should return POLICY_VIOLATION error type and informative message when denied in Plan Mode', async () => {
       const mockTool = new MockTool({
         name: 'dangerous_tool',
         displayName: 'Dangerous Tool',
@@ -2132,7 +2132,7 @@ describe('CoreToolScheduler Sequential Execution', () => {
       const result = reportedTools[0];
 
       expect(result.status).toBe('error');
-      expect(result.response.errorType).toBe(ToolErrorType.STOP_EXECUTION);
+      expect(result.response.errorType).toBe(ToolErrorType.POLICY_VIOLATION);
       expect(result.response.error.message).toBe(PLAN_MODE_DENIAL_MESSAGE);
     });
   });

@@ -73,7 +73,7 @@ const createErrorResponse = (
 });
 const HINT_DEBOUNCE_MS = 400;
 const PLAN_MODE_DENIAL_MESSAGE =
-  'You are in Plan Mode - adjust your prompt to only use read and search tools.';
+  'You are in Plan Mode - this tool is not allowed. Use read/search tools or approved subagents and continue planning.';
 
 /**
  * Event-Driven Orchestrator for Tool Execution.
@@ -468,7 +468,7 @@ export class Scheduler {
           : 'Tool execution denied by policy.';
       const errorType =
         this.config.getApprovalMode() === ApprovalMode.PLAN
-          ? ToolErrorType.STOP_EXECUTION
+          ? ToolErrorType.POLICY_VIOLATION
           : ToolErrorType.POLICY_VIOLATION;
       this.state.updateStatus(
         callId,
