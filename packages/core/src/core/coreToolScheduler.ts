@@ -66,6 +66,7 @@ export type {
 
 export const PLAN_MODE_DENIAL_MESSAGE =
   'You are in Plan Mode - adjust your prompt to only use read and search tools.';
+const HINT_DEBOUNCE_MS = 400;
 
 const createErrorResponse = (
   request: ToolCallRequestInfo,
@@ -557,6 +558,8 @@ export class CoreToolScheduler {
       return;
     }
 
+    await this.maybeDelayForHint(signal);
+
     const toolCall = this.toolCallQueue.shift()!;
 
     // This is now the single active tool call.
@@ -730,6 +733,37 @@ export class CoreToolScheduler {
       }
     }
     await this.attemptExecutionOfScheduledCalls(signal);
+  }
+
+  private async maybeDelayForHint(signal: AbortSignal): Promise<void> {
+    const pendingHints = this.config.peekUserHints();
+    const lastHintAt = this.config.getLastUserHintAt();
+    if (pendingHints.length === 0 || lastHintAt === null) {
+      return;
+    }
+
+    const remainingMs = HINT_DEBOUNCE_MS - (Date.now() - lastHintAt);
+    if (remainingMs <= 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      if (signal.aborted) {
+        resolve();
+        return;
+      }
+
+      const onAbort = () => {
+        clearTimeout(timeoutId);
+        resolve();
+      };
+      const timeoutId = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, remainingMs);
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
   }
 
   async handleConfirmationResponse(

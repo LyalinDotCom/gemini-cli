@@ -431,6 +431,7 @@ export class Config {
   private readonly debugMode: boolean;
   private readonly question: string | undefined;
   private pendingUserHints: string[] = [];
+  private lastUserHintAt: number | null = null;
 
   private readonly coreTools: string[] | undefined;
   private readonly allowedTools: string[] | undefined;
@@ -2063,6 +2064,7 @@ export class Config {
       return;
     }
     this.pendingUserHints.push(trimmed);
+    this.lastUserHintAt = Date.now();
   }
 
   peekUserHints(): string[] {
@@ -2073,6 +2075,10 @@ export class Config {
     const hints = this.pendingUserHints;
     this.pendingUserHints = [];
     return hints;
+  }
+
+  getLastUserHintAt(): number | null {
+    return this.lastUserHintAt;
   }
 
   /**

@@ -70,6 +70,7 @@ const createErrorResponse = (
   errorType,
   contentLength: error.message.length,
 });
+const HINT_DEBOUNCE_MS = 400;
 
 /**
  * Event-Driven Orchestrator for Tool Execution.
@@ -314,6 +315,8 @@ export class Scheduler {
     }
 
     if (!this.state.isActive) {
+      await this.maybeDelayForHint(signal);
+
       const next = this.state.dequeue();
       if (!next) return false;
 
@@ -332,6 +335,37 @@ export class Scheduler {
     }
 
     return true;
+  }
+
+  private async maybeDelayForHint(signal: AbortSignal): Promise<void> {
+    const pendingHints = this.config.peekUserHints();
+    const lastHintAt = this.config.getLastUserHintAt();
+    if (pendingHints.length === 0 || lastHintAt === null) {
+      return;
+    }
+
+    const remainingMs = HINT_DEBOUNCE_MS - (Date.now() - lastHintAt);
+    if (remainingMs <= 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      if (signal.aborted) {
+        resolve();
+        return;
+      }
+
+      const onAbort = () => {
+        clearTimeout(timeoutId);
+        resolve();
+      };
+      const timeoutId = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, remainingMs);
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
   }
 
   private async _processValidatingCall(
