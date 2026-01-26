@@ -84,7 +84,7 @@ export class BuiltinCommandLoader implements ICommandLoader {
           ? [...(chatCommand.subCommands || []), chatDebugCommand]
           : chatCommand.subCommands,
       },
-      ...(isNightlyBuild ? [debugSystemPromptCommand] : []),
+      debugSystemPromptCommand,
       clearCommand,
       compressCommand,
       copyCommand,
