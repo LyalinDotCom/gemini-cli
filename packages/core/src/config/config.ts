@@ -430,6 +430,7 @@ export class Config {
   private workspaceContext: WorkspaceContext;
   private readonly debugMode: boolean;
   private readonly question: string | undefined;
+  private pendingUserHints: string[] = [];
 
   private readonly coreTools: string[] | undefined;
   private readonly allowedTools: string[] | undefined;
@@ -2054,6 +2055,24 @@ export class Config {
    */
   getHookSystem(): HookSystem | undefined {
     return this.hookSystem;
+  }
+
+  addUserHint(hint: string): void {
+    const trimmed = hint.trim();
+    if (trimmed.length === 0) {
+      return;
+    }
+    this.pendingUserHints.push(trimmed);
+  }
+
+  peekUserHints(): string[] {
+    return [...this.pendingUserHints];
+  }
+
+  consumeUserHints(): string[] {
+    const hints = this.pendingUserHints;
+    this.pendingUserHints = [];
+    return hints;
   }
 
   /**

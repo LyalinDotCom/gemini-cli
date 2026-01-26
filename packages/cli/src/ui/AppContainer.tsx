@@ -212,8 +212,8 @@ export const AppContainer = (props: AppContainerProps) => {
   const {
     hintBuffer,
     appendToHintBuffer,
+    replaceHintBuffer,
     clearHintBuffer,
-    consumeHintBuffer,
     removeLastCharFromHintBuffer,
   } = useUserHintBuffer();
   const [updateInfo, setUpdateInfo] = useState<UpdateObject | null>(null);
@@ -893,7 +893,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     terminalWidth,
     terminalHeight,
     embeddedShellFocused,
-    consumeHintBuffer,
+    () => config.consumeUserHints().join('\n'),
   );
 
   const lastOutputTimeRef = useRef(0);
@@ -1011,12 +1011,13 @@ Logging in with Google... Restarting Gemini CLI to continue.
   // Handle hint submission - adds hint to history immediately
   const handleHintSubmit = useCallback(
     (hint: string) => {
+      config.addUserHint(hint);
       historyManager.addItem({
         type: 'hint',
         text: hint,
       });
     },
-    [historyManager],
+    [config, historyManager],
   );
 
   const { handleInput: vimHandleInput } = useVim(buffer, handleFinalSubmit);
@@ -1591,9 +1592,58 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
   // Hint mode is active when tools are executing (allows typing hints)
   const hintMode = useMemo(
-    () => isToolExecuting(pendingHistoryItems) && !embeddedShellFocused,
-    [pendingHistoryItems, embeddedShellFocused],
+    () =>
+      (streamingState === StreamingState.Responding ||
+        isToolExecuting(pendingHistoryItems)) &&
+      !embeddedShellFocused,
+    [pendingHistoryItems, embeddedShellFocused, streamingState],
   );
+
+  useEffect(() => {
+    if (!isConfigInitialized || streamingState !== StreamingState.Idle) {
+      return;
+    }
+
+    const pendingHints = config.consumeUserHints();
+    if (pendingHints.length === 0) {
+      return;
+    }
+
+    const hintMessage = `User hints:\n${pendingHints
+      .map((hint) => `- ${hint}`)
+      .join('\n')}`;
+    if (isMcpReady) {
+      void submitQuery(hintMessage);
+    } else {
+      addMessage(hintMessage);
+    }
+  }, [
+    addMessage,
+    config,
+    isConfigInitialized,
+    isMcpReady,
+    streamingState,
+    submitQuery,
+  ]);
+
+  const prevHintModeRef = useRef(hintMode);
+  useEffect(() => {
+    if (prevHintModeRef.current === hintMode) {
+      return;
+    }
+
+    if (hintMode) {
+      if (buffer.text.trim().length > 0 && hintBuffer.length === 0) {
+        replaceHintBuffer(buffer.text);
+        buffer.setText('');
+      }
+    } else if (hintBuffer.trim().length > 0 && buffer.text.length === 0) {
+      buffer.setText(hintBuffer);
+      clearHintBuffer();
+    }
+
+    prevHintModeRef.current = hintMode;
+  }, [hintMode, buffer, hintBuffer, replaceHintBuffer, clearHintBuffer]);
 
   const allToolCalls = useMemo(
     () =>

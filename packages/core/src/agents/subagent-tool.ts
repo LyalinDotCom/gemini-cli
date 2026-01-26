@@ -93,7 +93,23 @@ class SubAgentInvocation extends BaseToolInvocation<AgentInputs, ToolResult> {
       return false;
     }
 
-    const invocation = this.buildSubInvocation(this.definition, this.params);
+    const userHints = this.config.peekUserHints();
+    const hintText = userHints.map((hint) => `- ${hint}`).join('\n');
+    const paramsForInvocation =
+      hintText && this.definition.kind === 'remote'
+        ? {
+            ...this.params,
+            query:
+              typeof this.params['query'] === 'string'
+                ? `User hints:\n${hintText}\n\n${this.params['query']}`
+                : this.params['query'],
+          }
+        : this.params;
+
+    const invocation = this.buildSubInvocation(
+      this.definition,
+      paramsForInvocation,
+    );
     return invocation.shouldConfirmExecute(abortSignal);
   }
 

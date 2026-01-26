@@ -18,6 +18,10 @@ export function useUserHintBuffer() {
     setHintBuffer((prev) => prev + text);
   }, []);
 
+  const replaceHintBuffer = useCallback((text: string) => {
+    setHintBuffer(text);
+  }, []);
+
   const clearHintBuffer = useCallback(() => {
     setHintBuffer('');
   }, []);
@@ -35,6 +39,7 @@ export function useUserHintBuffer() {
   return {
     hintBuffer,
     appendToHintBuffer,
+    replaceHintBuffer,
     clearHintBuffer,
     consumeHintBuffer,
     removeLastCharFromHintBuffer,
