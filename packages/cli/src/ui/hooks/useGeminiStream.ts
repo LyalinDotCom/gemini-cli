@@ -923,6 +923,7 @@ export const useGeminiStream = (
             );
             break;
           case ServerGeminiEventType.ToolCallRequest:
+            setRetryStatus(null);
             toolCallRequests.push(event.value);
             break;
           case ServerGeminiEventType.UserCancelled:
