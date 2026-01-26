@@ -59,9 +59,7 @@ export function useApprovalModeIndicator({
         const currentMode = config.getApprovalMode();
         switch (currentMode) {
           case ApprovalMode.DEFAULT:
-            nextApprovalMode = config.isPlanEnabled()
-              ? ApprovalMode.PLAN
-              : ApprovalMode.AUTO_EDIT;
+            nextApprovalMode = ApprovalMode.PLAN;
             break;
           case ApprovalMode.PLAN:
             nextApprovalMode = ApprovalMode.AUTO_EDIT;

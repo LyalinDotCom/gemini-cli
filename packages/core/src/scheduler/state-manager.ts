@@ -67,6 +67,27 @@ export class SchedulerStateManager {
     return next;
   }
 
+  dequeueBatch(shouldBatch: (call: ToolCall) => boolean): ToolCall[] {
+    const first = this.queue.shift();
+    if (!first) {
+      return [];
+    }
+
+    const batch = [first];
+    if (shouldBatch(first)) {
+      while (this.queue.length > 0 && shouldBatch(this.queue[0])) {
+        batch.push(this.queue.shift()!);
+      }
+    }
+
+    for (const call of batch) {
+      this.activeCalls.set(call.request.callId, call);
+    }
+
+    this.emitUpdate();
+    return batch;
+  }
+
   get isActive(): boolean {
     return this.activeCalls.size > 0;
   }
@@ -81,6 +102,10 @@ export class SchedulerStateManager {
 
   get firstActiveCall(): ToolCall | undefined {
     return this.activeCalls.values().next().value;
+  }
+
+  getActiveCalls(): ToolCall[] {
+    return Array.from(this.activeCalls.values());
   }
 
   /**

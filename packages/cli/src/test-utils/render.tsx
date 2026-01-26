@@ -152,6 +152,8 @@ const baseMockUiState = {
   terminalHeight: 40,
   currentModel: 'gemini-pro',
   terminalBackgroundColor: undefined,
+  planCompletionRequest: null,
+  planQuestionsRequest: null,
   hintMode: false,
   hintBuffer: '',
 };

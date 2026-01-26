@@ -102,6 +102,43 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
   ) {
     // display nothing, as the TodoTray will handle rendering todos
     return null;
+  } else if (
+    typeof truncatedResultDisplay === 'object' &&
+    'presentedPlan' in truncatedResultDisplay
+  ) {
+    const planText = (
+      truncatedResultDisplay as {
+        presentedPlan: { displayText: string };
+      }
+    ).presentedPlan.displayText;
+    content = (
+      <MarkdownDisplay
+        text={planText}
+        terminalWidth={childWidth}
+        renderMarkdown={renderMarkdown}
+        isPending={false}
+      />
+    );
+  } else if (
+    typeof truncatedResultDisplay === 'object' &&
+    'askedQuestions' in truncatedResultDisplay
+  ) {
+    const asked = (
+      truncatedResultDisplay as {
+        askedQuestions: { title: string; questions: string[] };
+      }
+    ).askedQuestions;
+    const questionsText = `## ${asked.title}\n\n${asked.questions
+      .map((q, index) => `${index + 1}. ${q}`)
+      .join('\n')}`;
+    content = (
+      <MarkdownDisplay
+        text={questionsText}
+        terminalWidth={childWidth}
+        renderMarkdown={renderMarkdown}
+        isPending={false}
+      />
+    );
   } else {
     content = (
       <AnsiOutputText

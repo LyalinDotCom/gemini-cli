@@ -11,6 +11,10 @@ exports[`<AppHeader /> > should not render the banner when no flags are set 1`] 
  ███░      ░░█████████
 ░░░         ░░░░░░░░░
 
+• Client: v1.0.0
+• Path: /
+• Sandbox: none
+
 Tips for getting started:
 1. Ask questions, edit files, or run commands.
 2. Be specific for the best results.
@@ -28,6 +32,10 @@ exports[`<AppHeader /> > should not render the banner when previewFeatures is en
    ███░   ░░███  ░░███
  ███░      ░░█████████
 ░░░         ░░░░░░░░░
+
+• Client: v1.0.0
+• Path: /
+• Sandbox: none
 
 Tips for getting started:
 1. Ask questions, edit files, or run commands.
@@ -47,6 +55,10 @@ exports[`<AppHeader /> > should not render the default banner if shown count is 
  ███░      ░░█████████
 ░░░         ░░░░░░░░░
 
+• Client: v1.0.0
+• Path: /
+• Sandbox: none
+
 Tips for getting started:
 1. Ask questions, edit files, or run commands.
 2. Be specific for the best results.
@@ -64,6 +76,10 @@ exports[`<AppHeader /> > should render the banner when previewFeatures is disabl
    ███░   ░░███  ░░███
  ███░      ░░█████████
 ░░░         ░░░░░░░░░
+
+• Client: v1.0.0
+• Path: /
+• Sandbox: none
 
 ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ This is the default banner                                                                                          │
@@ -86,6 +102,10 @@ exports[`<AppHeader /> > should render the banner with default text 1`] = `
  ███░      ░░█████████
 ░░░         ░░░░░░░░░
 
+• Client: v1.0.0
+• Path: /
+• Sandbox: none
+
 ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ This is the default banner                                                                                          │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -106,6 +126,10 @@ exports[`<AppHeader /> > should render the banner with warning text 1`] = `
    ███░   ░░███  ░░███
  ███░      ░░█████████
 ░░░         ░░░░░░░░░
+
+• Client: v1.0.0
+• Path: /
+• Sandbox: none
 
 ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ There are capacity issues                                                                                           │

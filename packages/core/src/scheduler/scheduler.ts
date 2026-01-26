@@ -21,10 +21,11 @@ import {
   type ErroredToolCall,
 } from './types.js';
 import { ToolErrorType } from '../tools/tool-error.js';
-import { PolicyDecision } from '../policy/types.js';
+import { PolicyDecision, ApprovalMode } from '../policy/types.js';
 import {
   ToolConfirmationOutcome,
   type AnyDeclarativeTool,
+  Kind,
 } from '../tools/tools.js';
 import { getToolSuggestion } from '../utils/tool-utils.js';
 import { runInDevTraceSpan } from '../telemetry/trace.js';
@@ -71,6 +72,8 @@ const createErrorResponse = (
   contentLength: error.message.length,
 });
 const HINT_DEBOUNCE_MS = 400;
+const PLAN_MODE_DENIAL_MESSAGE =
+  'You are in Plan Mode - adjust your prompt to only use read and search tools.';
 
 /**
  * Event-Driven Orchestrator for Tool Execution.
@@ -195,13 +198,15 @@ export class Scheduler {
     }
 
     // Cancel active call
-    const activeCall = this.state.firstActiveCall;
-    if (activeCall && !this.isTerminal(activeCall.status)) {
-      this.state.updateStatus(
-        activeCall.request.callId,
-        'cancelled',
-        'Operation cancelled by user',
-      );
+    const activeCalls = this.state.getActiveCalls();
+    for (const activeCall of activeCalls) {
+      if (!this.isTerminal(activeCall.status)) {
+        this.state.updateStatus(
+          activeCall.request.callId,
+          'cancelled',
+          'Operation cancelled by user',
+        );
+      }
     }
 
     // Clear queue
@@ -214,6 +219,18 @@ export class Scheduler {
 
   private isTerminal(status: string) {
     return status === 'success' || status === 'error' || status === 'cancelled';
+  }
+
+  private isParallelizable(call: ToolCall): boolean {
+    if (!('tool' in call) || !call.tool) {
+      return false;
+    }
+    return (
+      call.tool.kind === Kind.Read ||
+      call.tool.kind === Kind.Search ||
+      call.tool.kind === Kind.Fetch ||
+      call.tool.kind === Kind.Think
+    );
   }
 
   // --- Phase 1: Ingestion & Resolution ---
@@ -317,21 +334,44 @@ export class Scheduler {
     if (!this.state.isActive) {
       await this.maybeDelayForHint(signal);
 
-      const next = this.state.dequeue();
-      if (!next) return false;
+      const batch = this.state.dequeueBatch((call) =>
+        this.isParallelizable(call),
+      );
+      if (batch.length === 0) return false;
 
-      if (next.status === 'error') {
-        this.state.updateStatus(next.request.callId, 'error', next.response);
-        this.state.finalizeCall(next.request.callId);
-        return true;
+      for (const call of batch) {
+        if (call.status === 'error') {
+          this.state.updateStatus(call.request.callId, 'error', call.response);
+          this.state.finalizeCall(call.request.callId);
+        }
       }
     }
 
-    const active = this.state.firstActiveCall;
-    if (!active) return false;
+    const activeCalls = this.state.getActiveCalls();
+    if (activeCalls.length === 0) {
+      return this.state.queueLength > 0;
+    }
 
-    if (active.status === 'validating') {
-      await this._processValidatingCall(active, signal);
+    const validatingCalls = activeCalls.filter(
+      (call): call is ValidatingToolCall => call.status === 'validating',
+    );
+
+    if (validatingCalls.length === 0) {
+      return true;
+    }
+
+    const shouldParallelize = validatingCalls.every((call) =>
+      this.isParallelizable(call),
+    );
+
+    if (shouldParallelize && validatingCalls.length > 1) {
+      await Promise.all(
+        validatingCalls.map((call) =>
+          this._processValidatingCall(call, signal),
+        ),
+      );
+    } else {
+      await this._processValidatingCall(validatingCalls[0], signal);
     }
 
     return true;
@@ -422,13 +462,21 @@ export class Scheduler {
     const decision = await checkPolicy(toolCall, this.config);
 
     if (decision === PolicyDecision.DENY) {
+      const errorMessage =
+        this.config.getApprovalMode() === ApprovalMode.PLAN
+          ? PLAN_MODE_DENIAL_MESSAGE
+          : 'Tool execution denied by policy.';
+      const errorType =
+        this.config.getApprovalMode() === ApprovalMode.PLAN
+          ? ToolErrorType.STOP_EXECUTION
+          : ToolErrorType.POLICY_VIOLATION;
       this.state.updateStatus(
         callId,
         'error',
         createErrorResponse(
           toolCall.request,
-          new Error('Tool execution denied by policy.'),
-          ToolErrorType.POLICY_VIOLATION,
+          new Error(errorMessage),
+          errorType,
         ),
       );
       return;
@@ -479,8 +527,15 @@ export class Scheduler {
     if (signal.aborted) throw new Error('Operation cancelled');
     this.state.updateStatus(callId, 'executing');
 
+    const executingCall = this.state.getToolCall(callId) as
+      | ExecutingToolCall
+      | undefined;
+    if (!executingCall) {
+      throw new Error(`Cannot execute tool call ${callId}: not found.`);
+    }
+
     const result = await this.executor.execute({
-      call: this.state.firstActiveCall as ExecutingToolCall,
+      call: executingCall,
       signal,
       outputUpdateHandler: (id, out) =>
         this.state.updateStatus(id, 'executing', { liveOutput: out }),

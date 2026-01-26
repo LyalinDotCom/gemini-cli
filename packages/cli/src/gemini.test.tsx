@@ -691,7 +691,7 @@ describe('gemini.tsx main function kitty protocol', () => {
       getContentGenerator: () => ({}),
       isTrustedFolder: () => true,
       isYoloModeDisabled: () => true,
-      isPlanEnabled: () => false,
+      isPlanEnabled: () => true,
       isEventDrivenSchedulerEnabled: () => false,
     } as unknown as Config;
 

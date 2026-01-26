@@ -22,6 +22,8 @@ export const LS_TOOL_NAME = 'list_directory';
 export const MEMORY_TOOL_NAME = 'save_memory';
 export const GET_INTERNAL_DOCS_TOOL_NAME = 'get_internal_docs';
 export const ACTIVATE_SKILL_TOOL_NAME = 'activate_skill';
+export const PRESENT_PLAN_TOOL_NAME = 'present_plan';
+export const ASK_QUESTIONS_TOOL_NAME = 'ask_questions';
 export const EDIT_TOOL_NAMES = new Set([EDIT_TOOL_NAME, WRITE_FILE_TOOL_NAME]);
 export const ASK_USER_TOOL_NAME = 'ask_user';
 
@@ -45,6 +47,8 @@ export const ALL_BUILTIN_TOOL_NAMES = [
   LS_TOOL_NAME,
   MEMORY_TOOL_NAME,
   ACTIVATE_SKILL_TOOL_NAME,
+  PRESENT_PLAN_TOOL_NAME,
+  ASK_QUESTIONS_TOOL_NAME,
   ASK_USER_TOOL_NAME,
 ] as const;
 
@@ -57,8 +61,13 @@ export const PLAN_MODE_TOOLS = [
   GLOB_TOOL_NAME,
   GREP_TOOL_NAME,
   READ_FILE_TOOL_NAME,
+  READ_MANY_FILES_TOOL_NAME,
   LS_TOOL_NAME,
+  WEB_FETCH_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
+  WRITE_TODOS_TOOL_NAME,
+  PRESENT_PLAN_TOOL_NAME,
+  ASK_QUESTIONS_TOOL_NAME,
 ] as const;
 
 /**

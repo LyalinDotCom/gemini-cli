@@ -288,6 +288,20 @@ export class PolicyEngine {
       `[PolicyEngine.check] toolCall.name: ${toolCall.name}, stringifiedArgs: ${stringifiedArgs}`,
     );
 
+    if (
+      this.approvalMode === ApprovalMode.PLAN &&
+      toolCall.name &&
+      toolCall.name.includes('__')
+    ) {
+      debugLogger.debug(
+        `[PolicyEngine.check] PLAN mode: denying MCP tool ${toolCall.name}`,
+      );
+      return {
+        decision: PolicyDecision.DENY,
+        rule: undefined,
+      };
+    }
+
     // Check for shell commands upfront to handle splitting
     let isShellCommand = false;
     let command: string | undefined;

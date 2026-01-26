@@ -37,6 +37,16 @@ vi.mock('../contexts/UIStateContext.js', () => ({
   }),
 }));
 
+vi.mock('../contexts/SettingsContext.js', () => ({
+  useSettings: () => ({
+    merged: {
+      ui: {
+        showFullThought: false,
+      },
+    },
+  }),
+}));
+
 vi.mock('../hooks/useAlternateBuffer.js', () => ({
   useAlternateBuffer: vi.fn(),
 }));

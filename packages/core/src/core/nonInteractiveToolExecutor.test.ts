@@ -72,6 +72,8 @@ describe('executeToolCall', () => {
       isInteractive: () => false,
       getExperiments: () => {},
       getEnableHooks: () => false,
+      peekUserHints: () => [],
+      getLastUserHintAt: () => null,
     } as unknown as Config;
 
     // Use proper MessageBus mocking for Phase 3 preparation

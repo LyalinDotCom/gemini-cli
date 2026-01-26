@@ -32,6 +32,8 @@ import { WriteFileTool } from '../tools/write-file.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
 import { WebSearchTool } from '../tools/web-search.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
+import { PresentPlanTool } from '../tools/present-plan.js';
+import { AskQuestionsTool } from '../tools/ask-questions.js';
 import { GeminiClient } from '../core/client.js';
 import { BaseLlmClient } from '../core/baseLlmClient.js';
 import type { HookDefinition, HookEventName } from '../hooks/types.js';
@@ -394,7 +396,6 @@ export interface ConfigParameters {
   adminSkillsEnabled?: boolean;
   experimentalJitContext?: boolean;
   disableLLMCorrection?: boolean;
-  plan?: boolean;
   onModelChange?: (model: string) => void;
   mcpEnabled?: boolean;
   extensionsEnabled?: boolean;
@@ -553,7 +554,6 @@ export class Config {
 
   private readonly experimentalJitContext: boolean;
   private readonly disableLLMCorrection: boolean;
-  private readonly planEnabled: boolean;
   private contextManager?: ContextManager;
   private terminalBackground: string | undefined = undefined;
   private remoteAdminSettings: FetchAdminControlsResponse | undefined;
@@ -636,7 +636,6 @@ export class Config {
     this.enableAgents = params.enableAgents ?? false;
     this.agents = params.agents ?? {};
     this.disableLLMCorrection = params.disableLLMCorrection ?? true;
-    this.planEnabled = params.plan ?? false;
     this.enableEventDrivenScheduler = params.enableEventDrivenScheduler ?? true;
     this.skillsSupport = params.skillsSupport ?? false;
     this.disabledSkills = params.disabledSkills ?? [];
@@ -1405,17 +1404,21 @@ export class Config {
       );
     }
 
-    const currentMode = this.getApprovalMode();
-    if (currentMode !== mode) {
-      this.logCurrentModeDuration(this.getApprovalMode());
+    const previousMode = this.getApprovalMode();
+    if (previousMode !== mode) {
+      this.logCurrentModeDuration(previousMode);
       logApprovalModeSwitch(
         this,
-        new ApprovalModeSwitchEvent(currentMode, mode),
+        new ApprovalModeSwitchEvent(previousMode, mode),
       );
       this.lastModeSwitchTime = Date.now();
     }
 
     this.policyEngine.setApprovalMode(mode);
+
+    if (previousMode === ApprovalMode.PLAN || mode === ApprovalMode.PLAN) {
+      void this.updateSystemInstructionIfInitialized();
+    }
   }
 
   /**
@@ -1622,7 +1625,7 @@ export class Config {
   }
 
   isPlanEnabled(): boolean {
-    return this.planEnabled;
+    return true;
   }
 
   isAgentsEnabled(): boolean {
@@ -2004,6 +2007,8 @@ export class Config {
     }
     registerCoreTool(ShellTool, this);
     registerCoreTool(MemoryTool);
+    registerCoreTool(PresentPlanTool);
+    registerCoreTool(AskQuestionsTool);
     if (this.getUseWriteTodos()) {
       registerCoreTool(WriteTodosTool);
     }

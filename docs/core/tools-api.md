@@ -107,6 +107,37 @@ its specific functionality.
 9.  **Display to user:** The `returnDisplay` from the `ToolResult` is sent to
     the CLI to show the user what the tool did.
 
+## Parallel tool execution
+
+When the model requests multiple tools in a single response, the core scheduler
+uses kind-based parallel execution to improve performance while preserving
+safety.
+
+### Tool Kinds
+
+Each tool declares a `Kind`:
+
+| Kind           | Description                      | Examples                  |
+| -------------- | -------------------------------- | ------------------------- |
+| `Kind.Read`    | Read-only file operations        | `read_file`, `ls`         |
+| `Kind.Search`  | Search operations                | `grep`, `glob`            |
+| `Kind.Fetch`   | Network fetch operations         | `web_fetch`, `web_search` |
+| `Kind.Think`   | Computation without side effects | planning tools            |
+| `Kind.Edit`    | File modifications               | `edit`, `write_file`      |
+| `Kind.Delete`  | File deletions                   | file removal operations   |
+| `Kind.Move`    | File moves/renames               | file move operations      |
+| `Kind.Execute` | Shell command execution          | `run_shell_command`       |
+| `Kind.Other`   | External/MCP tools               | MCP tools                 |
+
+### Execution strategy
+
+- Read-only kinds (`Read`, `Search`, `Fetch`, `Think`) execute in **parallel**.
+- Mutating kinds (`Edit`, `Delete`, `Move`, `Execute`, `Other`) execute
+  **sequentially**.
+
+When a batch contains both, read-only tools run first (in parallel), then
+mutating tools run in order.
+
 ## Extending with custom tools
 
 While direct programmatic registration of new tools by users isn't explicitly

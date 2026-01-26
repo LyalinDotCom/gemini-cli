@@ -211,6 +211,19 @@ export type HistoryItemChatList = HistoryItemBase & {
   chats: ChatDetail[];
 };
 
+export interface PlanDetail {
+  id: string;
+  title: string;
+  updatedAt: string;
+  status: 'draft' | 'saved' | 'executed';
+  lastViewed?: string;
+}
+
+export type HistoryItemPlanList = HistoryItemBase & {
+  type: 'plan_list';
+  plans: PlanDetail[];
+};
+
 export interface ToolDefinition {
   name: string;
   displayName: string;
@@ -341,6 +354,7 @@ export type HistoryItemWithoutId =
   | HistoryItemAgentsList
   | HistoryItemMcpStatus
   | HistoryItemChatList
+  | HistoryItemPlanList
   | HistoryItemHooksList
   | HistoryItemThought
   | HistoryItemHint;
@@ -367,6 +381,7 @@ export enum MessageType {
   AGENTS_LIST = 'agents_list',
   MCP_STATUS = 'mcp_status',
   CHAT_LIST = 'chat_list',
+  PLAN_LIST = 'plan_list',
   HOOKS_LIST = 'hooks_list',
 }
 
@@ -459,6 +474,26 @@ export interface ConfirmationRequest {
 
 export interface LoopDetectionConfirmationRequest {
   onComplete: (result: { userSelection: 'disable' | 'keep' }) => void;
+}
+
+export interface PlanCompletionRequest {
+  title: string;
+  content: string;
+  affectedFiles: string[];
+  dependencies: string[];
+  originalPrompt: string;
+  planId: string;
+  onChoice: (
+    choice: 'execute' | 'execute_clean' | 'save' | 'refine' | 'cancel',
+    feedback?: string,
+  ) => void;
+}
+
+export interface PlanQuestionsRequest {
+  title: string;
+  questions: string[];
+  onSubmit: (answers: string[]) => void;
+  onCancel: () => void;
 }
 
 export interface ActiveHook {

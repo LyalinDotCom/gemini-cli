@@ -18,10 +18,13 @@ import {
   WRITE_TODOS_TOOL_NAME,
   ACTIVATE_SKILL_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
+  PRESENT_PLAN_TOOL_NAME,
+  ASK_QUESTIONS_TOOL_NAME,
 } from '../tools/tool-names.js';
 import process from 'node:process';
 import { isGitRepository } from '../utils/gitUtils.js';
 import { CodebaseInvestigatorAgent } from '../agents/codebase-investigator.js';
+import { WebResearcherAgent } from '../agents/web-researcher.js';
 import type { Config } from '../config/config.js';
 import { GEMINI_DIR, homedir } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -101,6 +104,81 @@ export function getLocalOverridePath(): string | null {
   return null;
 }
 
+/**
+ * Returns the system prompt for Plan Mode.
+ * This prompt emphasizes read-only research, clarification, and planning.
+ */
+function getPlanModeSystemPrompt(config: Config, userMemory?: string): string {
+  const enableCodebaseInvestigator = config
+    .getToolRegistry()
+    .getAllToolNames()
+    .includes(CodebaseInvestigatorAgent.name);
+  const enableWebResearcher = config
+    .getToolRegistry()
+    .getAllToolNames()
+    .includes(WebResearcherAgent.name);
+
+  const availableToolNames = new Set(
+    config.getToolRegistry().getAllToolNames(),
+  );
+  const planModeToolsList = PLAN_MODE_TOOLS.filter((toolName) =>
+    availableToolNames.has(toolName),
+  )
+    .map((toolName) => `- \`${toolName}\``)
+    .join('\n');
+
+  const planPrompt = `# PLANNING MODE ACTIVE
+You are in **read-only planning mode**. Your role is to research the codebase, clarify requirements, and produce a detailed implementation plan WITHOUT making any code modifications.
+
+## CRITICAL RESTRICTIONS
+You **CANNOT**:
+- Create, edit, or delete any files
+- Execute shell commands that modify state
+- Use the '${EDIT_TOOL_NAME}', '${WRITE_FILE_TOOL_NAME}', or '${SHELL_TOOL_NAME}' tools
+- Use any MCP (external) tools
+
+You **CAN**:
+- Use the read-only tools listed below
+${enableCodebaseInvestigator ? `- Delegate to the '${CodebaseInvestigatorAgent.name}' agent for complex exploration` : ''}
+${enableWebResearcher ? `- Delegate to the '${WebResearcherAgent.name}' agent for internet research` : ''}
+
+## Available Tools
+${planModeToolsList}
+
+## WORKFLOW (STRICT)
+1. **Research Phase**
+   - Explore the codebase using read-only tools
+   - Identify relevant files, patterns, and constraints
+   - Batch multiple read-only tool calls in a single response whenever possible
+2. **Clarification Phase**
+   - If there are real decisions or missing requirements, call \`${ASK_QUESTIONS_TOOL_NAME}\`
+   - Ask **1-5 concise questions** only
+   - Users must answer every question (no skips)
+   - If the request is already precise, skip questions and state why in one sentence
+3. **Plan Phase**
+   - Create a comprehensive, actionable plan
+   - Include specific files, steps, tests, and risks
+
+## OUTPUT FORMAT
+Structure your plan using clear markdown:
+- **Summary**
+- **Files to Modify**
+- **Implementation Steps**
+- **Testing Strategy**
+- **Considerations**
+
+## COMPLETING THE PLAN
+When the plan is ready, you MUST call \`${PRESENT_PLAN_TOOL_NAME}\`.
+Do NOT implement anything. The user will decide whether to execute the plan.`;
+
+  const memorySuffix =
+    userMemory && userMemory.trim().length > 0
+      ? `\n\n---\n\n${userMemory.trim()}`
+      : '';
+
+  return `${planPrompt}${memorySuffix}`;
+}
+
 export function getCoreSystemPrompt(
   config: Config,
   userMemory?: string,
@@ -165,58 +243,10 @@ export function getCoreSystemPrompt(
   const interactiveMode = interactiveOverride ?? config.isInteractive();
 
   const approvalMode = config.getApprovalMode?.() ?? ApprovalMode.DEFAULT;
-  let approvalModePrompt = '';
   if (approvalMode === ApprovalMode.PLAN) {
-    // Build the list of available Plan Mode tools, filtering out any that are disabled
-    const availableToolNames = new Set(
-      config.getToolRegistry().getAllToolNames(),
-    );
-    const planModeToolsList = PLAN_MODE_TOOLS.filter((toolName) =>
-      availableToolNames.has(toolName),
-    )
-      .map((toolName) => `- \`${toolName}\``)
-      .join('\n');
-
-    approvalModePrompt = `
-# Active Approval Mode: Plan
-
-You are operating in **Plan Mode** - a structured planning workflow for designing implementation strategies before execution.
-
-## Available Tools
-The following read-only tools are available in Plan Mode:
-${planModeToolsList}
-
-## Workflow Phases
-
-**IMPORTANT: Complete ONE phase at a time. Do NOT skip ahead or combine phases. Wait for user input before proceeding to the next phase.**
-
-### Phase 1: Requirements Understanding
-- Analyze the user's request to identify core requirements and constraints
-- If critical information is missing or ambiguous, ask ONE clarifying question at a time
-- Do NOT explore the project or create a plan yet
-
-### Phase 2: Project Exploration
-- Only begin this phase after requirements are clear
-- Use the available read-only tools to explore the project
-- Identify existing patterns, conventions, and architectural decisions
-
-### Phase 3: Design & Planning
-- Only begin this phase after exploration is complete
-- Create a detailed implementation plan with clear steps
-- Include file paths, function signatures, and code snippets where helpful
-- Present the plan for review
-
-### Phase 4: Review & Approval
-- Ask the user if they approve the plan, want revisions, or want to reject it
-- Address feedback and iterate as needed
-- **When the user approves the plan**, prompt them to switch out of Plan Mode to begin implementation by pressing Shift+Tab to cycle to a different approval mode
-
-## Constraints
-- You may ONLY use the read-only tools listed above
-- You MUST NOT modify source code, configs, or any files
-- If asked to modify code, explain you are in Plan Mode and suggest exiting Plan Mode to enable edits
-`;
+    return getPlanModeSystemPrompt(config, userMemory);
   }
+  const approvalModePrompt = '';
 
   const skills = config.getSkillManager().getSkills();
   const skillsPrompt = getSkillsPrompt(skills);
@@ -445,19 +475,16 @@ Your core function is efficient and safe assistance. Balance extreme conciseness
       'hookContext',
     ];
 
-    // Skip Primary Workflows in Plan Mode - Plan Mode has its own workflow guidance
-    if (approvalMode !== ApprovalMode.PLAN) {
-      if (enableCodebaseInvestigator && enableWriteTodosTool) {
-        orderedPrompts.push('primaryWorkflows_prefix_ci_todo');
-      } else if (enableCodebaseInvestigator) {
-        orderedPrompts.push('primaryWorkflows_prefix_ci');
-      } else if (enableWriteTodosTool) {
-        orderedPrompts.push('primaryWorkflows_todo');
-      } else {
-        orderedPrompts.push('primaryWorkflows_prefix');
-      }
-      orderedPrompts.push('primaryWorkflows_suffix');
+    if (enableCodebaseInvestigator && enableWriteTodosTool) {
+      orderedPrompts.push('primaryWorkflows_prefix_ci_todo');
+    } else if (enableCodebaseInvestigator) {
+      orderedPrompts.push('primaryWorkflows_prefix_ci');
+    } else if (enableWriteTodosTool) {
+      orderedPrompts.push('primaryWorkflows_todo');
+    } else {
+      orderedPrompts.push('primaryWorkflows_prefix');
     }
+    orderedPrompts.push('primaryWorkflows_suffix');
 
     orderedPrompts.push(
       'operationalGuidelines',

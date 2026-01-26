@@ -281,6 +281,8 @@ function createMockConfig(overrides: Partial<Config> = {}): Config {
     getMessageBus: () => createMockMessageBus(),
     getEnableHooks: () => false,
     getExperiments: () => {},
+    peekUserHints: () => [],
+    getLastUserHintAt: () => null,
   } as unknown as Config;
 
   const finalConfig = { ...baseConfig, ...overrides } as Config;

@@ -37,7 +37,6 @@ interface MockConfigInstanceShape {
   getApprovalMode: Mock<() => ApprovalMode>;
   setApprovalMode: Mock<(value: ApprovalMode) => void>;
   isYoloModeDisabled: Mock<() => boolean>;
-  isPlanEnabled: Mock<() => boolean>;
   isTrustedFolder: Mock<() => boolean>;
   getCoreTools: Mock<() => string[]>;
   getToolDiscoveryCommand: Mock<() => string | undefined>;
@@ -80,7 +79,6 @@ describe('useApprovalModeIndicator', () => {
           (value: ApprovalMode) => void
         >,
         isYoloModeDisabled: vi.fn().mockReturnValue(false),
-        isPlanEnabled: vi.fn().mockReturnValue(false),
         isTrustedFolder: vi.fn().mockReturnValue(true) as Mock<() => boolean>,
         getCoreTools: vi.fn().mockReturnValue([]) as Mock<() => string[]>,
         getToolDiscoveryCommand: vi.fn().mockReturnValue(undefined) as Mock<
@@ -173,7 +171,7 @@ describe('useApprovalModeIndicator', () => {
     );
     expect(result.current).toBe(ApprovalMode.DEFAULT);
 
-    // Shift+Tab cycles to AUTO_EDIT
+    // Shift+Tab cycles to PLAN
     act(() => {
       capturedUseKeypressHandler({
         name: 'tab',
@@ -181,9 +179,9 @@ describe('useApprovalModeIndicator', () => {
       } as Key);
     });
     expect(mockConfigInstance.setApprovalMode).toHaveBeenCalledWith(
-      ApprovalMode.AUTO_EDIT,
+      ApprovalMode.PLAN,
     );
-    expect(result.current).toBe(ApprovalMode.AUTO_EDIT);
+    expect(result.current).toBe(ApprovalMode.PLAN);
 
     act(() => {
       capturedUseKeypressHandler({ name: 'y', ctrl: true } as Key);
@@ -193,7 +191,7 @@ describe('useApprovalModeIndicator', () => {
     );
     expect(result.current).toBe(ApprovalMode.YOLO);
 
-    // Shift+Tab cycles back to DEFAULT (since PLAN is disabled by default in mock)
+    // Shift+Tab from YOLO jumps to AUTO_EDIT
     act(() => {
       capturedUseKeypressHandler({
         name: 'tab',
@@ -227,9 +225,8 @@ describe('useApprovalModeIndicator', () => {
     expect(result.current).toBe(ApprovalMode.AUTO_EDIT);
   });
 
-  it('should cycle through DEFAULT -> AUTO_EDIT -> PLAN -> DEFAULT when plan is enabled', () => {
+  it('should cycle through DEFAULT -> PLAN -> AUTO_EDIT -> DEFAULT', () => {
     mockConfigInstance.getApprovalMode.mockReturnValue(ApprovalMode.DEFAULT);
-    mockConfigInstance.isPlanEnabled.mockReturnValue(true);
     renderHook(() =>
       useApprovalModeIndicator({
         config: mockConfigInstance as unknown as ActualConfigType,
@@ -380,7 +377,7 @@ describe('useApprovalModeIndicator', () => {
       expect(mockConfigInstance.getApprovalMode()).toBe(ApprovalMode.DEFAULT);
     });
 
-    it('should not enable AUTO_EDIT mode when Shift+Tab is pressed', () => {
+    it('should not enable PLAN mode when Shift+Tab is pressed', () => {
       mockConfigInstance.getApprovalMode.mockReturnValue(ApprovalMode.DEFAULT);
       mockConfigInstance.setApprovalMode.mockImplementation(() => {
         throw new Error(
@@ -406,7 +403,7 @@ describe('useApprovalModeIndicator', () => {
 
       // We expect setApprovalMode to be called, and the error to be caught.
       expect(mockConfigInstance.setApprovalMode).toHaveBeenCalledWith(
-        ApprovalMode.AUTO_EDIT,
+        ApprovalMode.PLAN,
       );
       expect(mockAddItem).toHaveBeenCalled();
       // Verify the underlying config value was not changed
@@ -568,7 +565,7 @@ describe('useApprovalModeIndicator', () => {
     expect(mockOnApprovalModeChange).toHaveBeenCalledWith(ApprovalMode.YOLO);
   });
 
-  it('should call onApprovalModeChange when switching to AUTO_EDIT mode', () => {
+  it('should call onApprovalModeChange when switching to PLAN mode', () => {
     mockConfigInstance.getApprovalMode.mockReturnValue(ApprovalMode.DEFAULT);
 
     const mockOnApprovalModeChange = vi.fn();
@@ -585,11 +582,9 @@ describe('useApprovalModeIndicator', () => {
     });
 
     expect(mockConfigInstance.setApprovalMode).toHaveBeenCalledWith(
-      ApprovalMode.AUTO_EDIT,
+      ApprovalMode.PLAN,
     );
-    expect(mockOnApprovalModeChange).toHaveBeenCalledWith(
-      ApprovalMode.AUTO_EDIT,
-    );
+    expect(mockOnApprovalModeChange).toHaveBeenCalledWith(ApprovalMode.PLAN);
   });
 
   it('should call onApprovalModeChange when switching to DEFAULT mode', () => {

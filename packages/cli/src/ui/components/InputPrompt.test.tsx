@@ -1280,9 +1280,9 @@ describe('InputPrompt', () => {
 
     await waitFor(() => {
       const frame = stdout.lastFrame();
-      // In plan mode it uses '>' but with success color.
-      // We check that it contains '>' and not '*' or '!'.
-      expect(frame).toContain('>');
+      // In plan mode it uses the normal prompt symbol with success color.
+      // We check that it contains the prompt symbol and not '*' or '!'.
+      expect(frame).toContain('›');
       expect(frame).not.toContain('*');
       expect(frame).not.toContain('!');
     });
@@ -1525,7 +1525,7 @@ describe('InputPrompt', () => {
           name: 'at the end of the line',
           text: 'hello',
           visualCursor: [0, 5],
-          expected: `hello${chalk.inverse(' ')}`,
+          expected: 'hello',
         },
         {
           name: 'on a highlighted token',
@@ -1543,7 +1543,7 @@ describe('InputPrompt', () => {
           name: 'at the end of a line with unicode characters',
           text: 'hello 👍',
           visualCursor: [0, 8],
-          expected: `hello 👍${chalk.inverse(' ')}`,
+          expected: 'hello 👍',
         },
         {
           name: 'on an empty line',
@@ -1609,7 +1609,7 @@ describe('InputPrompt', () => {
             [0, 0],
             [1, 0],
           ],
-          expected: `first line${chalk.inverse(' ')}`,
+          expected: 'first line',
         },
       ])(
         'should display cursor correctly $name in a multiline block',
@@ -1687,11 +1687,11 @@ describe('InputPrompt', () => {
         // Check that all lines, including the empty one, are rendered.
         // This implicitly tests that the Box wrapper provides height for the empty line.
         expect(frame).toContain('hello');
-        expect(frame).toContain(`world${chalk.inverse(' ')}`);
+        expect(frame).toContain('world');
 
         const outputLines = frame!.split('\n');
-        // The number of lines should be 2 for the border plus 3 for the content.
-        expect(outputLines.length).toBe(5);
+        // The number of lines should be 1 for the border plus 3 for the content.
+        expect(outputLines.length).toBe(4);
       });
       unmount();
     });
@@ -2635,28 +2635,28 @@ describe('InputPrompt', () => {
     it.each([
       {
         name: 'first line, first char',
-        relX: 0,
+        relX: 1,
         relY: 0,
         mouseCol: 5,
         mouseRow: 2,
       },
       {
         name: 'first line, middle char',
-        relX: 6,
+        relX: 7,
         relY: 0,
         mouseCol: 11,
         mouseRow: 2,
       },
       {
         name: 'second line, first char',
-        relX: 0,
+        relX: 1,
         relY: 1,
         mouseCol: 5,
         mouseRow: 3,
       },
       {
         name: 'second line, end char',
-        relX: 5,
+        relX: 6,
         relY: 1,
         mouseCol: 10,
         mouseRow: 3,

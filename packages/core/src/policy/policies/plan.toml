@@ -65,6 +65,49 @@ priority = 50
 modes = ["plan"]
 
 [[rule]]
-toolName = "SubagentInvocation"
+toolName = "read_many_files"
 decision = "allow"
 priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "web_fetch"
+decision = "allow"
+priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "write_todos"
+decision = "allow"
+priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "present_plan"
+decision = "allow"
+priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "ask_questions"
+decision = "allow"
+priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "delegate_to_agent"
+decision = "allow"
+priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "web_researcher"
+decision = "allow"
+priority = 50
+modes = ["plan"]
+
+[[rule]]
+toolName = "codebase_investigator"
+decision = "allow"
+priority = 50
+modes = ["plan"]

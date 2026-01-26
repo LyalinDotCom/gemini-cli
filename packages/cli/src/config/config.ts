@@ -518,11 +518,6 @@ export async function loadCliConfig(
         approvalMode = ApprovalMode.AUTO_EDIT;
         break;
       case 'plan':
-        if (!(settings.experimental?.plan ?? false)) {
-          throw new Error(
-            'Approval mode "plan" is only available when experimental.plan is enabled.',
-          );
-        }
         approvalMode = ApprovalMode.PLAN;
         break;
       case 'default':
@@ -752,7 +747,6 @@ export async function loadCliConfig(
     extensionLoader: extensionManager,
     enableExtensionReloading: settings.experimental?.extensionReloading,
     enableAgents: settings.experimental?.enableAgents,
-    plan: settings.experimental?.plan,
     enableEventDrivenScheduler:
       settings.experimental?.enableEventDrivenScheduler,
     skillsSupport:

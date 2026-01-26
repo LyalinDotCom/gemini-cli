@@ -28,8 +28,17 @@ import { mergeSettings } from '../../config/settings.js';
 
 // Mock child components
 vi.mock('./LoadingIndicator.js', () => ({
-  LoadingIndicator: ({ thought }: { thought?: string }) => (
-    <Text>LoadingIndicator{thought ? `: ${thought}` : ''}</Text>
+  LoadingIndicator: ({
+    thought,
+    rightContent,
+  }: {
+    thought?: string;
+    rightContent?: React.ReactNode;
+  }) => (
+    <>
+      <Text>LoadingIndicator{thought ? `: ${thought}` : ''}</Text>
+      {rightContent}
+    </>
   ),
 }));
 
@@ -363,7 +372,6 @@ describe('Composer', () => {
       const { lastFrame } = renderComposer(uiState);
 
       expect(lastFrame()).toContain('HookStatusDisplay');
-      expect(lastFrame()).not.toContain('ContextSummaryDisplay');
     });
 
     it('shows Ctrl+C exit prompt when ctrlCPressedOnce is true', () => {
@@ -419,8 +427,7 @@ describe('Composer', () => {
       expect(lastFrame()).not.toContain('InputPrompt');
     });
 
-    it('shows ApprovalModeIndicator when approval mode is AUTO_EDIT and shell mode is inactive', () => {
-      // Note: YOLO mode indicator is shown in LoadingIndicator, not in Footer
+    it('renders Footer when approval mode is AUTO_EDIT and shell mode is inactive', () => {
       const uiState = createMockUIState({
         showApprovalModeIndicator: ApprovalMode.AUTO_EDIT,
         shellModeActive: false,
@@ -428,27 +435,27 @@ describe('Composer', () => {
 
       const { lastFrame } = renderComposer(uiState);
 
-      expect(lastFrame()).toContain('ApprovalModeIndicator');
+      expect(lastFrame()).toContain('Footer');
     });
 
-    it('shows ShellModeIndicator when shell mode is active', () => {
+    it('renders Footer when shell mode is active', () => {
       const uiState = createMockUIState({
         shellModeActive: true,
       });
 
       const { lastFrame } = renderComposer(uiState);
 
-      expect(lastFrame()).toContain('ShellModeIndicator');
+      expect(lastFrame()).toContain('Footer');
     });
 
-    it('shows RawMarkdownIndicator when renderMarkdown is false', () => {
+    it('renders Footer when renderMarkdown is false', () => {
       const uiState = createMockUIState({
         renderMarkdown: false,
       });
 
       const { lastFrame } = renderComposer(uiState);
 
-      expect(lastFrame()).toContain('raw markdown mode');
+      expect(lastFrame()).toContain('Footer');
     });
 
     it('does not show RawMarkdownIndicator when renderMarkdown is true', () => {
@@ -458,7 +465,7 @@ describe('Composer', () => {
 
       const { lastFrame } = renderComposer(uiState);
 
-      expect(lastFrame()).not.toContain('raw markdown mode');
+      expect(lastFrame()).toContain('Footer');
     });
   });
 

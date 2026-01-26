@@ -31,6 +31,9 @@ import {
   ValidationRequiredError,
   coreEvents,
   CoreEvent,
+  PRESENT_PLAN_TOOL_NAME,
+  ASK_QUESTIONS_TOOL_NAME,
+  PlanService,
 } from '@google/gemini-cli-core';
 import type {
   Config,
@@ -54,6 +57,8 @@ import type {
   HistoryItemThought,
   SlashCommandProcessorResult,
   HistoryItemModel,
+  PlanCompletionRequest,
+  PlanQuestionsRequest,
 } from '../types.js';
 import { StreamingState, MessageType, ToolCallStatus } from '../types.js';
 import { isAtCommand, isSlashCommand } from '../utils/commandUtils.js';
@@ -133,6 +138,13 @@ export const useGeminiStream = (
   const [lastGeminiActivityTime, setLastGeminiActivityTime] =
     useState<number>(0);
   const processedMemoryToolsRef = useRef<Set<string>>(new Set());
+  const [planCompletionRequest, setPlanCompletionRequest] =
+    useState<PlanCompletionRequest | null>(null);
+  const [planQuestionsRequest, setPlanQuestionsRequest] =
+    useState<PlanQuestionsRequest | null>(null);
+  const processedPlanToolsRef = useRef<Set<string>>(new Set());
+  const processedQuestionToolsRef = useRef<Set<string>>(new Set());
+  const lastOriginalPromptRef = useRef<string>('');
   const { startNewPrompt, getPromptCount } = useSessionStats();
   const storage = config.storage;
   const logger = useLogger(storage);
@@ -1067,6 +1079,18 @@ export const useGeminiStream = (
 
             if (!options?.isContinuation) {
               if (typeof queryToSend === 'string') {
+                lastOriginalPromptRef.current = queryToSend;
+              } else if (Array.isArray(queryToSend)) {
+                const promptText = queryToSend
+                  .map((part) =>
+                    typeof part === 'object' && part && 'text' in part
+                      ? String(part.text)
+                      : '',
+                  )
+                  .join('');
+                lastOriginalPromptRef.current = promptText;
+              }
+              if (typeof queryToSend === 'string') {
                 // logging the text prompts only for now
                 const promptText = queryToSend;
                 logUserPrompt(
@@ -1299,6 +1323,295 @@ export const useGeminiStream = (
         return;
       }
 
+      const newQuestionTools = geminiTools.filter(
+        (t) =>
+          t.request.name === ASK_QUESTIONS_TOOL_NAME &&
+          t.status === 'success' &&
+          !processedQuestionToolsRef.current.has(t.request.callId),
+      );
+
+      if (newQuestionTools.length > 0) {
+        const questionTool = newQuestionTools[0];
+        processedQuestionToolsRef.current.add(questionTool.request.callId);
+
+        const display = questionTool.response.resultDisplay;
+        const askedQuestions =
+          typeof display === 'object' &&
+          display !== null &&
+          'askedQuestions' in display
+            ? (
+                display as {
+                  askedQuestions: { title: string; questions: string[] };
+                }
+              ).askedQuestions
+            : {
+                title: 'Clarify before planning',
+                questions:
+                  (questionTool.request.args?.['questions'] as string[]) ?? [],
+              };
+
+        if (geminiClient) {
+          const combinedParts = geminiTools.flatMap(
+            (toolCall) => toolCall.response.responseParts,
+          );
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          geminiClient.addHistory({
+            role: 'user',
+            parts: combinedParts,
+          });
+        }
+
+        const callIdsToMarkAsSubmitted = geminiTools.map(
+          (toolCall) => toolCall.request.callId,
+        );
+        markToolsAsSubmitted(callIdsToMarkAsSubmitted);
+
+        setPlanQuestionsRequest({
+          title: askedQuestions.title,
+          questions: askedQuestions.questions,
+          onSubmit: (answers) => {
+            setPlanQuestionsRequest(null);
+            const answersText = `Answers to clarification questions:\n${answers
+              .map((answer, index) => `${index + 1}) ${answer}`)
+              .join('\n')}`;
+            addItem({ type: MessageType.USER, text: answersText }, Date.now());
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            submitQuery([{ text: answersText }], { isContinuation: true });
+          },
+          onCancel: () => {
+            setPlanQuestionsRequest(null);
+            addItem(
+              {
+                type: MessageType.INFO,
+                text: 'Clarification cancelled. Plan mode paused.',
+              },
+              Date.now(),
+            );
+            setIsResponding(false);
+          },
+        });
+
+        setIsResponding(false);
+        return;
+      }
+
+      const newSuccessfulPlanPresentations = geminiTools.filter(
+        (t) =>
+          t.request.name === PRESENT_PLAN_TOOL_NAME &&
+          t.status === 'success' &&
+          !processedPlanToolsRef.current.has(t.request.callId),
+      );
+
+      if (newSuccessfulPlanPresentations.length > 0) {
+        const planTool = newSuccessfulPlanPresentations[0];
+        processedPlanToolsRef.current.add(planTool.request.callId);
+
+        if (config.getApprovalMode() !== ApprovalMode.PLAN) {
+          debugLogger.log(
+            'Ignoring present_plan result - not in Plan Mode',
+            config.getApprovalMode(),
+          );
+        } else {
+          const display = planTool.response.resultDisplay;
+          const presentedPlan =
+            typeof display === 'object' &&
+            display !== null &&
+            'presentedPlan' in display
+              ? (
+                  display as {
+                    presentedPlan: {
+                      title: string;
+                      content: string;
+                      affectedFiles: string[];
+                      dependencies: string[];
+                    };
+                  }
+                ).presentedPlan
+              : null;
+
+          if (presentedPlan) {
+            const projectRoot = config.getProjectRoot();
+            const planService = new PlanService(projectRoot);
+            const originalPrompt = lastOriginalPromptRef.current || '';
+
+            if (geminiClient) {
+              const combinedParts = geminiTools.flatMap(
+                (toolCall) => toolCall.response.responseParts,
+              );
+              // eslint-disable-next-line @typescript-eslint/no-floating-promises
+              geminiClient.addHistory({
+                role: 'user',
+                parts: combinedParts,
+              });
+            }
+
+            const callIdsToMarkAsSubmitted = geminiTools.map(
+              (toolCall) => toolCall.request.callId,
+            );
+            markToolsAsSubmitted(callIdsToMarkAsSubmitted);
+
+            try {
+              const planId = await planService.savePlan(
+                presentedPlan.content,
+                presentedPlan.title,
+                originalPrompt,
+              );
+
+              setPlanCompletionRequest({
+                title: presentedPlan.title,
+                content: presentedPlan.content,
+                affectedFiles: presentedPlan.affectedFiles ?? [],
+                dependencies: presentedPlan.dependencies ?? [],
+                originalPrompt,
+                planId,
+                onChoice: async (choice, feedback) => {
+                  setPlanCompletionRequest(null);
+
+                  if (choice === 'execute' || choice === 'execute_clean') {
+                    config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+                    await planService.updatePlanStatus(planId, 'executed');
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text:
+                          choice === 'execute_clean'
+                            ? `Executing plan "${presentedPlan.title}" with clean context... Mode switched to Auto Edit.`
+                            : `Executing plan "${presentedPlan.title}"... Mode switched to Auto Edit.`,
+                      },
+                      Date.now(),
+                    );
+
+                    const executeInstruction =
+                      choice === 'execute_clean'
+                        ? `Execute the following implementation plan in a clean context.\n\n---\n\n# Plan: ${presentedPlan.title}\n\n${presentedPlan.content}\n\n---\n\nOriginal request: ${originalPrompt}`
+                        : 'Please implement the plan above. Start with the first step and work through each step systematically.';
+
+                    if (choice === 'execute_clean' && geminiClient) {
+                      await geminiClient.resetChat();
+                    }
+
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    submitQuery([{ text: executeInstruction }], {
+                      isContinuation: true,
+                    });
+                  } else if (choice === 'save') {
+                    await planService.updatePlanStatus(planId, 'saved');
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text: `Plan "${presentedPlan.title}" saved. Use /plan resume "${presentedPlan.title}" to execute later.`,
+                      },
+                      Date.now(),
+                    );
+                    setIsResponding(false);
+                  } else if (choice === 'refine' && feedback) {
+                    await planService.deletePlan(planId);
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text: `Refining plan with feedback: "${feedback}"`,
+                      },
+                      Date.now(),
+                    );
+                    const refinePrompt = `I previously asked you to plan: "${originalPrompt}"
+You created this plan titled "${presentedPlan.title}":
+${presentedPlan.content}
+Please revise the plan based on this feedback:
+${feedback}
+Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    submitQuery([{ text: refinePrompt }], {
+                      isContinuation: true,
+                    });
+                  } else {
+                    await planService.deletePlan(planId);
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text: 'Plan discarded.',
+                      },
+                      Date.now(),
+                    );
+                    setIsResponding(false);
+                  }
+                },
+              });
+
+              setIsResponding(false);
+              return;
+            } catch (error) {
+              debugLogger.warn('Error saving plan as draft:', error);
+              setPlanCompletionRequest({
+                title: presentedPlan.title,
+                content: presentedPlan.content,
+                affectedFiles: presentedPlan.affectedFiles ?? [],
+                dependencies: presentedPlan.dependencies ?? [],
+                originalPrompt,
+                planId: `temp-${Date.now()}`,
+                onChoice: async (choice, feedback) => {
+                  setPlanCompletionRequest(null);
+                  if (choice === 'execute' || choice === 'execute_clean') {
+                    config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text:
+                          choice === 'execute_clean'
+                            ? `Executing plan "${presentedPlan.title}" with clean context... Mode switched to Auto Edit.`
+                            : `Executing plan "${presentedPlan.title}"... Mode switched to Auto Edit.`,
+                      },
+                      Date.now(),
+                    );
+                    const executeInstruction =
+                      choice === 'execute_clean'
+                        ? `Execute the following implementation plan in a clean context.\n\n---\n\n# Plan: ${presentedPlan.title}\n\n${presentedPlan.content}\n\n---\n\nOriginal request: ${originalPrompt}`
+                        : 'Please implement the plan above. Start with the first step and work through each step systematically.';
+
+                    if (choice === 'execute_clean' && geminiClient) {
+                      await geminiClient.resetChat();
+                    }
+
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    submitQuery([{ text: executeInstruction }], {
+                      isContinuation: true,
+                    });
+                  } else if (choice === 'refine' && feedback) {
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text: `Refining plan with feedback: "${feedback}"`,
+                      },
+                      Date.now(),
+                    );
+                    const refinePrompt = `I previously asked you to plan: "${originalPrompt}"
+You created this plan titled "${presentedPlan.title}":
+${presentedPlan.content}
+Please revise the plan based on this feedback:
+${feedback}
+Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    submitQuery([{ text: refinePrompt }], {
+                      isContinuation: true,
+                    });
+                  } else {
+                    addItem(
+                      {
+                        type: MessageType.INFO,
+                        text: 'Plan discarded.',
+                      },
+                      Date.now(),
+                    );
+                    setIsResponding(false);
+                  }
+                },
+              });
+              setIsResponding(false);
+              return;
+            }
+          }
+        }
+      }
+
       // Check if any tool requested to stop execution immediately
       const stopExecutionTool = geminiTools.find(
         (tc) => tc.response.errorType === ToolErrorType.STOP_EXECUTION,
@@ -1405,6 +1718,7 @@ export const useGeminiStream = (
       modelSwitchedFromQuotaError,
       addItem,
       getUserHint,
+      config,
     ],
   );
 
@@ -1493,6 +1807,8 @@ export const useGeminiStream = (
     handleApprovalModeChange,
     activePtyId,
     loopDetectionConfirmationRequest,
+    planCompletionRequest,
+    planQuestionsRequest,
     lastOutputTime,
     retryStatus,
   };

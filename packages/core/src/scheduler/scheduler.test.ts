@@ -64,6 +64,7 @@ import type {
   SuccessfulToolCall,
   ErroredToolCall,
   CancelledToolCall,
+  ToolCall,
   ToolCallResponseInfo,
 } from './types.js';
 import { ToolErrorType } from '../tools/tool-error.js';
@@ -86,6 +87,8 @@ describe('Scheduler (Orchestrator)', () => {
   let mockStateManager: Mocked<SchedulerStateManager>;
   let mockExecutor: Mocked<ToolExecutor>;
   let mockModifier: Mocked<ToolModificationHandler>;
+  let activeCalls: ValidatingToolCall[];
+  let queue: ToolCall[];
 
   // Test Data
   const req1: ToolCallRequestInfo = {
@@ -135,7 +138,10 @@ describe('Scheduler (Orchestrator)', () => {
       getToolRegistry: vi.fn().mockReturnValue(mockToolRegistry),
       isInteractive: vi.fn().mockReturnValue(true),
       getEnableHooks: vi.fn().mockReturnValue(true),
+      getApprovalMode: vi.fn().mockReturnValue('default'),
       setApprovalMode: vi.fn(),
+      peekUserHints: vi.fn().mockReturnValue([]),
+      getLastUserHintAt: vi.fn().mockReturnValue(null),
     } as unknown as Mocked<Config>;
 
     mockMessageBus = {
@@ -149,26 +155,92 @@ describe('Scheduler (Orchestrator)', () => {
     mockStateManager = {
       enqueue: vi.fn(),
       dequeue: vi.fn(),
+      dequeueBatch: vi.fn(),
       getToolCall: vi.fn(),
       updateStatus: vi.fn(),
       finalizeCall: vi.fn(),
       updateArgs: vi.fn(),
       setOutcome: vi.fn(),
+      getActiveCalls: vi.fn().mockImplementation(() => {
+        const first = (mockStateManager as unknown as SchedulerStateManager)
+          .firstActiveCall as ValidatingToolCall | undefined;
+        return first ? [first] : [];
+      }),
       cancelAllQueued: vi.fn(),
       clearBatch: vi.fn(),
     } as unknown as Mocked<SchedulerStateManager>;
 
+    activeCalls = [];
+    queue = [];
+
+    mockStateManager.enqueue.mockImplementation((calls: ToolCall[]) => {
+      queue.push(...calls);
+    });
+
+    mockStateManager.dequeue.mockImplementation(() => queue.shift());
+
+    mockStateManager.dequeueBatch.mockImplementation((predicate) => {
+      const first = queue.shift();
+      if (!first) return [];
+      const batch = [first];
+      if (predicate && predicate(first)) {
+        while (queue.length > 0 && predicate(queue[0])) {
+          batch.push(queue.shift()!);
+        }
+      }
+      activeCalls = batch as ValidatingToolCall[];
+      return batch;
+    });
+
+    mockStateManager.getActiveCalls.mockImplementation(() => {
+      const first = (mockStateManager as unknown as SchedulerStateManager)
+        .firstActiveCall as ValidatingToolCall | undefined;
+      return activeCalls.length > 0 ? activeCalls : first ? [first] : [];
+    });
+
+    mockStateManager.getToolCall.mockImplementation((callId: string) => {
+      const active = activeCalls.find((call) => call.request.callId === callId);
+      if (active) return active;
+      const first = (mockStateManager as unknown as SchedulerStateManager)
+        .firstActiveCall as ValidatingToolCall | undefined;
+      return first && first.request.callId === callId ? first : undefined;
+    });
+
+    (mockStateManager.updateStatus as unknown as Mock).mockImplementation(
+      (callId: string, status: string, responseOrDetails?: unknown) => {
+        const call = activeCalls.find(
+          (entry) => entry.request.callId === callId,
+        );
+        if (!call) return;
+        (call as unknown as { status: string }).status = status;
+        if (responseOrDetails) {
+          (call as unknown as { response?: unknown }).response =
+            responseOrDetails;
+        }
+      },
+    );
+
+    mockStateManager.finalizeCall.mockImplementation((callId: string) => {
+      activeCalls = activeCalls.filter(
+        (call) => call.request.callId !== callId,
+      );
+    });
+
+    mockStateManager.clearBatch.mockImplementation(() => {
+      activeCalls = [];
+    });
+
     // Define getters for accessors idiomatically
     Object.defineProperty(mockStateManager, 'isActive', {
-      get: vi.fn().mockReturnValue(false),
+      get: vi.fn().mockImplementation(() => activeCalls.length > 0),
       configurable: true,
     });
     Object.defineProperty(mockStateManager, 'queueLength', {
-      get: vi.fn().mockReturnValue(0),
+      get: vi.fn().mockImplementation(() => queue.length),
       configurable: true,
     });
     Object.defineProperty(mockStateManager, 'firstActiveCall', {
-      get: vi.fn().mockReturnValue(undefined),
+      get: vi.fn().mockImplementation(() => activeCalls[0]),
       configurable: true,
     });
     Object.defineProperty(mockStateManager, 'completedBatch', {
@@ -221,6 +293,17 @@ describe('Scheduler (Orchestrator)', () => {
   });
 
   describe('Phase 1: Ingestion & Resolution', () => {
+    beforeEach(() => {
+      Object.defineProperty(mockStateManager, 'queueLength', {
+        get: vi.fn().mockReturnValue(0),
+        configurable: true,
+      });
+      Object.defineProperty(mockStateManager, 'isActive', {
+        get: vi.fn().mockReturnValue(false),
+        configurable: true,
+      });
+    });
+
     it('should create an ErroredToolCall if tool is not found', async () => {
       vi.mocked(mockToolRegistry.getTool).mockReturnValue(undefined);
       vi.spyOn(ToolUtils, 'getToolSuggestion').mockReturnValue(
@@ -279,92 +362,19 @@ describe('Scheduler (Orchestrator)', () => {
 
   describe('Phase 2: Queue Management', () => {
     it('should drain the queue if multiple calls are scheduled', async () => {
-      const validatingCall: ValidatingToolCall = {
-        status: 'validating',
-        request: req1,
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
-      // Setup queue simulation: two items
-      Object.defineProperty(mockStateManager, 'queueLength', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(2)
-          .mockReturnValueOnce(1)
-          .mockReturnValue(0),
-        configurable: true,
-      });
-
-      Object.defineProperty(mockStateManager, 'isActive', {
-        get: vi.fn().mockReturnValue(false),
-        configurable: true,
-      });
-
-      mockStateManager.dequeue.mockReturnValue(validatingCall);
-      vi.mocked(mockStateManager.dequeue).mockReturnValue(validatingCall);
-      Object.defineProperty(mockStateManager, 'firstActiveCall', {
-        get: vi.fn().mockReturnValue(validatingCall),
-        configurable: true,
-      });
-
       // Execute is the end of the loop, stub it
       mockExecutor.execute.mockResolvedValue({
         status: 'success',
       } as unknown as SuccessfulToolCall);
 
-      await scheduler.schedule(req1, signal);
+      await scheduler.schedule([req1, req2], signal);
 
       // Verify loop ran twice
-      expect(mockStateManager.dequeue).toHaveBeenCalledTimes(2);
+      expect(mockStateManager.dequeueBatch).toHaveBeenCalledTimes(2);
       expect(mockStateManager.finalizeCall).toHaveBeenCalledTimes(2);
     });
 
     it('should execute tool calls sequentially (first completes before second starts)', async () => {
-      // Setup queue simulation: two items
-      Object.defineProperty(mockStateManager, 'queueLength', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(2)
-          .mockReturnValueOnce(1)
-          .mockReturnValue(0),
-        configurable: true,
-      });
-
-      Object.defineProperty(mockStateManager, 'isActive', {
-        get: vi.fn().mockReturnValue(false),
-        configurable: true,
-      });
-
-      const validatingCall1: ValidatingToolCall = {
-        status: 'validating',
-        request: req1,
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
-      const validatingCall2: ValidatingToolCall = {
-        status: 'validating',
-        request: req2,
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
-      vi.mocked(mockStateManager.dequeue)
-        .mockReturnValueOnce(validatingCall1)
-        .mockReturnValueOnce(validatingCall2)
-        .mockReturnValue(undefined);
-
-      Object.defineProperty(mockStateManager, 'firstActiveCall', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(validatingCall1) // Used in loop check for call 1
-          .mockReturnValueOnce(validatingCall1) // Used in _execute for call 1
-          .mockReturnValueOnce(validatingCall2) // Used in loop check for call 2
-          .mockReturnValueOnce(validatingCall2), // Used in _execute for call 2
-        configurable: true,
-      });
-
       const executionLog: string[] = [];
 
       // Mock executor to push to log with a deterministic microtask delay
@@ -390,52 +400,6 @@ describe('Scheduler (Orchestrator)', () => {
     });
 
     it('should queue and process multiple schedule() calls made synchronously', async () => {
-      const validatingCall1: ValidatingToolCall = {
-        status: 'validating',
-        request: req1,
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
-      const validatingCall2: ValidatingToolCall = {
-        status: 'validating',
-        request: req2, // Second request
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
-      // Mock state responses dynamically
-      Object.defineProperty(mockStateManager, 'isActive', {
-        get: vi.fn().mockReturnValue(false),
-        configurable: true,
-      });
-
-      // Queue state responses for the two batches:
-      // Batch 1: length 1 -> 0
-      // Batch 2: length 1 -> 0
-      Object.defineProperty(mockStateManager, 'queueLength', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(1)
-          .mockReturnValueOnce(0)
-          .mockReturnValueOnce(1)
-          .mockReturnValue(0),
-        configurable: true,
-      });
-
-      vi.mocked(mockStateManager.dequeue)
-        .mockReturnValueOnce(validatingCall1)
-        .mockReturnValueOnce(validatingCall2);
-      Object.defineProperty(mockStateManager, 'firstActiveCall', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(validatingCall1)
-          .mockReturnValueOnce(validatingCall1)
-          .mockReturnValueOnce(validatingCall2)
-          .mockReturnValueOnce(validatingCall2),
-        configurable: true,
-      });
-
       // Executor succeeds instantly
       mockExecutor.execute.mockResolvedValue({
         status: 'success',
@@ -454,50 +418,7 @@ describe('Scheduler (Orchestrator)', () => {
     });
 
     it('should queue requests when scheduler is busy (overlapping batches)', async () => {
-      const validatingCall1: ValidatingToolCall = {
-        status: 'validating',
-        request: req1,
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
-      const validatingCall2: ValidatingToolCall = {
-        status: 'validating',
-        request: req2, // Second request
-        tool: mockTool,
-        invocation: mockInvocation as unknown as AnyToolInvocation,
-      };
-
       // 1. Setup State Manager for 2 sequential batches
-      Object.defineProperty(mockStateManager, 'isActive', {
-        get: vi.fn().mockReturnValue(false),
-        configurable: true,
-      });
-
-      Object.defineProperty(mockStateManager, 'queueLength', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(1) // Batch 1
-          .mockReturnValueOnce(0)
-          .mockReturnValueOnce(1) // Batch 2
-          .mockReturnValue(0),
-        configurable: true,
-      });
-
-      vi.mocked(mockStateManager.dequeue)
-        .mockReturnValueOnce(validatingCall1)
-        .mockReturnValueOnce(validatingCall2);
-
-      Object.defineProperty(mockStateManager, 'firstActiveCall', {
-        get: vi
-          .fn()
-          .mockReturnValueOnce(validatingCall1)
-          .mockReturnValueOnce(validatingCall1)
-          .mockReturnValueOnce(validatingCall2)
-          .mockReturnValueOnce(validatingCall2),
-        configurable: true,
-      });
-
       // 2. Setup Executor with a controllable lock for the first batch
       const executionLog: string[] = [];
       let finishFirstBatch: (value: unknown) => void;
@@ -573,6 +494,7 @@ describe('Scheduler (Orchestrator)', () => {
         get: vi.fn().mockReturnValue(activeCall),
         configurable: true,
       });
+      mockStateManager.getActiveCalls = vi.fn().mockReturnValue([activeCall]);
 
       scheduler.cancelAll();
 

@@ -872,6 +872,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
     handleApprovalModeChange,
     activePtyId,
     loopDetectionConfirmationRequest,
+    planCompletionRequest,
+    planQuestionsRequest,
     lastOutputTime,
     retryStatus,
   } = useGeminiStream(
@@ -1569,6 +1571,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
     !!customDialog ||
     confirmUpdateExtensionRequests.length > 0 ||
     !!loopDetectionConfirmationRequest ||
+    !!planCompletionRequest ||
+    !!planQuestionsRequest ||
     isThemeDialogOpen ||
     isSettingsDialogOpen ||
     isModelDialogOpen ||
@@ -1733,6 +1737,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       confirmationRequest,
       confirmUpdateExtensionRequests,
       loopDetectionConfirmationRequest,
+      planCompletionRequest,
+      planQuestionsRequest,
       geminiMdFileCount,
       streamingState,
       initError,
@@ -1831,6 +1837,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       confirmationRequest,
       confirmUpdateExtensionRequests,
       loopDetectionConfirmationRequest,
+      planCompletionRequest,
+      planQuestionsRequest,
       geminiMdFileCount,
       streamingState,
       initError,
