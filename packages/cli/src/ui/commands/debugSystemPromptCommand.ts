@@ -9,7 +9,10 @@ import path from 'node:path';
 import type { SlashCommand } from './types.js';
 import { CommandKind } from './types.js';
 import type { MessageActionReturn } from '@google/gemini-cli-core';
-import { getCoreSystemPromptForExport } from '@google/gemini-cli-core';
+import {
+  getCoreSystemPrompt,
+  getCoreSystemPromptForExport,
+} from '@google/gemini-cli-core';
 
 const exportSystemPromptCommand: SlashCommand = {
   name: 'export-system-prompt',
@@ -64,10 +67,40 @@ The file contains \${placeholders} that will be dynamically substituted:
   },
 };
 
+const showActivePromptCommand: SlashCommand = {
+  name: 'show-active-prompt',
+  description: 'Show the active system prompt currently in use',
+  kind: CommandKind.BUILT_IN,
+  autoExecute: true,
+  action: async (context): Promise<MessageActionReturn | void> => {
+    const config = context.services.config;
+    if (!config) {
+      return {
+        type: 'message',
+        messageType: 'error',
+        content: 'Configuration not available.',
+      };
+    }
+
+    const systemPrompt = getCoreSystemPrompt(config, config.getUserMemory());
+    const overrideNote = config.isSystemPromptOverrideActive()
+      ? '\n\n> Override file detected: `.gemini/system-prompt.md`'
+      : '';
+
+    context.ui.addItem(
+      {
+        type: 'gemini',
+        text: `## Active System Prompt${overrideNote}\n\n---\n\n${systemPrompt}`,
+      },
+      Date.now(),
+    );
+  },
+};
+
 export const debugSystemPromptCommand: SlashCommand = {
   name: 'debug',
   description: 'Debug and development tools',
   kind: CommandKind.BUILT_IN,
   autoExecute: false,
-  subCommands: [exportSystemPromptCommand],
+  subCommands: [exportSystemPromptCommand, showActivePromptCommand],
 };
