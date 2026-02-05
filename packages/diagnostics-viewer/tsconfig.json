@@ -8,5 +8,6 @@
     "types": ["node"]
   },
   "include": ["src/server/**/*", "src/index.ts"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "../diagnostics" }]
 }
